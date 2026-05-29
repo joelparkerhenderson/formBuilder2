@@ -69,6 +69,7 @@ export const fbAddressograph: React.FC<AddressographProps> = ({
           <div
             className="addressograph-field"
             data-tooltip="NHS Number"
+            title="NHS Number"
             style={{fontWeight: 'bold', transition: 'background-color 0.5s ease-out', padding: '0.1rem'}}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#ffffcc';
@@ -90,11 +91,12 @@ export const fbAddressograph: React.FC<AddressographProps> = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <span style={{fontWeight: 'bold'}}>{surname}</span>, {forenames} ({title})
+            <span style={{fontWeight: 'bold'}} title="Surname">{surname}</span>, <span title="First name(s)">{forenames}</span> <span title="Title">({title})</span>
           </div>
           <div
             className="addressograph-field"
             data-tooltip="Address"
+            title="Address"
             style={{transition: 'background-color 0.5s ease-out', padding: '0.1rem'}}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#ffffcc';
@@ -103,10 +105,10 @@ export const fbAddressograph: React.FC<AddressographProps> = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <div>{addressLine1}</div>
-            <div>{addressLine2}</div>
-            <div>{addressLine3}</div>
-            <div>{addressLine4}</div>
+            <div title="Address">{addressLine1}</div>
+            <div title="Address">{addressLine2}</div>
+            <div title="Address">{addressLine3}</div>
+            <div title="Address">{addressLine4}</div>
           </div>
         </div>
 
@@ -115,6 +117,7 @@ export const fbAddressograph: React.FC<AddressographProps> = ({
           <div
             className="addressograph-field"
             data-tooltip="CRN"
+            title="CRN"
             style={{transition: 'background-color 0.5s ease-out', padding: '0.1rem'}}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#ffffcc';
@@ -136,11 +139,12 @@ export const fbAddressograph: React.FC<AddressographProps> = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            {formattedDOB} ({age}y)
+            <span title="Date of birth">{formattedDOB}</span> <span title="Age">({age}y)</span>
           </div>
           <div
             className="addressograph-field"
             data-tooltip="Sex"
+            title="Sex"
             style={{transition: 'background-color 0.5s ease-out', padding: '0.1rem'}}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#ffffcc';
