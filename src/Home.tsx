@@ -2,6 +2,10 @@ import React from 'react';
 import { Link } from 'react-router';
 
 export default function Home() {
+  React.useEffect(() => {
+    sessionStorage.setItem('fb_prev_main_page', '/');
+  }, []);
+
   return (
     <div style={{
       height: '100vh',
@@ -105,6 +109,25 @@ export default function Home() {
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgb(27, 110, 194)'}
           >
             Patient registry
+          </Link>
+          <Link
+            to="/patient-search"
+            style={{
+              display: 'block',
+              padding: '1rem',
+              backgroundColor: 'rgb(27, 110, 194)',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '0.4rem',
+              fontSize: '1.1rem',
+              fontWeight: 400,
+              textAlign: 'center',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgb(21, 88, 156)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgb(27, 110, 194)'}
+          >
+            Patient search
           </Link>
           <Link
             to="/patient-record"

@@ -1,27 +1,44 @@
 class SupabaseQueryBuilder {
   private table: string;
-  private filters: Array<(item: any) => boolean> = [];
-  private orderField: string | null = null;
-  private orderAscending: boolean = true;
+  private filters: Array<{ field: string; value: any; op: string }> = [];
+  private orderCriteria: Array<{ field: string; ascending: boolean }> = [];
   private limitCount: number | null = null;
   private isSingle: boolean = false;
+  private updateValues: any = null;
 
   constructor(table: string) {
     this.table = table;
   }
 
-  select(columns: string = '*') {
+  select(columns: string = "*") {
     return this;
   }
 
   eq(field: string, value: any) {
-    this.filters.push((item) => item[field] === value);
+    this.filters.push({ field, value, op: "eq" });
+    return this;
+  }
+
+  in(field: string, value: any[]) {
+    this.filters.push({ field, value, op: "in" });
+    return this;
+  }
+
+  is(field: string, value: any) {
+    this.filters.push({ field, value, op: "is" });
+    return this;
+  }
+
+  ilike(field: string, pattern: string) {
+    this.filters.push({ field, value: pattern, op: "ilike" });
     return this;
   }
 
   order(field: string, options?: { ascending?: boolean }) {
-    this.orderField = field;
-    this.orderAscending = options?.ascending !== false;
+    this.orderCriteria.push({
+      field,
+      ascending: options?.ascending !== false
+    });
     return this;
   }
 
@@ -35,152 +52,210 @@ class SupabaseQueryBuilder {
     return this;
   }
 
-  private getData() {
-    const key = `sb_${this.table}`;
-    let data = JSON.parse(localStorage.getItem(key) || '[]');
-
-    // If patients table is empty, initialize default patients
-    if (this.table === 'patients' && data.length === 0) {
-      data = [
-        {
-          id: 1,
-          uuid: '12345678-1234-1234-1234-123456789012',
-          version: 1,
-          nhs_number: '123 456 7890',
-          surname: 'DUCK',
-          forenames: 'Donald',
-          title: 'Mr',
-          address_line1: 'Duck House',
-          address_line2: '1 Duck Close',
-          address_line3: 'Fantasyland',
-          address_line4: 'Disneyworld, FL3 1DC',
-          crn: '012345678',
-          date_of_birth: '1956-04-12',
-          sex: 'Male',
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: 2,
-          uuid: '22345678-1234-1234-1234-123456789012',
-          version: 1,
-          nhs_number: '123 456 7890',
-          surname: 'SMITH',
-          forenames: 'John',
-          title: 'Mr',
-          address_line1: '10 High Street',
-          address_line2: 'Cardiff',
-          address_line3: '',
-          address_line4: 'CF10 1AB',
-          crn: '112233445',
-          date_of_birth: '1965-03-15',
-          sex: 'Male',
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: 3,
-          uuid: '32345678-1234-1234-1234-123456789012',
-          version: 1,
-          nhs_number: '234 567 8901',
-          surname: 'JOHNSON',
-          forenames: 'Mary',
-          title: 'Mrs',
-          address_line1: '5 Queen Road',
-          address_line2: 'Swansea',
-          address_line3: '',
-          address_line4: 'SA1 2CD',
-          crn: '223344556',
-          date_of_birth: '1958-07-22',
-          sex: 'Female',
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: 4,
-          uuid: '42345678-1234-1234-1234-123456789012',
-          version: 1,
-          nhs_number: '345 678 9012',
-          surname: 'WILLIAMS',
-          forenames: 'Robert',
-          title: 'Mr',
-          address_line1: '12 Church Lane',
-          address_line2: 'Newport',
-          address_line3: '',
-          address_line4: 'NP19 3EF',
-          crn: '334455667',
-          date_of_birth: '1972-11-08',
-          sex: 'Male',
-          updated_at: new Date().toISOString()
-        }
-      ];
-      localStorage.setItem(key, JSON.stringify(data));
-    }
-
-    if (this.table === 'forms_index_current') {
-      // forms_index_current should load the latest version of forms from forms_index key
-      const forms = JSON.parse(localStorage.getItem('sb_forms_index') || '[]');
-      const grouped: Record<string, any> = {};
-      forms.forEach((f: any) => {
-        if (!grouped[f.form_uuid] || grouped[f.form_uuid].form_version < f.form_version) {
-          grouped[f.form_uuid] = f;
-        }
-      });
-      data = Object.values(grouped);
-    }
-
-    return data;
-  }
-
-  then(resolve: (value: any) => void) {
-    let data = this.getData();
-
-    // Apply filters
-    for (const filter of this.filters) {
-      data = data.filter(filter);
-    }
-
-    // Apply ordering
-    if (this.orderField) {
-      const field = this.orderField;
-      const asc = this.orderAscending;
-      data.sort((a: any, b: any) => {
-        let valA = a[field];
-        let valB = b[field];
-        if (typeof valA === 'string') valA = valA.toLowerCase();
-        if (typeof valB === 'string') valB = valB.toLowerCase();
-        if (valA < valB) return asc ? -1 : 1;
-        if (valA > valB) return asc ? 1 : -1;
-        return 0;
-      });
-    }
-
-    // Apply limit
-    if (this.limitCount !== null) {
-      data = data.slice(0, this.limitCount);
-    }
-
-    // Handle single
-    let result = data;
-    if (this.isSingle) {
-      result = data.length > 0 ? data[0] : null;
-    }
-
-    resolve({ data: result, error: null });
+  update(values: any) {
+    this.updateValues = values;
     return this;
   }
 
-  async insert(items: any | any[]) {
-    const key = `sb_${this.table}`;
-    const currentData = JSON.parse(localStorage.getItem(key) || '[]');
-    const itemsToAdd = Array.isArray(items) ? items : [items];
-
-    itemsToAdd.forEach((item: any) => {
-      if (!item.id) {
-        item.id = currentData.length + 1;
+  // Intercept `.then` for await chaining
+  async then(resolve: (value: any) => void, reject?: (reason: any) => void) {
+    try {
+      const result = await this.execute();
+      resolve(result);
+    } catch (err) {
+      if (reject) {
+        reject(err);
+      } else {
+        resolve({ data: null, error: err });
       }
-      currentData.push(item);
-    });
+    }
+    return this;
+  }
 
-    localStorage.setItem(key, JSON.stringify(currentData));
-    return { data: items, error: null };
+  private async execute() {
+    const tableToUse = this.table === "patients_current" ? "patients" : this.table;
+
+    // A. Query updates
+    if (this.updateValues !== null) {
+      if (tableToUse === "outpatient_appointments") {
+        const uuidFilter = this.filters.find(f => f.field === "uuid" && f.op === "eq");
+        const appUuid = uuidFilter ? uuidFilter.value : null;
+        if (appUuid) {
+          // If referencing an outpatient appointment linkage, store in sessionStorage so it binds to the outcome form submission
+          const outcomeFormUuid = this.updateValues.outcome_form_uuid;
+          if (outcomeFormUuid) {
+            sessionStorage.setItem(`fb_link_appt_${outcomeFormUuid}`, appUuid);
+          }
+        }
+      }
+      return { data: this.updateValues, error: null };
+    }
+
+    // B. Query select fetches
+    // 1. Patients demographics queries
+    if (tableToUse === "patients") {
+      const uuidFilter = this.filters.find(f => f.field === "uuid" && f.op === "eq");
+      const patientUuid = uuidFilter ? uuidFilter.value : null;
+
+      if (patientUuid) {
+        const res = await fetch(`/api/patients/${patientUuid}`);
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Failed to fetch patient detail: ${text}`);
+        }
+        const data = await res.json();
+        return { data: this.isSingle ? data : [data], error: null };
+      } else {
+        const res = await fetch("/api/patients");
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Failed to fetch patients list: ${text}`);
+        }
+        const data = await res.json();
+        return { data, error: null };
+      }
+    }
+
+    // 2. Patient registry / event timeline indexed forms
+    if (tableToUse === "forms_index" || tableToUse === "forms_index_current") {
+      const patientFilter = this.filters.find(f => f.field === "patient_uuid" && f.op === "eq");
+      const patientUuid = patientFilter ? patientFilter.value : null;
+
+      if (patientUuid) {
+        const res = await fetch(`/api/patients/${patientUuid}/forms`);
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Failed to fetch patient forms timeline: ${text}`);
+        }
+        const data = await res.json();
+        return { data, error: null };
+      } else {
+        return { data: [], error: null };
+      }
+    }
+
+    // 3. Outpatient scheduled events
+    if (tableToUse === "outpatient_appointments") {
+      // 3.1: Targeted UUID array fetch
+      const uidsFilter = this.filters.find(f => f.field === "uuid" && f.op === "in");
+      if (uidsFilter && Array.isArray(uidsFilter.value)) {
+        const res = await fetch("/api/appointments/targeted", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uuids: uidsFilter.value })
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Failed to fetch targeted appointments: ${text}`);
+        }
+        const data = await res.json();
+        return { data, error: null };
+      }
+
+      // 3.2: Unscheduled active appointments fetch for outcome dropdown lists
+      const patientFilter = this.filters.find(f => f.field === "patient_uuid" && f.op === "eq");
+      const patientUuid = patientFilter ? patientFilter.value : null;
+      if (patientUuid) {
+        const res = await fetch(`/api/patients/${patientUuid}/appointments/unlinked`);
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Failed to fetch unlinked clinic appointments: ${text}`);
+        }
+        const data = await res.json();
+        return { data, error: null };
+      }
+    }
+
+    // 4. Clinical form detailed read back (Waiting list, Operation, Outpatient Outcome)
+    if (["waiting_list_cards", "operation_notes", "outpatient_outcomes"].includes(tableToUse)) {
+      const uuidFilter = this.filters.find(f => f.field === "uuid" && f.op === "eq");
+      const formUuid = uuidFilter ? uuidFilter.value : null;
+
+      if (formUuid) {
+        const typeMap: Record<string, string> = {
+          "waiting_list_cards": "waiting_list_card",
+          "operation_notes": "operation_note",
+          "outpatient_outcomes": "outpatient_outcome"
+        };
+        const res = await fetch(`/api/forms/${typeMap[tableToUse]}/${formUuid}`);
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Failed to fetch clinical form contents: ${text}`);
+        }
+        const data = await res.json();
+        return { data: this.isSingle ? data : [data], error: null };
+      }
+    }
+
+    return { data: [], error: null };
+  }
+
+  // Intercept inserts to construct and post transactional datasets to Express
+  async insert(items: any | any[]) {
+    const item = Array.isArray(items) ? items[0] : items;
+    const tableToUse = this.table;
+
+    // A. Intercept details insert and stage payload in storage
+    if (["waiting_list_cards", "operation_notes", "outpatient_outcomes"].includes(tableToUse)) {
+      sessionStorage.setItem(`fb_pending_form_${item.uuid}`, JSON.stringify(item));
+      return { data: [item], error: null };
+    }
+
+    // B. Intercept index insert, consolidate staged payload details and post to transactional server hook
+    if (tableToUse === "forms_index") {
+      const formUuid = item.form_uuid;
+      const indexFormType = item.form_type;
+
+      // Pull document stage dataset
+      const pendingFormRaw = sessionStorage.getItem(`fb_pending_form_${formUuid}`);
+      if (!pendingFormRaw) {
+        throw new Error(`Staged clinical form document data not found in session for UUID ${formUuid}`);
+      }
+      const pendingForm = JSON.parse(pendingFormRaw);
+
+      // Check for appointment link reference
+      const storedLinkAppUuid = sessionStorage.getItem(`fb_link_appt_${formUuid}`);
+      const linkAppUuid = storedLinkAppUuid || pendingForm.appointment_uuid || null;
+
+      const payload = {
+        formUuid,
+        version: item.form_version,
+        patientUuid: item.patient_uuid,
+        eventDatetime: item.event_datetime,
+        formStatus: item.form_status,
+        formData: pendingForm.form_data,
+        indexDetails: {
+          speciality: item.speciality,
+          organisation: item.organisation,
+          hospital: item.hospital,
+          seniorClinician: item.senior_clinician,
+          details: item.details,
+          eventOrDocument: item.event_or_document || "Document"
+        },
+        linkAppointmentUuid: linkAppUuid
+      };
+
+      const res = await fetch(`/api/forms/${indexFormType}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`API transaction failed to write document: ${errText}`);
+      }
+
+      const resJson = await res.json();
+
+      // Clean session state
+      sessionStorage.removeItem(`fb_pending_form_${formUuid}`);
+      sessionStorage.removeItem(`fb_link_appt_${formUuid}`);
+
+      return { data: [item], error: null };
+    }
+
+    return { data: [item], error: null };
   }
 }
 
@@ -188,6 +263,35 @@ export function createClient(url: string, key: string) {
   return {
     from: (table: string) => {
       return new SupabaseQueryBuilder(table);
+    },
+    rpc: (functionName: string, args: any) => {
+      const run = async () => {
+        if (functionName === "search_patients_fuzzy") {
+          const searchTerm = args?.search_term || "";
+          if (!searchTerm.trim()) {
+            return { data: [], error: null };
+          }
+          const res = await fetch("/api/patients/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ searchQuery: searchTerm })
+          });
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`Search request failed: ${text}`);
+          }
+          const data = await res.json();
+          return { data, error: null };
+        }
+        return { data: null, error: new Error(`Unknown RPC function: ${functionName}`) };
+      };
+
+      const promise = run();
+      return {
+        then: (resolve: any) => promise.then(resolve),
+        catch: (reject: any) => promise.catch(reject),
+        promise
+      };
     }
   };
 }

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useNavigate } from 'react-router';
 import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbButton as FbButton } from './components/fbButton';
+import { fbSearchInput as FbSearchInput } from './components/fbSearchInput';
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import PatientRecord from './PatientRecord';
@@ -26,17 +27,24 @@ interface Patient {
   sex: string;
 }
 
-export default function PatientRegistry() {
+export default function PatientSearch() {
   const navigate = useNavigate();
 
   const [patients, setPatients] = React.useState<Patient[]>([]);
-  const [loading, setLoading] = React.useState<boolean>(true);
+  const [loading, setLoading] = React.useState<boolean>(false);
   const [activePatientUuid, setActivePatientUuid] = React.useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState<string>('');
+
+  const queryRef = React.useRef<number>(0);
 
   // Custom userName control state with localStorage persistence
   const [username, setUsername] = React.useState<string>(() => {
     return localStorage.getItem('fb_username') || '';
   });
+
+  React.useEffect(() => {
+    sessionStorage.setItem('fb_prev_main_page', '/patient-search');
+  }, []);
 
   const handleUsernameChange = (val: string) => {
     setUsername(val);
@@ -44,35 +52,46 @@ export default function PatientRegistry() {
   };
 
   React.useEffect(() => {
-    sessionStorage.setItem('fb_prev_main_page', '/patient-registry');
-    fetchPatients();
-  }, []);
-
-  const fetchPatients = async () => {
-    try {
-      setLoading(true);
-
-      // Select distinct latest versions of patients using our mock view
-      // Ordered by surname (ascending), then forenames (ascending), then date_of_birth (ascending)
-      const { data, error } = await supabase
-        .from('patients_current')
-        .select('*')
-        .order('surname', { ascending: true })
-        .order('forenames', { ascending: true })
-        .order('date_of_birth', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching patients:', error);
-      } else {
-        setPatients(data || []);
-      }
-
-    } catch (err) {
-      console.error('Exception fetching patient registry data:', err);
-    } finally {
+    // 1. When the page is first opened, or when the search query is empty,
+    // the list should be empty and the database should not be queried.
+    if (!searchQuery.trim()) {
+      setPatients([]);
       setLoading(false);
+      return;
     }
-  };
+
+    // 2. When query changes, clear results of previous searches immediately,
+    // and ignore earlier pending queries
+    setPatients([]);
+    setLoading(true);
+
+    const currentQueryId = ++queryRef.current;
+
+    const performSearch = async () => {
+      try {
+        const { data, error } = await supabase.rpc('search_patients_fuzzy', {
+          search_term: searchQuery
+        });
+
+        // 3. When query returns (and a more recent query has not been sent), display matches
+        if (currentQueryId === queryRef.current) {
+          if (error) {
+            console.error('Fuzzy search query failed:', error);
+          } else {
+            setPatients(data || []);
+          }
+          setLoading(false);
+        }
+      } catch (err) {
+        if (currentQueryId === queryRef.current) {
+          console.error('Fuzzy search execution failed:', err);
+          setLoading(false);
+        }
+      }
+    };
+
+    performSearch();
+  }, [searchQuery]);
 
   const handleOpenRecord = (patientUuid: string) => {
     setActivePatientUuid(patientUuid);
@@ -80,9 +99,9 @@ export default function PatientRegistry() {
 
   return (
     <>
-      {/* Registry UI container - visibility is toggled by setting style.display */}
+      {/* Search UI container - visibility is toggled by setting style.display */}
       <div
-        id="patient-registry-container"
+        id="patient-search-container"
         style={{
           height: '100vh',
           display: activePatientUuid ? 'none' : 'flex',
@@ -91,30 +110,47 @@ export default function PatientRegistry() {
           backgroundColor: 'white'
         }}
       >
-        {/* Top Banner section */}
+        {/* Top Banner section with wide full-width Search for input inside the header */}
         <div style={{
           backgroundColor: 'white',
           borderBottom: '0.2rem solid rgb(27, 110, 194)',
-          padding: '0.4rem 0.8rem',
+          padding: '0.8rem',
           boxSizing: 'border-box',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
+          flexDirection: 'column',
+          gap: '0.8rem'
         }} className="flex-shrink-0">
-          <h1
-            style={{
-              fontFamily: "'Roboto', sans-serif",
-              fontSize: '1.8rem',
-              fontWeight: 700,
-              color: '#333',
-              margin: 0,
-              lineHeight: '2.2rem',
-              cursor: 'pointer'
-            }}
-            onClick={() => navigate('/')}
-          >
-            Patient registry
-          </h1>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <h1
+              style={{
+                fontFamily: "'Roboto', sans-serif",
+                fontSize: '1.8rem',
+                fontWeight: 700,
+                color: '#333',
+                margin: 0,
+                lineHeight: '2.2rem',
+                cursor: 'pointer'
+              }}
+              onClick={() => navigate('/')}
+            >
+              Patient search
+            </h1>
+          </div>
+          
+          <div style={{ width: '100%' }}>
+            <FbSearchInput
+              label="Search for"
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Type to search patient index"
+              id="patient-search-query-input"
+              autoFocus
+            />
+          </div>
         </div>
 
         {/* Main content container */}
@@ -124,11 +160,17 @@ export default function PatientRegistry() {
           overflowY: 'auto'
         }}>
 
-          {loading ? (
-            <div style={{ fontSize: '1.1rem', color: '#666' }}>Loading patients...</div>
+          {!searchQuery.trim() ? null : loading ? (
+            <div style={{ fontSize: '1.1rem', color: '#666' }}>Querying clinical registry...</div>
           ) : patients.length === 0 ? (
-            <div style={{ fontSize: '1.1rem', color: '#666', fontStyle: 'italic' }}>
-              No patients found.
+            <div style={{
+              fontFamily: "'Roboto', sans-serif",
+              fontSize: '1rem',
+              fontWeight: 300,
+              fontStyle: 'italic',
+              color: '#666'
+            }}>
+              No matches found
             </div>
           ) : (
             <table style={{

@@ -2,6 +2,14 @@ import * as React from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbAddFormMenu as AddFormMenu } from './components/fbAddFormMenu';
+import { fbButton as FbButton } from './components/fbButton';
+import { fbOutpatientAppointmentTile as OutpatientAppointmentTile } from './components/fbOutpatientAppointmentTile';
+import { fbFormTile as FormTile } from './components/fbFormTile';
+import { fbDraftBadge as DraftBadge } from './components/fbDraftBadge';
+import { fbAddButton as AddButton } from './components/fbAddButton';
+import WaitingListCard from './WaitingListCard';
+import OperationNote from './OperationNote';
+import OutpatientOutcome from './OutpatientOutcome';
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
@@ -32,67 +40,131 @@ interface FormIndexItem {
   form_type: string;
   patient_uuid: string;
   event_datetime: string;
-  document_datetime: string;
-  form_status: 'draft' | 'final';
+  document_datetime: string | null;
+  form_status: string;
+  event_or_document?: 'Event' | 'Document';
+  details?: string;
+  speciality?: string;
+  organisation?: string;
+  hospital?: string;
+  senior_clinician?: string;
 }
 
-export default function PatientRecord() {
+interface PatientRecordProps {
+  patientUuid?: string;
+  username?: string;
+  onClose?: () => void;
+  inline?: boolean;
+}
+
+export default function PatientRecord({
+  patientUuid: propPatientUuid,
+  username: propUsername,
+  onClose,
+  inline = false
+}: PatientRecordProps = {}) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [patient, setPatient] = React.useState<Patient | null>(null);
   const [forms, setForms] = React.useState<FormIndexItem[]>([]);
+  const [appointments, setAppointments] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
 
-  // State & Ref for the AddFormMenu dropdown
+  // Search/Registry persistence for username
+  const [username, setUsername] = React.useState<string>(() => {
+    return localStorage.getItem('fb_username') || propUsername || 'demoUser';
+  });
+
+  const handleUsernameChange = (val: string) => {
+    setUsername(val);
+    localStorage.setItem('fb_username', val);
+  };
+
+  // State & Ref for the AddFormMenu dropdown (bottom-left AddButton trigger)
   const [showAddMenu, setShowAddMenu] = React.useState<boolean>(false);
   const addButtonRef = React.useRef<HTMLButtonElement>(null);
 
+  // Local state to keep track of actively opened forms/documents inline
+  const [inlineActiveForm, setInlineActiveForm] = React.useState<{
+    formType: 'waiting_list_card' | 'operation_note' | 'outpatient_outcome';
+    formUuid?: string;
+    appointmentUuid?: string;
+    openInRoV?: boolean;
+  } | null>(null);
+
   // Parse location state to see if patientUuid was passed
-  const state = location.state as { patientUuid?: string } | null;
-  const patientUuid = state?.patientUuid || '12345678-1234-1234-1234-123456789012'; // Default demo patient
+  const state = location.state as { patientUuid?: string; from?: string } | null;
+  const patientUuid = inline ? propPatientUuid : (state?.patientUuid || '12345678-1234-1234-1234-123456789012');
+
+  const fetchPatientAndForms = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch latest version of patient
+      const { data: patientData, error: patientError } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('uuid', patientUuid)
+        .order('version', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (patientError) {
+        console.error('Error fetching patient:', patientError);
+      } else {
+        setPatient(patientData);
+      }
+
+      // Fetch forms for patient_uuid via forms_index
+      const { data: formIndexData, error: formIndexError } = await supabase
+        .from('forms_index_current')
+        .select('*')
+        .eq('patient_uuid', patientUuid)
+        .order('event_datetime', { ascending: false });
+
+      if (formIndexError) {
+        console.error('Error fetching form index:', formIndexError);
+      } else {
+        setForms(formIndexData || []);
+
+        // Lazy/targeted secondary query: Fetch metadata ONLY for the specific appointments found in the main forms list
+        const apptUuids = (formIndexData || [])
+          .filter(f => f.form_type === 'outpatient_appointment')
+          .map(f => f.form_uuid);
+
+        if (apptUuids.length > 0) {
+          const { data: apptsData, error: apptsError } = await supabase
+            .from('outpatient_appointments')
+            .select('*')
+            .in('uuid', apptUuids);
+
+          if (apptsError) {
+            console.error('Error fetching targeted appointment details:', apptsError);
+          } else {
+            setAppointments(apptsData || []);
+          }
+        } else {
+          setAppointments([]);
+        }
+      }
+
+    } catch (err) {
+      console.error('Exception fetching patient record data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   React.useEffect(() => {
-    const fetchPatientAndForms = async () => {
-      try {
-        setLoading(true);
-
-        // Fetch latest version of patient
-        const { data: patientData, error: patientError } = await supabase
-          .from('patients')
-          .select('*')
-          .eq('uuid', patientUuid)
-          .order('version', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (patientError) {
-          console.error('Error fetching patient:', patientError);
-        } else {
-          setPatient(patientData);
-        }
-
-        // Fetch forms for patient_uuid via forms_index
-        const { data: formIndexData, error: formIndexError } = await supabase
-          .from('forms_index_current')
-          .select('*')
-          .eq('patient_uuid', patientUuid)
-          .order('event_datetime', { ascending: false });
-
-        if (formIndexError) {
-          console.error('Error fetching form index:', formIndexError);
-        } else {
-          setForms(formIndexData || []);
-        }
-
-      } catch (err) {
-        console.error('Exception fetching patient record data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPatientAndForms();
+  }, [patientUuid]);
+
+  React.useEffect(() => {
+    sessionStorage.setItem('fb_prev_main_page', '/patient-record');
+    if (patientUuid) {
+      sessionStorage.setItem('fb_prev_patient_uuid', patientUuid);
+    }
   }, [patientUuid]);
 
   // Translate form type to display name
@@ -100,36 +172,52 @@ export default function PatientRecord() {
     if (type === 'waiting_list_card') return 'Waiting list card';
     if (type === 'operation_note') return 'Operation note';
     if (type === 'outpatient_outcome') return 'Outpatient outcome';
+    if (type === 'outpatient_appointment') return 'Outpatient appointment';
     return type;
   };
 
-  // Navigate to corresponding form view
   const handleFormClick = (form: FormIndexItem) => {
-    let route = '';
-    if (form.form_type === 'waiting_list_card') route = '/waiting-list';
-    else if (form.form_type === 'operation_note') route = '/operation-note';
-    else if (form.form_type === 'outpatient_outcome') route = '/outpatient-outcome';
+    setInlineActiveForm({
+      formType: form.form_type as any,
+      formUuid: form.form_uuid,
+      openInRoV: true // clicking directly on standard record always opens in Read-Only unless otherwise selected
+    });
+  };
 
-    if (route) {
-      if (form.form_status === 'final') {
-        // Read-only view (RoV)
-        navigate(route, { state: { formUuid: form.form_uuid, patientUuid: patient?.uuid, openInRoV: true } });
-      } else {
-        // Edit view (EV)
-        navigate(route, { state: { formUuid: form.form_uuid, patientUuid: patient?.uuid, openInRoV: false } });
-      }
+  const handleAppointmentClick = (form: FormIndexItem) => {
+    const appt = appointments.find(a => a.uuid === form.form_uuid);
+    if (!appt) {
+      console.error('Appointment not found:', form.form_uuid);
+      return;
+    }
+
+    if (appt.outcome_form_uuid) {
+      const matchingForm = forms.find(f => f.form_uuid === appt.outcome_form_uuid);
+      const isFinal = matchingForm?.form_status === 'final';
+      setInlineActiveForm({
+        formType: 'outpatient_outcome',
+        formUuid: appt.outcome_form_uuid,
+        openInRoV: isFinal
+      });
+    } else {
+      setInlineActiveForm({
+        formType: 'outpatient_outcome',
+        appointmentUuid: appt.uuid,
+        openInRoV: false
+      });
     }
   };
 
   const handleAddNewForm = (formType: string) => {
-    let route = '';
-    if (formType === 'waiting-list') route = '/waiting-list';
-    else if (formType === 'operation-note') route = '/operation-note';
-    else if (formType === 'outpatient-outcome') route = '/outpatient-outcome';
+    let resolvedType: any = formType;
+    if (formType === 'waiting-list') resolvedType = 'waiting_list_card';
+    if (formType === 'operation-note') resolvedType = 'operation_note';
+    if (formType === 'outpatient-outcome') resolvedType = 'outpatient_outcome';
 
-    if (route) {
-      navigate(route, { state: { patientUuid: patient?.uuid, openInRoV: false } });
-    }
+    setInlineActiveForm({
+      formType: resolvedType,
+      openInRoV: false
+    });
   };
 
   const formatDateTime = (isoString: string) => {
@@ -147,6 +235,67 @@ export default function PatientRecord() {
     }
   };
 
+  const handleClose = () => {
+    if (inline && onClose) {
+      onClose();
+      return;
+    }
+    const fromPath = (location.state as any)?.from || '/';
+    navigate(fromPath);
+  };
+
+  const renderBadge = (form: FormIndexItem) => {
+    if (form.form_type === 'outpatient_appointment') {
+      const appt = appointments.find(a => a.uuid === form.form_uuid);
+      const isFuture = new Date(form.event_datetime) > new Date();
+
+      if (isFuture) {
+        return (
+          <div style={{
+            backgroundColor: '#2e7d32', // green
+            color: 'white',
+            fontWeight: 700,
+            padding: '0.2rem 0.4rem',
+            fontFamily: "'Roboto', sans-serif",
+            fontSize: '1rem',
+            display: 'inline-block',
+            lineHeight: 1.2
+          }}>
+            Future appt
+          </div>
+        );
+      } else {
+        const outcomeFormUuid = appt?.outcome_form_uuid;
+        const matchingFormStatus = forms.find(f => f.form_uuid === outcomeFormUuid)?.form_status;
+        const hasFinalOutcome = matchingFormStatus === 'final';
+
+        if (!hasFinalOutcome) {
+          return (
+            <div style={{
+              backgroundColor: '#d50000', // red
+              color: 'white',
+              fontWeight: 700,
+              padding: '0.2rem 0.4rem',
+              fontFamily: "'Roboto', sans-serif",
+              fontSize: '1rem',
+              display: 'inline-block',
+              lineHeight: 1.2
+            }}>
+              Not outcomed
+            </div>
+          );
+        }
+      }
+      return null;
+    }
+
+    if (form.form_status === 'draft') {
+      return <DraftBadge />;
+    }
+
+    return null;
+  };
+
   return (
     <div style={{
       height: '100vh',
@@ -156,201 +305,124 @@ export default function PatientRecord() {
       backgroundColor: 'white'
     }}>
 
-      {/* Top Banner section */}
-      <div style={{
-        borderBottom: '0.2rem solid rgb(27, 110, 194)',
-        padding: '0.4rem',
-        display: 'flex',
-        justifyContent: 'between',
-        alignItems: 'center'
-      }} className="flex-shrink-0">
-        <h1 style={{ fontSize: '2rem', fontWeight: 500, margin: 0, cursor: 'pointer', color: 'black' }} onClick={() => navigate('/')}>
-          Patient record
-        </h1>
-        <div className="flex-1"></div>
-        {patient ? (
-          <Addressograph
-            nhsNumber={patient.nhs_number}
-            surname={patient.surname}
-            forenames={patient.forenames}
-            title={patient.title}
-            addressLine1={patient.address_line1}
-            addressLine2={patient.address_line2}
-            addressLine3={patient.address_line3}
-            addressLine4={patient.address_line4}
-            crn={patient.crn}
-            dateOfBirth={patient.date_of_birth}
-            sex={patient.sex}
-          />
-        ) : (
-          <Addressograph />
-        )}
-      </div>
-
-      {/* Main content grid */}
-      <div style={{
-        flex: 1,
-        display: 'grid',
-        gridTemplateColumns: '300px 1fr',
-        overflow: 'hidden'
-      }}>
-
-        {/* Left column menu panel */}
-        <div style={{
-          borderRight: '0.1rem solid silver',
-          backgroundColor: '#f9f9f9',
-          padding: '1rem',
-          display: 'flex',
+      {/* Main Patient Record Page UI container */}
+      <div
+        id="patient-record-page-container"
+        style={{
+          display: inlineActiveForm ? 'none' : 'flex',
           flexDirection: 'column',
-          gap: '1rem',
-          overflowY: 'auto'
-        }}>
-          <div style={{ position: 'relative' }}>
-            <button
-              ref={addButtonRef}
-              type="button"
-              onClick={() => setShowAddMenu(prev => !prev)}
-              style={{
-                width: '100%',
-                padding: '0.6rem 1rem',
-                border: '0.1rem solid silver',
-                borderRadius: '0.4rem',
-                backgroundColor: 'rgb(27, 110, 194)',
-                color: 'white',
-                cursor: 'pointer',
-                fontWeight: 500,
-                fontSize: '1rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgb(21, 88, 156)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgb(27, 110, 194)'}
-            >
-              <span>Add form</span>
-              <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>+</span>
-            </button>
-            {showAddMenu && (
-              <AddFormMenu
-                buttonRef={addButtonRef}
-                onSelectFormType={(type) => {
-                  setShowAddMenu(false);
-                  // Map types: outpatient_outcome -> outpatient-outcome, etc.
-                  const mappedType = type.replace('_', '-');
-                  handleAddNewForm(mappedType);
-                }}
-                onCancel={() => setShowAddMenu(false)}
-              />
-            )}
-          </div>
-          <button
-            onClick={() => navigate('/patient-registry')}
-            style={{
-              padding: '0.6rem 1rem',
-              border: '0.1rem solid silver',
-              borderRadius: '0.4rem',
-              backgroundColor: 'white',
-              cursor: 'pointer',
-              fontWeight: 400,
-              fontSize: '1rem',
-              color: 'rgb(27, 110, 194)',
-              textAlign: 'left',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f4f9'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-          >
-            ● Patient registry
-          </button>
+          height: '100%',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Top Banner section */}
+        <div style={{
+          borderBottom: '0.2rem solid rgb(27, 110, 194)',
+          padding: '0.4rem',
+          display: 'flex',
+          justifyContent: 'between',
+          alignItems: 'center'
+        }} className="flex-shrink-0">
+          <h1 style={{ fontSize: '2rem', fontWeight: 500, margin: 0, cursor: 'pointer', color: 'black' }} onClick={() => navigate('/')}>
+            Patient record
+          </h1>
+          <div className="flex-1"></div>
+          {patient ? (
+            <Addressograph
+              nhsNumber={patient.nhs_number}
+              surname={patient.surname}
+              forenames={patient.forenames}
+              title={patient.title}
+              addressLine1={patient.address_line1}
+              addressLine2={patient.address_line2}
+              addressLine3={patient.address_line3}
+              addressLine4={patient.address_line4}
+              crn={patient.crn}
+              dateOfBirth={patient.date_of_birth}
+              sex={patient.sex}
+            />
+          ) : (
+            <Addressograph />
+          )}
         </div>
 
-        {/* Right column content list */}
+        {/* List of documents (forms_index) taking full width (no left gray column) */}
         <div style={{
+          flex: 1,
           padding: '1.5rem',
           overflowY: 'auto'
         }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 400, marginBottom: '1rem', color: '#333' }}>
-            Forms index
-          </h2>
-
           {loading ? (
             <div style={{ fontSize: '1.1rem', color: '#666' }}>Loading forms...</div>
           ) : forms.length === 0 ? (
             <div style={{ fontSize: '1.1rem', color: '#666', fontStyle: 'italic' }}>
-              No forms recorded for this patient yet. Use the dropdown menu on the left to add a form.
+              No forms recorded for this patient yet. Use the button in the bottom left corner to add a form.
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               {forms.map((form) => {
-                const isDraft = form.form_status === 'draft';
+                const isAppointment = form.form_type === 'outpatient_appointment';
+                const appt = isAppointment ? appointments.find(a => a.uuid === form.form_uuid) : null;
+                const clinicName = appt?.clinic_name || '';
+                const isFutureAppointment = isAppointment && (new Date(form.event_datetime) > new Date());
+
                 return (
                   <div
                     key={form.form_uuid}
-                    onClick={() => handleFormClick(form)}
                     style={{
-                      border: '0.1rem solid silver',
-                      borderRadius: '0.6rem',
-                      padding: '1rem',
-                      backgroundColor: 'white',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.5rem',
-                      boxShadow: '0 0.1rem 0.3rem rgba(0,0,0,0.05)',
-                      transition: 'border-color 0.2s, box-shadow 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'rgb(27, 110, 194)';
-                      e.currentTarget.style.boxShadow = '0 0.2rem 0.6rem rgba(0,0,0,0.1)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'silver';
-                      e.currentTarget.style.boxShadow = '0 0.1rem 0.3rem rgba(0,0,0,0.05)';
+                      display: 'grid',
+                      gridTemplateColumns: '170px 1fr auto',
+                      alignItems: 'start',
+                      gap: '1.5rem',
+                      borderBottom: '1px solid silver',
+                      padding: '0.2rem 0'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '1.15rem', fontWeight: 500, color: 'rgb(27, 110, 194)' }}>
-                        {getFormTypeDisplay(form.form_type)}
-                      </span>
-                      {isDraft ? (
-                        <span style={{
-                          backgroundColor: '#fff3cd',
-                          color: '#856404',
-                          border: '0.1rem solid #ffeeba',
-                          borderRadius: '0.3rem',
-                          padding: '0.2rem 0.5rem',
-                          fontSize: '0.8rem',
-                          fontWeight: 500,
-                          textTransform: 'uppercase'
-                        }}>
-                          Draft
-                        </span>
+                    {/* Column 1: Badge */}
+                    <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'flex-start' }}>
+                      {renderBadge(form)}
+                    </div>
+
+                    {/* Column 2: Custom Tile Component or Form details */}
+                    <div>
+                      {isAppointment ? (
+                        <OutpatientAppointmentTile
+                          dateTime={formatDateTime(form.event_datetime)}
+                          clinicName={clinicName}
+                          speciality={form.speciality || ''}
+                          src={form.senior_clinician || ''}
+                        />
                       ) : (
-                        <span style={{
-                          backgroundColor: '#d4edda',
-                          color: '#155724',
-                          border: '0.1rem solid #c3e6cb',
-                          borderRadius: '0.3rem',
-                          padding: '0.2rem 0.5rem',
-                          fontSize: '0.8rem',
-                          fontWeight: 500,
-                          textTransform: 'uppercase'
-                        }}>
-                          Final
-                        </span>
+                        <FormTile
+                          dateTime={formatDateTime(form.document_datetime || form.event_datetime)}
+                          formTypeName={getFormTypeDisplay(form.form_type)}
+                          speciality={form.speciality || ''}
+                          src={form.senior_clinician || ''}
+                        />
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.9rem', color: '#666' }}>
-                      <span>
-                        <strong>Event date:</strong> {formatDateTime(form.event_datetime)}
-                      </span>
-                      <span>
-                        <strong>Documented:</strong> {formatDateTime(form.document_datetime)}
-                      </span>
-                      <span>
-                        <strong>Version:</strong> {form.form_version}
-                      </span>
+
+                    {/* Column 3: Blue on White Buttons */}
+                    <div>
+                      {isAppointment ? (
+                        !isFutureAppointment && (
+                          <FbButton
+                            variant="primary"
+                            onClick={() => handleAppointmentClick(form)}
+                            id={`outcome-btn-${form.form_uuid}`}
+                          >
+                            Outcome form
+                          </FbButton>
+                        )
+                      ) : (
+                        <FbButton
+                          variant="primary"
+                          onClick={() => handleFormClick(form)}
+                          id={`open-btn-${form.form_uuid}`}
+                        >
+                          Open
+                        </FbButton>
+                      )}
                     </div>
                   </div>
                 );
@@ -359,7 +431,123 @@ export default function PatientRecord() {
           )}
         </div>
 
+        {/* Bottom Control bar */}
+        <div
+          className="bottom-control-bar"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.4rem 0.8rem',
+            backgroundColor: 'white',
+            borderTop: '0.2rem solid rgb(27, 110, 194)',
+            minHeight: '2.8rem',
+            boxSizing: 'border-box',
+            zIndex: 100 // ensure dropdown fits nicely
+          }}
+        >
+          {/* New form / document button in the bottom left corner */}
+          <div style={{ position: 'relative' }}>
+            <AddButton
+              ref={addButtonRef}
+              label="New form / document"
+              id="new-form-document-button"
+              onClick={() => setShowAddMenu(prev => !prev)}
+            />
+            {showAddMenu && (
+              <AddFormMenu
+                buttonRef={addButtonRef}
+                onSelectFormType={(type) => {
+                  setShowAddMenu(false);
+                  const mappedType = type.replace('_', '-');
+                  handleAddNewForm(mappedType);
+                }}
+                onCancel={() => setShowAddMenu(false)}
+              />
+            )}
+          </div>
+
+          {/* User Name input and Close button in the bottom right corner */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <input
+                id="username-input"
+                type="text"
+                value={username}
+                onChange={(e) => handleUsernameChange(e.target.value)}
+                style={{
+                  width: '10rem',
+                  height: '2.0rem',
+                  paddingLeft: '0.4rem',
+                  border: '0.1rem solid silver',
+                  borderRadius: '0.4rem',
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: '1rem',
+                  fontWeight: 400,
+                  color: 'black'
+                }}
+                onFocus={(e) => {
+                  e.target.style.backgroundColor = '#ffffcc';
+                }}
+                onBlur={(e) => {
+                  e.target.style.backgroundColor = 'white';
+                }}
+              />
+            </div>
+
+            <FbButton variant="primary" onClick={handleClose} id="patient-record-close-button">
+              Close
+            </FbButton>
+          </div>
+        </div>
+
       </div>
+
+      {/* Render selected active form inline if present and hide parent container */}
+      {inlineActiveForm && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+          {inlineActiveForm.formType === 'waiting_list_card' && (
+            <WaitingListCard
+              inlineProps={{
+                patientUuid: patient?.uuid,
+                formUuid: inlineActiveForm.formUuid,
+                openInRoV: inlineActiveForm.openInRoV,
+                onClose: () => {
+                  setInlineActiveForm(null);
+                  fetchPatientAndForms();
+                }
+              }}
+            />
+          )}
+          {inlineActiveForm.formType === 'operation_note' && (
+            <OperationNote
+              inlineProps={{
+                patientUuid: patient?.uuid,
+                formUuid: inlineActiveForm.formUuid,
+                openInRoV: inlineActiveForm.openInRoV,
+                onClose: () => {
+                  setInlineActiveForm(null);
+                  fetchPatientAndForms();
+                }
+              }}
+            />
+          )}
+          {inlineActiveForm.formType === 'outpatient_outcome' && (
+            <OutpatientOutcome
+              inlineProps={{
+                patientUuid: patient?.uuid,
+                formUuid: inlineActiveForm.formUuid,
+                appointmentUuid: inlineActiveForm.appointmentUuid,
+                openInRoV: inlineActiveForm.openInRoV,
+                onClose: () => {
+                  setInlineActiveForm(null);
+                  fetchPatientAndForms();
+                }
+              }}
+            />
+          )}
+        </div>
+      )}
 
     </div>
   );

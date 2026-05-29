@@ -6,6 +6,7 @@ import OperationNote from './OperationNote';
 import OutpatientOutcome from './OutpatientOutcome';
 import PatientRecord from './PatientRecord';
 import PatientRegistry from './PatientRegistry';
+import PatientSearch from './PatientSearch';
 
 export const router = createBrowserRouter([
   {
@@ -31,5 +32,9 @@ export const router = createBrowserRouter([
   {
     path: '/patient-registry',
     element: <PatientRegistry />,
+  },
+  {
+    path: '/patient-search',
+    element: <PatientSearch />,
   },
 ]);

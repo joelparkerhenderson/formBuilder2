@@ -186,11 +186,33 @@ interface Patient {
   sex: string;
 }
 
-export default function OutpatientOutcome() {
+interface InlineProps {
+  patientUuid?: string;
+  formUuid?: string;
+  appointmentUuid?: string;
+  openInRoV?: boolean;
+  onClose: () => void;
+}
+
+export default function OutpatientOutcome({ inlineProps }: { inlineProps?: InlineProps } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [patient, setPatient] = React.useState<Patient | null>(null);
+
+  const navigateBack = () => {
+    if (inlineProps) {
+      inlineProps.onClose();
+    } else {
+      const prevPage = sessionStorage.getItem('fb_prev_main_page') || '/';
+      const prevPatientUuid = sessionStorage.getItem('fb_prev_patient_uuid') || patient?.uuid;
+      if (prevPage === '/patient-record' && prevPatientUuid) {
+        navigate('/patient-record', { state: { patientUuid: prevPatientUuid } });
+      } else {
+        navigate(prevPage);
+      }
+    }
+  };
   const [loadingData, setLoadingData] = React.useState<boolean>(false);
 
   const [formState, setFormState] = React.useState<Record<string, any>>({
@@ -222,6 +244,7 @@ export default function OutpatientOutcome() {
   const [formChanged, setFormChanged] = React.useState<boolean>(false);
   const [finalChecked, setFinalChecked] = React.useState<boolean>(false);
   const [isReadOnlyView, setIsReadOnlyView] = React.useState<boolean>(() => {
+    if (inlineProps) return inlineProps.openInRoV || false;
     const s = location.state as { openInRoV?: boolean } | null;
     return s?.openInRoV || false;
   });
@@ -229,9 +252,12 @@ export default function OutpatientOutcome() {
   const [clickedRoVButton, setClickedRoVButton] = React.useState<boolean>(false);
   const [username, setUsername] = React.useState<string>('demoUser');
   const [password, setPassword] = React.useState<string>('');
+  const [appointmentUuid, setAppointmentUuid] = React.useState<string | null>(null);
+  const [appointments, setAppointments] = React.useState<any[]>([]);
   const [showDraftPopup, setShowDraftPopup] = React.useState<boolean>(false);
   const [showPasswordPopup, setShowPasswordPopup] = React.useState<boolean>(false);
   const [openedFromPatientRecord, setOpenedFromPatientRecord] = React.useState<boolean>(() => {
+    if (inlineProps) return true;
     const s = location.state as { openInRoV?: boolean } | null;
     return !!(s && typeof s.openInRoV !== 'undefined');
   });
@@ -366,7 +392,13 @@ export default function OutpatientOutcome() {
 
   // Load form and patient data when opened from patient record
   React.useEffect(() => {
-    const state = location.state as { formUuid?: string; patientUuid?: string; openInRoV?: boolean; username?: string } | null;
+    const state = inlineProps ? {
+      patientUuid: inlineProps.patientUuid,
+      formUuid: inlineProps.formUuid,
+      appointmentUuid: inlineProps.appointmentUuid,
+      openInRoV: inlineProps.openInRoV,
+      username: username
+    } : (location.state as { formUuid?: string; patientUuid?: string; openInRoV?: boolean; username?: string } | null);
 
     // Load username from state if provided
     if (state?.username) {
@@ -378,7 +410,7 @@ export default function OutpatientOutcome() {
       return; // No patient to load, use default state
     }
 
-    setOpenedFromPatientRecord(!!(state && typeof state.openInRoV !== 'undefined'));
+    setOpenedFromPatientRecord(!!inlineProps || !!(state && typeof state.openInRoV !== 'undefined'));
 
     const loadData = async () => {
       try {
@@ -402,6 +434,15 @@ export default function OutpatientOutcome() {
         let loadedFormState = formState;
         let loadedDischarged = false;
         let loadedSos = false;
+
+        // Fetch patient's appointments first so we can use them to list
+        const { data: appsData } = await supabase
+          .from('outpatient_appointments')
+          .select('*')
+          .eq('patient_uuid', state.patientUuid);
+        setAppointments(appsData || []);
+
+        let currentAppUuid = state && 'appointmentUuid' in state ? (state as any).appointmentUuid : null;
         let loadedPifu = false;
         let loadedRemote = false;
         let loadedTests = false;
@@ -429,15 +470,19 @@ export default function OutpatientOutcome() {
 
           if (formError) {
             console.error('Error loading form:', formError);
-          } else if (formData?.form_data) {
-            // Load form data into state
-            loadedFormState = formData.form_data;
-            setFormState(loadedFormState);
+          } else if (formData) {
+            if (formData.appointment_uuid) {
+              currentAppUuid = formData.appointment_uuid;
+            }
+            if (formData.form_data) {
+              // Load form data into state
+              loadedFormState = formData.form_data;
+              setFormState(loadedFormState);
 
-            // Set checkbox states from form_data
-            loadedDischarged = formData.form_data.discharged || false;
-            loadedSos = formData.form_data.sos || false;
-            loadedPifu = formData.form_data.pifu || false;
+              // Set checkbox states from form_data
+              loadedDischarged = formData.form_data.discharged || false;
+              loadedSos = formData.form_data.sos || false;
+              loadedPifu = formData.form_data.pifu || false;
             loadedRemote = formData.form_data.remoteMonitoring || false;
             loadedTests = formData.form_data.testsReq || false;
             loadedWait = formData.form_data.waitListed || false;
@@ -471,8 +516,9 @@ export default function OutpatientOutcome() {
               setFinalChecked(true);
             }
           }
-        } else {
-          // New form created
+        }
+      } else {
+        // New form created
           setOpenedFromPatientRecord(!!(state && typeof state.openInRoV !== 'undefined'));
           const today = formatDate(new Date());
           loadedFormState = {
@@ -486,6 +532,29 @@ export default function OutpatientOutcome() {
             attendedOption: 'attended'
           };
           setFormState(loadedFormState);
+        }
+
+        if (currentAppUuid) {
+          setAppointmentUuid(currentAppUuid);
+          const { data: appData } = await supabase
+            .from('outpatient_appointments')
+            .select('*')
+            .eq('uuid', currentAppUuid)
+            .single();
+
+          if (appData) {
+            loadedFormState = {
+              ...loadedFormState,
+              organisation: appData.organisation,
+              speciality: appData.speciality,
+              site: appData.site,
+              seniorClinician: appData.senior_clinician,
+              clinicName: appData.clinic_name,
+              date: appData.date,
+              time: appData.time
+            };
+            setFormState(loadedFormState);
+          }
         }
 
         setInitialSnapshot({
@@ -522,7 +591,7 @@ export default function OutpatientOutcome() {
     };
 
     loadData();
-  }, [location.state]);
+  }, [location.state, inlineProps]);
 
   React.useLayoutEffect(() => {
     if (isReadOnlyView) return;
@@ -840,10 +909,19 @@ export default function OutpatientOutcome() {
           patient_uuid: patient?.uuid || null,
           event_datetime: formState.date || new Date().toISOString(),
           form_status: 'final',
-          form_data: formDataToSave
+          form_data: formDataToSave,
+          appointment_uuid: appointmentUuid || null
         });
 
       if (insertError) throw insertError;
+
+      // Update outpatient appointment with outcome form uuid if saved for the first time
+      if (!formState.uuid && appointmentUuid) {
+        await supabase
+          .from('outpatient_appointments')
+          .update({ outcome_form_uuid: formUuid })
+          .eq('uuid', appointmentUuid);
+      }
 
       // Also insert into forms_index
       const { error: indexError } = await supabase
@@ -855,7 +933,8 @@ export default function OutpatientOutcome() {
           patient_uuid: patient?.uuid || null,
           event_datetime: formState.date || new Date().toISOString(),
           document_datetime: new Date().toISOString(),
-          form_status: 'final'
+          form_status: 'final',
+          event_or_document: 'Document'
         });
 
       if (indexError) throw indexError;
@@ -882,11 +961,7 @@ export default function OutpatientOutcome() {
       setFormChanged(false);
       setPassword('');
 
-      if (openedFromPatientRecord) {
-        navigate('/patient-record', { state: { patientUuid: patient?.uuid } });
-      } else {
-        navigate('/');
-      }
+      navigateBack();
     } catch (error) {
       console.error('Error saving form:', error);
       alert('Error saving form: ' + (error as Error).message);
@@ -962,10 +1037,19 @@ export default function OutpatientOutcome() {
           patient_uuid: patient?.uuid || null,
           event_datetime: formState.date || new Date().toISOString(),
           form_status: 'draft',
-          form_data: formDataToSave
+          form_data: formDataToSave,
+          appointment_uuid: appointmentUuid || null
         });
 
       if (insertError) throw insertError;
+
+      // Update outpatient appointment with outcome form uuid if saved for the first time
+      if (!formState.uuid && appointmentUuid) {
+        await supabase
+          .from('outpatient_appointments')
+          .update({ outcome_form_uuid: formUuid })
+          .eq('uuid', appointmentUuid);
+      }
 
       // Also insert into forms_index
       const { error: indexError } = await supabase
@@ -977,7 +1061,8 @@ export default function OutpatientOutcome() {
           patient_uuid: patient?.uuid || null,
           event_datetime: formState.date || new Date().toISOString(),
           document_datetime: new Date().toISOString(),
-          form_status: 'draft'
+          form_status: 'draft',
+          event_or_document: 'Document'
         });
 
       if (indexError) throw indexError;
@@ -1004,11 +1089,7 @@ export default function OutpatientOutcome() {
       setFormChanged(false);
       setPassword('');
 
-      if (openedFromPatientRecord) {
-        navigate('/patient-record', { state: { patientUuid: patient?.uuid } });
-      } else {
-        navigate('/');
-      }
+      navigateBack();
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Error saving draft: ' + (error as Error).message);
@@ -1047,11 +1128,12 @@ export default function OutpatientOutcome() {
           finalChecked={finalChecked}
           formStatus={finalChecked ? 'final' : 'draft'}
           openedFromPatientRecord={openedFromPatientRecord}
+          username={username}
           onSwitchToEV={() => {
             setIsReadOnlyView(false);
             setClickedRoVButton(false);
           }}
-          onBack={() => navigate('/patient-record', { state: { patientUuid: patient?.uuid } })}
+          onBack={navigateBack}
         />
       ) : (
         <div className="min-h-screen bg-white" style={{fontFamily: "'Roboto', sans-serif", fontWeight: 300, lineHeight: 1.2}}>
@@ -1224,10 +1306,12 @@ export default function OutpatientOutcome() {
                 passwordTimeoutRef={passwordTimeoutRef}
                 formChanged={formChanged}
                 onCancel={() => {
-                  if (openedFromPatientRecord) {
-                    navigate('/patient-record', { state: { patientUuid: patient?.uuid } });
+                  const s = location.state as { formUuid?: string } | null;
+                  const isEditOfExisting = s?.formUuid || inlineProps?.formUuid;
+                  if (isEditOfExisting) {
+                    setIsReadOnlyView(true);
                   } else {
-                    navigate('/');
+                    navigateBack();
                   }
                 }}
                 saveLabel="Save and close"

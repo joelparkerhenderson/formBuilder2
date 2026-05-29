@@ -72,11 +72,32 @@ interface Patient {
   sex: string;
 }
 
-export default function WaitingListCard() {
+interface InlineProps {
+  patientUuid?: string;
+  formUuid?: string;
+  openInRoV?: boolean;
+  onClose: () => void;
+}
+
+export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineProps } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [patient, setPatient] = React.useState<Patient | null>(null);
+
+  const navigateBack = () => {
+    if (inlineProps) {
+      inlineProps.onClose();
+    } else {
+      const prevPage = sessionStorage.getItem('fb_prev_main_page') || '/';
+      const prevPatientUuid = sessionStorage.getItem('fb_prev_patient_uuid') || patient?.uuid;
+      if (prevPage === '/patient-record' && prevPatientUuid) {
+        navigate('/patient-record', { state: { patientUuid: prevPatientUuid } });
+      } else {
+        navigate(prevPage);
+      }
+    }
+  };
   const [loadingData, setLoadingData] = React.useState<boolean>(false);
 
   const [formState, setFormState] = React.useState<Record<string, any>>({
@@ -194,6 +215,7 @@ export default function WaitingListCard() {
     }
   }, [initialSnapshot, formState, procedures, anticoagChecked, highlySensitive, finalChecked]);
   const [isReadOnlyView, setIsReadOnlyView] = React.useState<boolean>(() => {
+    if (inlineProps) return inlineProps.openInRoV || false;
     const state = location.state as { openInRoV?: boolean } | null;
     return state?.openInRoV || false;
   });
@@ -205,6 +227,7 @@ export default function WaitingListCard() {
     React.useState<boolean>(false);
   const [openedFromPatientRecord, setOpenedFromPatientRecord] =
     React.useState<boolean>(() => {
+      if (inlineProps) return true;
       const state = location.state as { openInRoV?: boolean } | null;
       return !!(state && typeof state.openInRoV !== "undefined");
     });
@@ -314,12 +337,17 @@ export default function WaitingListCard() {
 
   // Load form and patient data when opened from patient record
   React.useEffect(() => {
-    const state = location.state as {
+    const state = inlineProps ? {
+      patientUuid: inlineProps.patientUuid,
+      formUuid: inlineProps.formUuid,
+      openInRoV: inlineProps.openInRoV,
+      username: username
+    } : (location.state as {
       formUuid?: string;
       patientUuid?: string;
       openInRoV?: boolean;
       username?: string;
-    } | null;
+    } | null);
 
     if (state?.username) {
       setUsername(state.username);
@@ -445,7 +473,7 @@ export default function WaitingListCard() {
     };
 
     loadData();
-  }, [location.state]);
+  }, [location.state, inlineProps]);
 
 
 
@@ -654,6 +682,7 @@ export default function WaitingListCard() {
         event_datetime: eventDate,
         document_datetime: new Date().toISOString(),
         form_status: "final",
+        event_or_document: "Document",
       });
 
       if (indexError) throw indexError;
@@ -669,11 +698,7 @@ export default function WaitingListCard() {
       setFormChanged(false);
       setPassword("");
 
-      if (openedFromPatientRecord) {
-        navigate("/patient-record", { state: { patientUuid: patient?.uuid } });
-      } else {
-        navigate("/");
-      }
+      navigateBack();
     } catch (error) {
       console.error("Error saving form:", error);
       alert("Error saving form: " + (error as Error).message);
@@ -749,6 +774,7 @@ export default function WaitingListCard() {
         event_datetime: eventDate,
         document_datetime: new Date().toISOString(),
         form_status: "draft",
+        event_or_document: "Document",
       });
 
       if (indexError) throw indexError;
@@ -764,11 +790,7 @@ export default function WaitingListCard() {
       setFormChanged(false);
       setPassword("");
 
-      if (openedFromPatientRecord) {
-        navigate("/patient-record", { state: { patientUuid: patient?.uuid } });
-      } else {
-        navigate("/");
-      }
+      navigateBack();
     } catch (error) {
       console.error("Error saving draft:", error);
       alert("Error saving draft: " + (error as Error).message);
@@ -1035,15 +1057,7 @@ export default function WaitingListCard() {
             setClickedRoVButton(false);
             setIsReadOnlyView(false);
           }}
-          onBack={() => {
-            if (openedFromPatientRecord) {
-              navigate("/patient-record", {
-                state: { patientUuid: patient?.uuid },
-              });
-            } else {
-              navigate("/");
-            }
-          }}
+          onBack={navigateBack}
           reachedByRoVButton={clickedRoVButton}
         />
       ) : (
@@ -1106,12 +1120,12 @@ export default function WaitingListCard() {
               passwordTimeoutRef={passwordTimeoutRef}
               formChanged={formChanged}
               onCancel={() => {
-                if (openedFromPatientRecord) {
-                  navigate("/patient-record", {
-                    state: { patientUuid: patient?.uuid },
-                  });
+                const s = location.state as { formUuid?: string } | null;
+                const isEditOfExisting = s?.formUuid || inlineProps?.formUuid;
+                if (isEditOfExisting) {
+                  setIsReadOnlyView(true);
                 } else {
-                  navigate("/");
+                  navigateBack();
                 }
               }}
               saveLabel="Save and close"

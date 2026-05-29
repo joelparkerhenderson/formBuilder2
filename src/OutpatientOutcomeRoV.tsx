@@ -1,6 +1,7 @@
 import React from 'react';
 import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbDraftBadge as DraftBadge } from './components/fbDraftBadge';
+import { fbButton as FbButton } from './components/fbButton';
 
 interface Patient {
   uuid: string;
@@ -36,6 +37,7 @@ interface OutpatientOutcomeRoVProps {
   finalChecked: boolean;
   formStatus: string;
   openedFromPatientRecord: boolean;
+  username: string;
   onSwitchToEV: () => void;
   onBack: () => void;
 }
@@ -60,6 +62,7 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
     finalChecked,
     formStatus,
     openedFromPatientRecord,
+    username,
     onSwitchToEV,
     onBack
   } = props;
@@ -415,112 +418,40 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
 
           {/* Fixed Bottom Section */}
           <div style={{ borderTop: '0.2rem solid rgb(27, 110, 194)', marginTop: '0.2rem', paddingTop: '0.2rem', paddingBottom: '0.2rem', paddingLeft: 0, paddingRight: 0 }}>
-            <div className="flex items-center">
-              {openedFromPatientRecord ? (
-                <>
-                  <div className="flex-1"></div>
-                  <div
-                    style={{
-                      display: 'inline-block',
-                      height: '2.0rem',
-                      lineHeight: '2rem',
-                      marginLeft: '0.2rem',
-                      padding: '0 0.5rem',
-                      border: '0.1rem solid silver',
-                      borderRadius: '0.4rem',
-                      backgroundColor: 'white',
-                      fontFamily: 'Roboto, sans-serif',
-                      fontSize: '1rem',
-                      fontWeight: 400,
-                      color: 'black'
-                    }}
-                  >
-                    demoUser
-                  </div>
-                  <button
-                    type="button"
-                    style={{
-                      backgroundColor: '#1b6ec2',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.4rem',
-                      display: 'inline-block',
-                      height: '2.0rem',
-                      lineHeight: '2rem',
-                      marginLeft: '0.2rem',
-                      padding: '0 0.5rem',
-                      fontSize: '1rem',
-                      fontWeight: 400,
-                      cursor: 'pointer'
-                    }}
-                    onClick={onSwitchToEV}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    style={{
-                      backgroundColor: '#1b6ec2',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.4rem',
-                      display: 'inline-block',
-                      height: '2.0rem',
-                      lineHeight: '2rem',
-                      marginLeft: '0.2rem',
-                      padding: '0 0.5rem',
-                      fontSize: '1rem',
-                      fontWeight: 400,
-                      cursor: 'pointer'
-                    }}
-                    onClick={onBack}
-                  >
-                    Back
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    style={{
-                      backgroundColor: '#1b6ec2',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.4rem',
-                      display: 'inline-block',
-                      height: '2.0rem',
-                      lineHeight: '2rem',
-                      marginLeft: '0.2rem',
-                      padding: '0 0.5rem',
-                      fontSize: '1rem',
-                      fontWeight: 400,
-                      cursor: 'pointer'
-                    }}
-                    onClick={onSwitchToEV}
-                  >
-                    EV
-                  </button>
-                  <div className="flex-1"></div>
-                  <div
-                    style={{
-                      display: 'inline-block',
-                      height: '2.0rem',
-                      lineHeight: '2rem',
-                      marginLeft: '0.2rem',
-                      padding: '0 0.5rem',
-                      border: '0.1rem solid silver',
-                      borderRadius: '0.4rem',
-                      backgroundColor: 'white',
-                      fontFamily: 'Roboto, sans-serif',
-                      fontSize: '1rem',
-                      fontWeight: 400,
-                      color: 'black'
-                    }}
-                  >
-                    demoUser
-                  </div>
-                </>
-              )}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div className="flex-1"></div>
+              <div
+                style={{
+                  display: 'inline-block',
+                  height: '2.0rem',
+                  lineHeight: '2rem',
+                  marginLeft: '0.2rem',
+                  padding: '0 0.5rem',
+                  border: '0.1rem solid silver',
+                  borderRadius: '0.4rem',
+                  backgroundColor: 'white',
+                  fontFamily: 'Roboto, sans-serif',
+                  fontSize: '1rem',
+                  fontWeight: 400,
+                  color: 'black'
+                }}
+              >
+                {username}
+              </div>
+              <FbButton
+                variant="primary"
+                onClick={onSwitchToEV}
+                style={{ marginLeft: '0.4rem' }}
+              >
+                Edit
+              </FbButton>
+              <FbButton
+                variant="primary"
+                onClick={onBack}
+                style={{ marginLeft: '0.4rem' }}
+              >
+                Back
+              </FbButton>
             </div>
           </div>
 

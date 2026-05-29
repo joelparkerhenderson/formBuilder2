@@ -191,11 +191,32 @@ interface Patient {
   sex: string;
 }
 
-export default function OperationNote() {
+interface InlineProps {
+  patientUuid?: string;
+  formUuid?: string;
+  openInRoV?: boolean;
+  onClose: () => void;
+}
+
+export default function OperationNote({ inlineProps }: { inlineProps?: InlineProps } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [patient, setPatient] = React.useState<Patient | null>(null);
+
+  const navigateBack = () => {
+    if (inlineProps) {
+      inlineProps.onClose();
+    } else {
+      const prevPage = sessionStorage.getItem('fb_prev_main_page') || '/';
+      const prevPatientUuid = sessionStorage.getItem('fb_prev_patient_uuid') || patient?.uuid;
+      if (prevPage === '/patient-record' && prevPatientUuid) {
+        navigate('/patient-record', { state: { patientUuid: prevPatientUuid } });
+      } else {
+        navigate(prevPage);
+      }
+    }
+  };
   const [loadingData, setLoadingData] = React.useState<boolean>(false);
 
   const [formState, setFormState] = React.useState<Record<string, any>>({});
@@ -213,6 +234,7 @@ export default function OperationNote() {
   const [clickedRoVButton, setClickedRoVButton] = React.useState<boolean>(false);
   const [finalChecked, setFinalChecked] = React.useState<boolean>(false);
   const [isReadOnlyView, setIsReadOnlyView] = React.useState<boolean>(() => {
+    if (inlineProps) return inlineProps.openInRoV || false;
     const s = location.state as { openInRoV?: boolean } | null;
     return s?.openInRoV || false;
   });
@@ -221,6 +243,7 @@ export default function OperationNote() {
   const [showDraftPopup, setShowDraftPopup] = React.useState<boolean>(false);
   const [showPasswordPopup, setShowPasswordPopup] = React.useState<boolean>(false);
   const [openedFromPatientRecord, setOpenedFromPatientRecord] = React.useState<boolean>(() => {
+    if (inlineProps) return true;
     const s = location.state as { openInRoV?: boolean } | null;
     return !!(s && typeof s.openInRoV !== 'undefined');
   });
@@ -338,7 +361,12 @@ export default function OperationNote() {
 
   // Load form and patient data when opened from patient record
   React.useEffect(() => {
-    const state = location.state as { formUuid?: string; patientUuid?: string; openInRoV?: boolean; username?: string } | null;
+    const state = inlineProps ? {
+      patientUuid: inlineProps.patientUuid,
+      formUuid: inlineProps.formUuid,
+      openInRoV: inlineProps.openInRoV,
+      username: username
+    } : (location.state as { formUuid?: string; patientUuid?: string; openInRoV?: boolean; username?: string } | null);
 
     // Load username from state if provided
     if (state?.username) {
@@ -463,7 +491,7 @@ export default function OperationNote() {
     };
 
     loadData();
-  }, [location.state]);
+  }, [location.state, inlineProps]);
 
   React.useLayoutEffect(() => {
     if (isReadOnlyView) return;
@@ -726,7 +754,8 @@ export default function OperationNote() {
           patient_uuid: patient?.uuid || null,
           event_datetime: formState.date || new Date().toISOString(),
           document_datetime: new Date().toISOString(),
-          form_status: 'final'
+          form_status: 'final',
+          event_or_document: 'Document'
         });
 
       if (indexError) throw indexError;
@@ -748,11 +777,7 @@ export default function OperationNote() {
       setFormChanged(false);
       setPassword('');
 
-      if (openedFromPatientRecord) {
-        navigate('/patient-record', { state: { patientUuid: patient?.uuid } });
-      } else {
-        navigate('/');
-      }
+      navigateBack();
     } catch (error) {
       console.error('Error saving form:', error);
       alert('Error saving form: ' + (error as Error).message);
@@ -838,7 +863,8 @@ export default function OperationNote() {
           patient_uuid: patient?.uuid || null,
           event_datetime: formState.date || new Date().toISOString(),
           document_datetime: new Date().toISOString(),
-          form_status: 'draft'
+          form_status: 'draft',
+          event_or_document: 'Document'
         });
 
       if (indexError) throw indexError;
@@ -860,11 +886,7 @@ export default function OperationNote() {
       setFormChanged(false);
       setPassword('');
 
-      if (openedFromPatientRecord) {
-        navigate('/patient-record', { state: { patientUuid: patient?.uuid } });
-      } else {
-        navigate('/');
-      }
+      navigateBack();
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Error saving draft: ' + (error as Error).message);
@@ -1068,7 +1090,7 @@ export default function OperationNote() {
           openedFromPatientRecord={openedFromPatientRecord}
           username={username}
           onSwitchToEV={() => setIsReadOnlyView(false)}
-          onBack={() => navigate('/patient-record', { state: { patientUuid: patient?.uuid } })}
+          onBack={navigateBack}
         />
       ) : (
         <div className="bg-white flex flex-col" style={{height: '100vh', fontFamily: "'Roboto', sans-serif", fontWeight: 300, lineHeight: 1.2}}>
@@ -1289,10 +1311,12 @@ export default function OperationNote() {
               passwordTimeoutRef={passwordTimeoutRef}
               formChanged={formChanged}
               onCancel={() => {
-                if (openedFromPatientRecord) {
-                  navigate('/patient-record', { state: { patientUuid: patient?.uuid } });
+                const s = location.state as { formUuid?: string } | null;
+                const isEditOfExisting = s?.formUuid || inlineProps?.formUuid;
+                if (isEditOfExisting) {
+                  setIsReadOnlyView(true);
                 } else {
-                  navigate('/');
+                  navigateBack();
                 }
               }}
               saveLabel="Save and close"
