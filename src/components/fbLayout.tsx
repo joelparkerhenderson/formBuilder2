@@ -81,9 +81,9 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
       let current = element.parentElement;
       while (current) {
         if (
-          current.classList.contains("question-container") ||
-          current.classList.contains("radio-checkbox-item") ||
-          current.classList.contains("subfield") ||
+          current.classList.contains("fb-question-container") ||
+          current.classList.contains("fb-radio-checkbox-item") ||
+          current.classList.contains("fb-subquestion") ||
           current.tagName === "TD"
         ) {
           level++;
@@ -119,7 +119,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
 
     const addListeners = () => {
       const elements = document.querySelectorAll(
-        ".question-container, .radio-checkbox-item, .subfield",
+        ".fb-question-container, .fb-radio-checkbox-item, .fb-subquestion",
       );
       elements.forEach((element) => {
         element.addEventListener("mouseenter", handleMouseEnter);
@@ -131,7 +131,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
 
     const removeListeners = () => {
       const elements = document.querySelectorAll(
-        ".question-container, .radio-checkbox-item, .subfield",
+        ".fb-question-container, .fb-radio-checkbox-item, .fb-subquestion",
       );
       elements.forEach((element) => {
         element.removeEventListener("mouseenter", handleMouseEnter);
@@ -143,7 +143,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
 
     addListeners();
 
-    const formElement = document.querySelector(".edit-view-form");
+    const formElement = document.querySelector(".fb-layout-edit-view-form");
     let observer: MutationObserver | null = null;
     if (formElement) {
       observer = new MutationObserver(() => {
@@ -199,7 +199,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
 
   return (
     <div
-      className="bg-white flex flex-col form-layout-container"
+      className="bg-white flex flex-col fb-layout-container"
       style={{
         height: '100vh',
         width: '100%',
@@ -211,7 +211,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
       }}
     >
       <form
-        className="flex flex-col h-full edit-view-form"
+        className="flex flex-col h-full fb-layout-edit-view-form"
         onSubmit={onSubmit}
         onKeyDown={handleKeyDown}
         noValidate
@@ -236,7 +236,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
                 height: '100%',
               }}
             >
-              <div className="nav-grid">
+              <div className="fb-layout-nav-grid">
                 {sections.map((section) => {
                   const status = getSectionStatus(section, formState);
                   const isActive = activeSection === section.id;
@@ -244,7 +244,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
                     <React.Fragment key={section.id}>
                       <a
                         href={`#${section.id}`}
-                        className="nav-section-name"
+                        className="fb-layout-nav-section-name"
                         id={`nav-${section.id}`}
                         style={{
                           fontWeight: 500,
@@ -257,7 +257,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
                         {section.name}
                       </a>
                       <span
-                        className="nav-counter-box"
+                        className="fb-layout-nav-counter-box"
                         style={{
                           backgroundColor: status.isComplete ? "#008000" : "#fd8a10",
                           display: "flex",
@@ -274,7 +274,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
                         {status.incomplete === 0 ? "✓" : status.incomplete}
                       </span>
                       <span
-                        className={`nav-indicator ${!isActive ? "hidden" : ""}`}
+                        className={`fb-layout-nav-indicator ${!isActive ? "hidden" : ""}`}
                         style={{ display: "flex", alignItems: "center" }}
                       >
                         ◄►

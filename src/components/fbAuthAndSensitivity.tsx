@@ -32,7 +32,7 @@ export const fbAuthAndSensitivity: React.FC<fbAuthAndSensitivityProps> = ({
   return (
     <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
       <label
-        className="flex items-center gap-2 bottom-control-item"
+        className="flex items-center gap-2 fb-bottom-control-item"
         style={{
           border: '0.1rem solid silver',
           borderRadius: '0.4rem',
@@ -70,7 +70,7 @@ export const fbAuthAndSensitivity: React.FC<fbAuthAndSensitivityProps> = ({
         checked={finalChecked}
         disabled={!requiredFieldsComplete}
         onChange={onFinalCheckedChange}
-        className="bottom-control-final"
+        className="fb-bottom-control-final"
         style={{
           marginLeft: '0.2rem',
         }}

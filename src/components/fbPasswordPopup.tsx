@@ -1,5 +1,6 @@
 import React from 'react';
 import { fbButton as FbButton } from './fbButton';
+import { fbPassword as FbPassword } from './fbPassword';
 
 interface PasswordPopupProps {
   onClose?: () => void;
@@ -10,8 +11,6 @@ interface PasswordPopupProps {
 export const fbPasswordPopup: React.FC<PasswordPopupProps> = ({ onClose, onConfirm, onCancel }) => {
   const [passwordValue, setPasswordValue] = React.useState('');
   const [error, setError] = React.useState('');
-  const [isHovered, setIsHovered] = React.useState(false);
-  const [isFocused, setIsFocused] = React.useState(false);
 
   const handleConfirmClick = () => {
     if (!passwordValue.trim()) {
@@ -25,13 +24,6 @@ export const fbPasswordPopup: React.FC<PasswordPopupProps> = ({ onClose, onConfi
   };
 
   const handleCancelClick = onCancel || onClose;
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleConfirmClick();
-    }
-  };
 
   return (
     <div
@@ -61,44 +53,30 @@ export const fbPasswordPopup: React.FC<PasswordPopupProps> = ({ onClose, onConfi
       >
         <h2 style={{fontSize: '1.5rem', fontWeight: 500, marginBottom: '1rem', color: '#1b6ec2'}}>Password re-entry required</h2>
         <p style={{marginBottom: '1.2rem', lineHeight: '1.4', color: '#333333'}}>
-          {onConfirm ? 'You must re-enter your password to complete this action.' : 'You must re-enter your password to save.'}
+          {onConfirm ? 'You must re-enter your password to save the form.' : 'You must re-enter your password to save the form.'}
         </p>
 
         {onConfirm && (
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.4rem', color: '#444' }}>
-              Password
-            </label>
-            <input
-              type="password"
+            <FbPassword
+              label="Password"
               placeholder="Enter password..."
               value={passwordValue}
-              onChange={(e) => {
-                setPasswordValue(e.target.value);
-                if (e.target.value) setError('');
+              onChange={(val) => {
+                setPasswordValue(val);
+                if (val) setError('');
               }}
-              onKeyDown={handleKeyDown}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
+              id="password-input"
               autoFocus
-              style={{
-                width: '100%',
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleConfirmClick();
+                }
+              }}
+              inputStyle={{
                 border: error ? '1px solid #d50000' : '1px solid silver',
-                borderRadius: '0.4rem',
-                padding: '0 0.5rem',
-                height: '2.0rem',
-                lineHeight: '2rem',
-                fontSize: '1rem',
-                fontFamily: "'Roboto', sans-serif",
-                fontWeight: 400,
-                color: 'black',
-                outline: 'none',
-                boxSizing: 'border-box',
-                backgroundColor: isFocused || isHovered ? '#ffffcc' : 'white',
                 boxShadow: error ? '0 0 0 2px rgba(213, 0, 0, 0.15)' : 'none',
-                transition: 'background-color 0.2s',
               }}
             />
             {error && (

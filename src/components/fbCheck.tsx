@@ -8,8 +8,13 @@ interface fbCheckProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   label: string;
   required?: boolean;
+  disabled?: boolean;
   children?: React.ReactNode; // For subquestions or nested content
   style?: React.CSSProperties;
+  onMouseEnter?: (e: React.MouseEvent<HTMLLabelElement>) => void;
+  onMouseLeave?: (e: React.MouseEvent<HTMLLabelElement>) => void;
+  onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
 }
 
 export const fbCheck: React.FC<fbCheckProps> = ({
@@ -20,16 +25,23 @@ export const fbCheck: React.FC<fbCheckProps> = ({
   onChange,
   label,
   required,
+  disabled,
   children,
   style,
+  onMouseEnter,
+  onMouseLeave,
+  onFocus,
+  onBlur,
 }) => {
   return (
-    <div className="subfield-wrapper" style={style}>
+    <div className="fb-subquestion-wrapper" style={style}>
       <label
-        className="flex items-start gap-2 radio-checkbox-item w-full"
+        className="flex items-start gap-2 fb-radio-checkbox-item w-full"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
         style={{
-          paddingTop: '0.1rem',
-          paddingBottom: '0.1rem',
+          paddingTop: 0,
+          paddingBottom: 0,
           marginTop: 0,
           marginBottom: 0,
           cursor: 'pointer',
@@ -51,17 +63,17 @@ export const fbCheck: React.FC<fbCheckProps> = ({
           checked={checked}
           onChange={onChange}
           required={required}
+          disabled={disabled}
+          onFocus={onFocus}
+          onBlur={onBlur}
           style={{
             cursor: 'pointer',
-            width: '1rem',
-            height: '1rem',
-            marginTop: '0.2rem',
             flexShrink: 0,
             outline: 'none',
             boxShadow: 'none'
           }}
         />
-        <span style={{ fontWeight: 300, lineHeight: '1.4rem' }}>{label}</span>
+        <span style={{ fontWeight: 300 }}>{label}</span>
       </label>
       {checked && children && (
         <div className="pl-6 pb-1">

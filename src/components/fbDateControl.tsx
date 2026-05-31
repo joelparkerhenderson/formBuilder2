@@ -6,9 +6,23 @@ interface DateControlProps {
   onChange: (value: string) => void;
   placeholder?: string;
   required?: boolean;
+  onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onMouseEnter?: (e: React.MouseEvent<HTMLInputElement>) => void;
+  onMouseLeave?: (e: React.MouseEvent<HTMLInputElement>) => void;
 }
 
-export const fbDateControl: React.FC<DateControlProps> = ({ name, value = '', onChange, placeholder, required }) => {
+export const fbDateControl: React.FC<DateControlProps> = ({
+  name,
+  value = '',
+  onChange,
+  placeholder,
+  required,
+  onFocus,
+  onBlur,
+  onMouseEnter,
+  onMouseLeave,
+}) => {
   const [inputValue, setInputValue] = React.useState<string>(value);
   const [showCalendar, setShowCalendar] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string>('');
@@ -458,7 +472,7 @@ export const fbDateControl: React.FC<DateControlProps> = ({ name, value = '', on
               }
             }
           }}
-          onFocus={() => {
+          onFocus={(e) => {
             setShowCalendar(true);
             const { date } = parseDate(inputValue);
             if (date) {
@@ -466,10 +480,16 @@ export const fbDateControl: React.FC<DateControlProps> = ({ name, value = '', on
               setDisplayMonth(date.getMonth());
               setDisplayYear(date.getFullYear());
             }
+            if (onFocus) onFocus(e);
           }}
-          onBlur={handleBlur}
+          onBlur={(e) => {
+            handleBlur();
+            if (onBlur) onBlur(e);
+          }}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
           onKeyDown={handleKeyDown}
-          className="border rounded hideBorderInRoV text-black"
+          className="border rounded fb-hide-border-in-rov fb-date-control-input text-black"
           placeholder={placeholder || 'dd-Mmm-yyyy'}
           required={required}
           autoComplete="off"

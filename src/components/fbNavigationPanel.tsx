@@ -23,7 +23,7 @@ export const fbNavigationPanel: React.FC<fbNavigationPanelProps> = ({
 }) => {
   return (
     <div
-      className="form-nav-panel-container h-full w-64 flex flex-col pt-2 select-none select-none overflow-y-auto"
+      className="fb-navigation-panel-container h-full w-64 flex flex-col pt-2 select-none overflow-y-auto"
       style={{
         width: '16rem',
         backgroundColor: '#f5f5f5',
@@ -43,7 +43,7 @@ export const fbNavigationPanel: React.FC<fbNavigationPanelProps> = ({
               key={section.id}
               type="button"
               onClick={() => onSectionClick(section.id)}
-              className="form-nav-link text-left w-full rounded transition-all duration-150"
+              className="fb-navigation-panel-link text-left w-full rounded transition-all duration-150"
               style={{
                 display: 'block',
                 width: '100%',

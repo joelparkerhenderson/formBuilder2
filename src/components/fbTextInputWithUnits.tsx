@@ -25,7 +25,7 @@ export const fbTextInputWithUnits: React.FC<fbTextInputWithUnitsProps> = ({
 }) => {
   return (
     <div
-      className="input-with-units"
+      className="fb-input-with-units"
       style={{
         display: 'inline-flex',
         alignItems: 'center',

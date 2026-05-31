@@ -36,16 +36,16 @@ export const fbQuestionRow: React.FC<fbQuestionRowProps> = ({
 
       // Select top-level question labels inside this row only
       const labels = Array.from(
-        container.querySelectorAll('.question-container > label:not(.radio-checkbox-item)')
+        container.querySelectorAll('.fb-question-container > label:not(.fb-radio-checkbox-item)')
       ) as HTMLElement[];
 
-      // Isolate labels that are descendants of nested subfields/subfield-wrappers to avoid double-equalizing
+      // Isolate labels that are descendants of nested subquestions to avoid double-equalizing.
       const filteredLabels = labels.filter((lbl) => {
         let parent = lbl.parentElement;
         while (parent && parent !== container) {
           if (
-            parent.classList.contains('subfield') ||
-            parent.classList.contains('subfield-wrapper')
+            parent.classList.contains('fb-subquestion') ||
+            parent.classList.contains('fb-subquestion-wrapper')
           ) {
             return false;
           }

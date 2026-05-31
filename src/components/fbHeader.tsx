@@ -19,7 +19,7 @@ export const fbHeader: React.FC<fbHeaderProps> = ({
 }) => {
   return (
     <div
-      className="form-header-with-divider"
+      className="fb-header-with-divider"
       style={{
         backgroundColor: '#f8f9fa',
         borderBottom: '0.2rem solid #1b6ec2',
@@ -48,7 +48,7 @@ export const fbHeader: React.FC<fbHeaderProps> = ({
 
         {/* Dynamic patient address block on the right */}
         {patient && (
-          <div className="addressograph-container" style={{ minWidth: '22rem' }}>
+          <div className="fb-addressograph-container" style={{ minWidth: '22rem' }}>
             <Addressograph patient={patient} />
           </div>
         )}

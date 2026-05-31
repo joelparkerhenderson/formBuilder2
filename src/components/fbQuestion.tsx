@@ -50,7 +50,7 @@ export const fbQuestion: React.FC<fbQuestionProps> = ({
 
   return (
     <div
-      className={`question-container ${className}`}
+      className={`fb-question-container ${className}`}
       style={{
         display: 'flex',
         flexDirection: 'column',

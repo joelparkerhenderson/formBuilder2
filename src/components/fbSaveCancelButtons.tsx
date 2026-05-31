@@ -1,4 +1,6 @@
 import React from 'react';
+import { fbCancelFormButton as FbCancelFormButton } from './fbCancelFormButton';
+import { fbButton as FbButton } from './fbButton';
 
 interface SaveCancelButtonsProps {
   formChanged: boolean;
@@ -17,54 +19,30 @@ export const fbSaveCancelButtons: React.FC<SaveCancelButtonsProps> = ({
 }) => {
   return (
     <>
-      <button
+      <FbButton
         type="submit"
         disabled={!formChanged || isSaving}
-        className="bottom-control-btn-save"
+        variant={formChanged ? 'success' : 'secondary'}
+        className="fb-bottom-btn-save"
         style={{
-          backgroundColor: formChanged ? '#008000' : '#c0c0c0',
-          color: 'white',
-          border: 'none',
-          borderRadius: '0.4rem',
-          display: 'inline-block',
-          height: '2.0rem',
-          lineHeight: '2rem',
           marginLeft: '0.2rem',
-          padding: '0 0.8rem',
-          fontFamily: "'Roboto', sans-serif",
-          fontSize: '1rem',
-          fontWeight: 500,
-          cursor: formChanged ? 'pointer' : 'not-allowed',
-          transition: 'background-color 0.2s ease, color 0.2s ease',
-          opacity: 1,
+          ...(formChanged ? {} : {
+            backgroundColor: '#c0c0c0',
+            borderColor: '#c0c0c0',
+            color: 'white',
+          })
         }}
       >
         {isSaving ? 'Saving...' : saveLabel}
-      </button>
+      </FbButton>
 
-      <button
-        type="button"
-        className="bottom-control-btn-cancel"
+      <FbCancelFormButton
+        className="fb-bottom-btn-cancel"
         onClick={onCancel}
         style={{
-          backgroundColor: '#d50000',
-          color: 'white',
-          border: 'none',
-          borderRadius: '0.4rem',
-          display: 'inline-block',
-          height: '2.0rem',
-          lineHeight: '2rem',
           marginLeft: '0.2rem',
-          padding: '0 0.8rem',
-          fontFamily: "'Roboto', sans-serif",
-          fontSize: '1rem',
-          fontWeight: 500,
-          cursor: 'pointer',
-          transition: 'background-color 0.2s ease, color 0.2s ease',
         }}
-      >
-        {cancelLabel}
-      </button>
+      />
     </>
   );
 };

@@ -219,7 +219,7 @@ export const fbMSISelector: React.FC<MSISelectorProps> = ({
                 }, 200);
               }}
               onKeyDown={handleKeyDown}
-              className="w-full p-2 hideBorderInRoV"
+              className="w-full p-2 fb-hide-border-in-rov fb-msi-selector-input"
               style={{
                 border: '0.1rem solid silver',
                 borderRadius: '0.4rem',

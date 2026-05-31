@@ -18,7 +18,7 @@ export const fbSection: React.FC<fbSectionProps> = ({
   return (
     <div
       id={id}
-      className={`form-section-block ${className}`}
+      className={`fb-section-block ${className}`}
       style={{
         display: 'flex',
         flexDirection: 'column',

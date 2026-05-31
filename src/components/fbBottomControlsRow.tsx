@@ -1,6 +1,7 @@
 import React from 'react';
 import { fbAuthAndSensitivity as FbAuthAndSensitivity } from './fbAuthAndSensitivity';
 import { fbSaveCancelButtons as FbSaveCancelButtons } from './fbSaveCancelButtons';
+import { fbButton as FbButton } from './fbButton';
 
 interface BottomControlsRowProps {
   openedFromPatientRecord: boolean;
@@ -41,7 +42,7 @@ export const fbBottomControlsRow: React.FC<BottomControlsRowProps> = ({
 }) => {
   return (
     <div
-      className="bottom-control-bar"
+      className="fb-bottom-control-bar"
       style={{
         display: 'flex',
         flexWrap: 'wrap',
@@ -54,29 +55,18 @@ export const fbBottomControlsRow: React.FC<BottomControlsRowProps> = ({
       }}
     >
       {!openedFromPatientRecord && (
-        <button
+        <FbButton
           type="button"
-          className="bottom-control-btn-rov"
+          variant="primary"
+          className="fb-bottom-control-btn-rov"
           onClick={onRoVClick}
           style={{
-            backgroundColor: '#1b6ec2',
-            color: 'white',
-            border: 'none',
-            borderRadius: '0.4rem',
-            display: 'inline-block',
-            height: '2.0rem',
-            lineHeight: '2rem',
             marginLeft: '0.2rem',
             padding: '0 0.5rem',
-            fontFamily: "'Roboto', sans-serif",
-            fontSize: '1rem',
-            fontWeight: 500,
-            cursor: 'pointer',
-            transition: 'background-color 0.2s ease, color 0.2s ease',
           }}
         >
           RoV
-        </button>
+        </FbButton>
       )}
 
       {/* Spacing element */}

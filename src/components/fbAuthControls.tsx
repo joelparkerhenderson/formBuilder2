@@ -1,4 +1,5 @@
 import React from 'react';
+import { fbUserName as FbUserName } from './fbUserName';
 
 interface AuthControlsProps {
   username: string;
@@ -26,33 +27,10 @@ export const fbAuthControls: React.FC<AuthControlsProps> = ({
 
   return (
     <>
-      <input
-        type="text"
-        name="username"
+      <FbUserName
         value={username}
-        onChange={(e) => handleUsernameChange && handleUsernameChange(e.target.value)}
-        placeholder="Enter username"
-        className="bottom-control-username"
-        style={{
-          display: 'inline-block',
-          height: '2.0rem',
-          lineHeight: '2rem',
-          marginLeft: '0.2rem',
-          padding: '0 0.5rem',
-          border: '0.1rem solid silver',
-          borderRadius: '0.4rem',
-          backgroundColor: 'white',
-          fontFamily: 'Roboto, sans-serif',
-          fontSize: '1rem',
-          fontWeight: 400,
-          color: 'black'
-        }}
-        onFocus={(e) => {
-          e.target.style.backgroundColor = '#ffffcc';
-        }}
-        onBlur={(e) => {
-          e.target.style.backgroundColor = 'white';
-        }}
+        onChange={(val) => handleUsernameChange && handleUsernameChange(val)}
+        style={{ marginLeft: '0.2rem' }}
       />
       {formChanged && (
         <input
@@ -61,7 +39,7 @@ export const fbAuthControls: React.FC<AuthControlsProps> = ({
           value={password}
           onChange={(e) => handlePasswordChange && handlePasswordChange(e.target.value)}
           placeholder="Enter password"
-          className="bottom-control-password"
+          className="fb-bottom-control-password"
           style={{
             display: 'inline-block',
             height: '2.0rem',
