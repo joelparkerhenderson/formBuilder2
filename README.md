@@ -1,6 +1,8 @@
 # formBuilder2
 - A re-implementation of the original shadesOfPale formBuilder WCP form design and form engine using tech that may be more approachable and easily reproducible than the original.
 - Aim: consistency of design and user experience across all WCP forms.
+## Demo
+There is a working demo at https://www.shadesOfPale.net/formBuilder2/index.html. Use the usual userName and password.
 ## Intended audience
 Any technically literate persons (clinicians, PMs, BAs, devs) interested in experimenting or working with WCP form design.
 ## Suggested usage
