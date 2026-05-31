@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { fbAddressograph as Addressograph } from './components/fbAddressograph';
-import { fbDraftBadge as DraftBadge } from './components/fbDraftBadge';
-import { fbButton as FbButton } from './components/fbButton';
+import { fbRoVField as FbRoVField, fbRoVTableCell as FbRoVTableCell } from './components/fbRoVField';
+import { fbRoVFooter as FbRoVFooter, fbRoVHeader as FbRoVHeader } from './components/fbRoVShell';
+import {
+  fbTable as FbTable,
+  fbTableHeader as FbTableHeader,
+  fbTableBody as FbTableBody,
+  fbTableRow as FbTableRow,
+  fbTableHeaderCell as FbTableHeaderCell
+} from "./components/fbTable";
+import { hospitalLabels, organisationLabels, sideLabels, specialityLabels } from './data/formLabels';
 
 interface Patient {
   uuid: string;
@@ -27,6 +34,7 @@ interface OperationNoteRoVProps {
   specimens: Array<{id: number, label: string, description: string}>;
   implants: Array<{id: number, implantId: string, description: string, requiresRemoval: string, removeBy: string}>;
   surgeons: Array<{id: number, name: string}>;
+  text?: string;
   anaesthetists: Array<{id: number, name: string}>;
   urgencyType: string;
   electiveUrgency: string;
@@ -36,6 +44,7 @@ interface OperationNoteRoVProps {
   openedFromPatientRecord: boolean;
   onSwitchToEV: () => void;
   onBack: () => void;
+  reachedByRoVButton?: boolean;
 }
 
 export function OperationNoteRoV(props: OperationNoteRoVProps) {
@@ -58,48 +67,9 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
     username,
     openedFromPatientRecord,
     onSwitchToEV,
-    onBack
+    onBack,
+    reachedByRoVButton
   } = props;
-
-  // Lookup tables for select option values -> display text
-  const organisationLabels: Record<string, string> = {
-    'aneurin-bevan': 'Aneurin Bevan',
-    'betsi-cadwaladr': 'Betsi Cadwaladr',
-    'cardiff-vale': 'Cardiff & Vale',
-    'cwm-taf': 'Cwm Taf Morgannwg',
-    'hywel-dda': 'Hywel Dda',
-    'powys': 'Powys',
-    'swansea-bay': 'Swansea Bay',
-    'velindre': 'Velindre'
-  };
-
-  const specialityLabels: Record<string, string> = {
-    'general-surgery': 'General Surgery',
-    'orthopaedics': 'Orthopaedics',
-    'cardiothoracic': 'Cardiothoracic Surgery',
-    'neurosurgery': 'Neurosurgery',
-    'urology': 'Urology',
-    'ent': 'ENT Surgery',
-    'ophthalmology': 'Ophthalmology',
-    'vascular': 'Vascular Surgery',
-    'colorectal': 'Colorectal Surgery',
-    'breast': 'Breast Surgery',
-    'plastic': 'Plastic Surgery',
-    'oral-maxillofacial': 'Oral & Maxillofacial Surgery'
-  };
-
-  const hospitalLabels: Record<string, string> = {
-    'prince-charles': 'Prince Charles Hospital, Merthyr Tydfil',
-    'royal-glamorgan': 'Royal Glamorgan Hospital, Llantrisant',
-    'princess-wales': 'Princess of Wales Hospital, Bridgend'
-  };
-
-  const sideLabels: Record<string, string> = {
-    'left': 'Left',
-    'right': 'Right',
-    'bilateral': 'Bilateral',
-    'na': 'Not applicable'
-  };
 
   // Track active section based on scroll position
   useEffect(() => {
@@ -127,62 +97,20 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
     }
   }, [activeSection]);
 
-  // Helper to render a read-only field
   const renderField = (label: string, value: any, lookupTable?: Record<string, string>) => {
-    if (!value || value === '' || value === 'Select side' || value === 'select') {
-      return <div></div>;
-    }
-    const displayValue = lookupTable && lookupTable[value] ? lookupTable[value] : value;
-    return (
-      <div className="space-y-2 question-container">
-        <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>{label}</label>
-        <div style={{ fontWeight: 500, marginLeft: '0.4rem', whiteSpace: 'pre-line' }}>{displayValue}</div>
-      </div>
-    );
+    return <FbRoVField label={label} value={value} lookupTable={lookupTable} />;
   };
 
   return (
     <div className="bg-white flex flex-col h-screen" style={{ height: '100vh', fontWeight: 300, lineHeight: 1.1 }}>
         <div className="flex flex-col h-full">
-          {/* Fixed Top Section - Title and Addressograph */}
-          <div style={{ borderBottom: '0.2rem solid rgb(27, 110, 194)', marginBottom: '0.2rem', padding: '0.4rem' }}>
-            <div className="flex justify-between items-center">
-              <div>
-                {formStatus === 'draft' && (
-                  <>
-                    <DraftBadge />
-                    <br />
-                  </>
-                )}
-                <h1 style={{ fontSize: '2rem', fontWeight: 500 }}>Operation note</h1>
-              </div>
-
-              {/* Addressograph */}
-              {patient ? (
-                <Addressograph
-                  nhsNumber={patient.nhs_number}
-                  surname={patient.surname}
-                  forenames={patient.forenames}
-                  title={patient.title}
-                  addressLine1={patient.address_line1}
-                  addressLine2={patient.address_line2}
-                  addressLine3={patient.address_line3}
-                  addressLine4={patient.address_line4}
-                  crn={patient.crn}
-                  dateOfBirth={patient.date_of_birth}
-                  sex={patient.sex}
-                />
-              ) : (
-                <Addressograph />
-              )}
-            </div>
-          </div>
+          <FbRoVHeader title="Operation note" patient={patient} formStatus={formStatus} />
 
           {/* Middle Section - Nav Panel and Scrollable Content */}
           <div className="flex-1 flex overflow-hidden">
             {/* Navigation Panel */}
             <nav className="w-64 overflow-y-auto" style={{backgroundColor: 'white'}}>
-              <div className="nav-grid">
+              <div className="fb-layout-nav-grid">
                 {[
                   { href: '#section-basic', id: 'section-basic', name: 'Basic information' },
                   { href: '#section-staff', id: 'section-staff', name: 'Surgeons and anaesthetists' },
@@ -196,11 +124,11 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
                   const isActive = activeSection === section.id;
                   return (
                     <React.Fragment key={section.href}>
-                      <a href={section.href} className="nav-section-name" id={`nav-${section.id}`}>
+                      <a href={section.href} className="fb-layout-nav-section-name" id={`nav-${section.id}`}>
                         {section.name}
                       </a>
                       <span style={{width: 0}}></span>
-                      <span className={`nav-indicator ${!isActive ? 'hidden' : ''}`}>
+                      <span className={`fb-layout-nav-indicator ${!isActive ? 'hidden' : ''}`}>
                         ◄►
                       </span>
                     </React.Fragment>
@@ -225,7 +153,7 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4" style={{marginTop: '0.6rem'}}>
                       {urgencyType && (
-                        <div className="space-y-2 question-container">
+                        <div className="space-y-2 fb-question-container">
                           <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Urgency</label>
                           <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                             ● {urgencyType === 'elective' ? ('Elective' + (electiveUrgency === 'routine' ? ' - Routine' : electiveUrgency === 'urgent' ? ' - Urgent' : electiveUrgency === 'usc' ? ' - USC' : '')) : 'Emergency'}
@@ -288,21 +216,32 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
                 <div id="section-procedures">
                   <h3 className="font-bold text-white" style={{backgroundColor: 'rgb(27, 110, 194)', fontWeight: 500, padding: '0.2rem', paddingLeft: '0.4rem', margin: 0, marginTop: '0.4rem'}}>Procedure(s)</h3>
                   <div style={{marginTop: '0.4rem', marginBottom: '0.6rem'}}>
-                    {procedures.filter(p => p.procedure).map((proc, idx) => (
-                      <div key={proc.id} style={{ marginBottom: idx < procedures.filter(p => p.procedure).length - 1 ? '0.6rem' : 0 }}>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          {renderField('Side', proc.side, sideLabels)}
-                          <div className="md:col-span-3">
-                            {renderField('Procedure', proc.procedure)}
-                          </div>
-                        </div>
-                        {proc.additionalInfo && (
-                          <div className="grid grid-cols-1" style={{marginTop: '0.4rem'}}>
-                            {renderField('Additional information', proc.additionalInfo)}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    <div className="overflow-x-auto">
+                      <FbTable>
+                        <FbTableHeader>
+                          <FbTableRow>
+                            <FbTableHeaderCell style={{ width: '20%' }}>Side</FbTableHeaderCell>
+                            <FbTableHeaderCell style={{ width: '40%' }}>Procedure</FbTableHeaderCell>
+                            <FbTableHeaderCell>Additional information</FbTableHeaderCell>
+                          </FbTableRow>
+                        </FbTableHeader>
+                        <FbTableBody>
+                          {procedures.filter(p => p.procedure).map((proc) => (
+                            <FbTableRow key={proc.id}>
+                              <FbRoVTableCell>
+                                {sideLabels[proc.side] || proc.side || '—'}
+                              </FbRoVTableCell>
+                              <FbRoVTableCell>
+                                {proc.procedure}
+                              </FbRoVTableCell>
+                              <FbRoVTableCell tone="muted">
+                                {proc.additionalInfo || '—'}
+                              </FbRoVTableCell>
+                            </FbTableRow>
+                          ))}
+                        </FbTableBody>
+                      </FbTable>
+                    </div>
                   </div>
                 </div>
               )}
@@ -318,14 +257,25 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
                       {renderField('Findings', formState.findings)}
                       {renderField('Procedure description', formState.procedureDescription)}
                       {diagnoses.some(d => d.diagnosis) && (
-                        <div className="space-y-2 question-container">
+                        <div className="space-y-2 fb-question-container">
                           <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Operative diagnoses</label>
-                          <div style={{ marginLeft: '0.4rem' }}>
-                            {diagnoses.filter(d => d.diagnosis).map((diag, idx) => (
-                              <div key={diag.id} style={{ fontWeight: 500, marginTop: idx > 0 ? '0.2rem' : 0 }}>
-                                {diag.diagnosis}
-                              </div>
-                            ))}
+                          <div className="overflow-x-auto" style={{ marginTop: '0.4rem' }}>
+                            <FbTable>
+                              <FbTableHeader>
+                                <FbTableRow>
+                                  <FbTableHeaderCell style={{ width: '100%' }}>Diagnosis</FbTableHeaderCell>
+                                </FbTableRow>
+                              </FbTableHeader>
+                              <FbTableBody>
+                                {diagnoses.filter(d => d.diagnosis).map((diag) => (
+                                  <FbTableRow key={diag.id}>
+                                    <FbRoVTableCell verticalAlign={undefined}>
+                                      {diag.diagnosis}
+                                    </FbRoVTableCell>
+                                  </FbTableRow>
+                                ))}
+                              </FbTableBody>
+                            </FbTable>
                           </div>
                         </div>
                       )}
@@ -345,14 +295,28 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
                 <div id="section-specimens">
                   <h3 className="font-bold text-white" style={{backgroundColor: 'rgb(27, 110, 194)', fontWeight: 500, padding: '0.2rem', paddingLeft: '0.4rem', margin: 0, marginTop: '0.4rem'}}>Tissue removed</h3>
                   <div style={{marginTop: '0.4rem', marginBottom: '0.6rem'}}>
-                    {specimens.filter(s => s.label || s.description).map((specimen, idx) => (
-                      <div key={specimen.id} style={{ marginBottom: idx < specimens.filter(s => s.label || s.description).length - 1 ? '0.6rem' : 0 }}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {renderField('Label', specimen.label)}
-                          {renderField('Description', specimen.description)}
-                        </div>
-                      </div>
-                    ))}
+                    <div className="overflow-x-auto">
+                      <FbTable>
+                        <FbTableHeader>
+                          <FbTableRow>
+                            <FbTableHeaderCell style={{ width: '20%' }}>A, B, C</FbTableHeaderCell>
+                            <FbTableHeaderCell>Description</FbTableHeaderCell>
+                          </FbTableRow>
+                        </FbTableHeader>
+                        <FbTableBody>
+                          {specimens.filter(s => s.label || s.description).map((specimen) => (
+                            <FbTableRow key={specimen.id}>
+                              <FbRoVTableCell>
+                                {specimen.label || '—'}
+                              </FbRoVTableCell>
+                              <FbRoVTableCell tone="muted">
+                                {specimen.description || '—'}
+                              </FbRoVTableCell>
+                            </FbTableRow>
+                          ))}
+                        </FbTableBody>
+                      </FbTable>
+                    </div>
                   </div>
                 </div>
               )}
@@ -372,25 +336,36 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
                 <div id="section-implants">
                   <h3 className="font-bold text-white" style={{backgroundColor: 'rgb(27, 110, 194)', fontWeight: 500, padding: '0.2rem', paddingLeft: '0.4rem', margin: 0, marginTop: '0.4rem'}}>Implants - Scan for safety</h3>
                   <div style={{marginTop: '0.4rem', marginBottom: '0.6rem'}}>
-                    {implants.filter(i => i.implantId || i.description).map((implant, idx) => (
-                      <div key={implant.id} style={{ marginBottom: idx < implants.filter(i => i.implantId || i.description).length - 1 ? '0.6rem' : 0 }}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {renderField('Implant ID', implant.implantId)}
-                          {renderField('Type / description', implant.description)}
-                        </div>
-                        {implant.requiresRemoval && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{marginTop: '0.4rem'}}>
-                            <div className="space-y-2 question-container">
-                              <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Requires exchange or removal</label>
-                              <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
-                                ● {implant.requiresRemoval === 'yes' ? 'Yes' : 'No'}
-                              </div>
-                            </div>
-                            {implant.requiresRemoval === 'yes' && implant.removeBy && renderField('Remove by', implant.removeBy)}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    <div className="overflow-x-auto">
+                      <FbTable style={{ tableLayout: 'auto' }}>
+                        <FbTableHeader>
+                          <FbTableRow>
+                            <FbTableHeaderCell style={{ width: '25%' }}>Implant Id</FbTableHeaderCell>
+                            <FbTableHeaderCell style={{ width: '45%' }}>Type / description</FbTableHeaderCell>
+                            <FbTableHeaderCell style={{ width: '15%' }}>Requires exchange or removal?</FbTableHeaderCell>
+                            <FbTableHeaderCell style={{ width: '15%' }}>Remove by</FbTableHeaderCell>
+                          </FbTableRow>
+                        </FbTableHeader>
+                        <FbTableBody>
+                          {implants.filter(i => i.implantId || i.description).map((implant) => (
+                            <FbTableRow key={implant.id}>
+                              <FbRoVTableCell>
+                                {implant.implantId || '—'}
+                              </FbRoVTableCell>
+                              <FbRoVTableCell tone="muted">
+                                {implant.description || '—'}
+                              </FbRoVTableCell>
+                              <FbRoVTableCell>
+                                {implant.requiresRemoval ? (implant.requiresRemoval === 'yes' ? 'Yes' : 'No') : '—'}
+                              </FbRoVTableCell>
+                              <FbRoVTableCell>
+                                {implant.requiresRemoval === 'yes' ? (implant.removeBy || '—') : '—'}
+                              </FbRoVTableCell>
+                            </FbTableRow>
+                          ))}
+                        </FbTableBody>
+                      </FbTable>
+                    </div>
                   </div>
                 </div>
               )}
@@ -398,44 +373,12 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
             </div>
 
           </div>
-          {/* Fixed Bottom Section - Controls */}
-          <div style={{ borderTop: '0.2rem solid rgb(27, 110, 194)', marginTop: '0.2rem', paddingTop: '0.2rem', paddingBottom: '0.2rem', paddingLeft: 0, paddingRight: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div className="flex-1"></div>
-              <div
-                style={{
-                  display: 'inline-block',
-                  height: '2.0rem',
-                  lineHeight: '2rem',
-                  marginLeft: '0.2rem',
-                  padding: '0 0.5rem',
-                  border: '0.1rem solid silver',
-                  borderRadius: '0.4rem',
-                  backgroundColor: 'white',
-                  fontFamily: 'Roboto, sans-serif',
-                  fontSize: '1rem',
-                  fontWeight: 400,
-                  color: 'black'
-                }}
-              >
-                {username}
-              </div>
-              <FbButton
-                variant="primary"
-                onClick={onSwitchToEV}
-                style={{ marginLeft: '0.4rem' }}
-              >
-                Edit
-              </FbButton>
-              <FbButton
-                variant="primary"
-                onClick={onBack}
-                style={{ marginLeft: '0.4rem' }}
-              >
-                Back
-              </FbButton>
-            </div>
-          </div>
+          <FbRoVFooter
+            username={username}
+            reachedByRoVButton={reachedByRoVButton}
+            onSwitchToEV={onSwitchToEV}
+            onBack={onBack}
+          />
         </div>
       </div>
   );

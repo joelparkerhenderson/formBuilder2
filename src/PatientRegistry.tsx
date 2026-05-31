@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useNavigate } from 'react-router';
 import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbButton as FbButton } from './components/fbButton';
+import { fbUserName as FbUserName } from './components/fbUserName';
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import PatientRecord from './PatientRecord';
@@ -35,7 +36,7 @@ export default function PatientRegistry() {
 
   // Custom userName control state with localStorage persistence
   const [username, setUsername] = React.useState<string>(() => {
-    return localStorage.getItem('fb_username') || '';
+    return localStorage.getItem('fb_username') || 'demoUser';
   });
 
   const handleUsernameChange = (val: string) => {
@@ -152,21 +153,21 @@ export default function PatientRegistry() {
                         width: '100%'
                       }}>
                         <div
-                          className="addressograph-wrapper"
+                          className="fb-addressograph-wrapper"
                           onClick={() => handleOpenRecord(pat.uuid)}
                           style={{
                             display: 'inline-block',
                             cursor: 'pointer'
                           }}
                           onMouseEnter={(e) => {
-                            const card = e.currentTarget.querySelector('.addressograph-card');
+                            const card = e.currentTarget.querySelector('.fb-addressograph-card');
                             if (card) {
                               (card as HTMLElement).style.transform = 'scale(1.01)';
                               (card as HTMLElement).style.boxShadow = '0 0.2rem 0.5rem rgba(0,0,0,0.08)';
                             }
                           }}
                           onMouseLeave={(e) => {
-                            const card = e.currentTarget.querySelector('.addressograph-card');
+                            const card = e.currentTarget.querySelector('.fb-addressograph-card');
                             if (card) {
                               (card as HTMLElement).style.transform = 'none';
                               (card as HTMLElement).style.boxShadow = 'none';
@@ -222,32 +223,9 @@ export default function PatientRegistry() {
           }}
         >
           <div>
-            <input
-              type="text"
-              name="username"
+            <FbUserName
               value={username}
-              onChange={(e) => handleUsernameChange(e.target.value)}
-              placeholder="Enter username"
-              className="bottom-control-username"
-              style={{
-                display: 'inline-block',
-                height: '2.0rem',
-                lineHeight: '2rem',
-                padding: '0 0.5rem',
-                border: '0.1rem solid silver',
-                borderRadius: '0.4rem',
-                backgroundColor: 'white',
-                fontFamily: 'Roboto, sans-serif',
-                fontSize: '1rem',
-                fontWeight: 400,
-                color: 'black'
-              }}
-              onFocus={(e) => {
-                e.target.style.backgroundColor = '#ffffcc';
-              }}
-              onBlur={(e) => {
-                e.target.style.backgroundColor = 'white';
-              }}
+              onChange={handleUsernameChange}
             />
           </div>
           <div>

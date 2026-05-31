@@ -3,13 +3,15 @@ import { useNavigate, useLocation } from 'react-router';
 import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbAddFormMenu as AddFormMenu } from './components/fbAddFormMenu';
 import { fbButton as FbButton } from './components/fbButton';
+import { fbUserName as FbUserName } from './components/fbUserName';
 import { fbOutpatientAppointmentTile as OutpatientAppointmentTile } from './components/fbOutpatientAppointmentTile';
 import { fbFormTile as FormTile } from './components/fbFormTile';
 import { fbDraftBadge as DraftBadge } from './components/fbDraftBadge';
-import { fbAddButton as AddButton } from './components/fbAddButton';
+import { fbAddButtonForPage as AddButtonForPage } from './components/fbAddButtonForPage';
 import WaitingListCard from './WaitingListCard';
 import OperationNote from './OperationNote';
 import OutpatientOutcome from './OutpatientOutcome';
+import { specialities } from './data/specialities';
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
@@ -47,7 +49,7 @@ interface FormIndexItem {
   speciality?: string;
   organisation?: string;
   hospital?: string;
-  senior_clinician?: string;
+  senior_responsible_clinician?: string;
 }
 
 interface PatientRecordProps {
@@ -97,9 +99,12 @@ export default function PatientRecord({
   const state = location.state as { patientUuid?: string; from?: string } | null;
   const patientUuid = inline ? propPatientUuid : (state?.patientUuid || '12345678-1234-1234-1234-123456789012');
 
-  const fetchPatientAndForms = async () => {
+  const fetchPatientAndForms = async (options: { showLoading?: boolean } = {}) => {
+    const showLoading = options.showLoading !== false;
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
 
       // Fetch latest version of patient
       const { data: patientData, error: patientError } = await supabase
@@ -152,7 +157,9 @@ export default function PatientRecord({
     } catch (err) {
       console.error('Exception fetching patient record data:', err);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -242,6 +249,12 @@ export default function PatientRecord({
     }
     const fromPath = (location.state as any)?.from || '/';
     navigate(fromPath);
+  };
+
+  const getSpecialityDisplay = (specVal?: string) => {
+    if (!specVal) return '';
+    const found = specialities.find(s => s.value === specVal || s.value.toLowerCase() === specVal.toLowerCase());
+    return found ? found.label : specVal;
   };
 
   const renderBadge = (form: FormIndexItem) => {
@@ -389,15 +402,15 @@ export default function PatientRecord({
                         <OutpatientAppointmentTile
                           dateTime={formatDateTime(form.event_datetime)}
                           clinicName={clinicName}
-                          speciality={form.speciality || ''}
-                          src={form.senior_clinician || ''}
+                          speciality={getSpecialityDisplay(form.speciality)}
+                          src={form.senior_responsible_clinician || ''}
                         />
                       ) : (
                         <FormTile
                           dateTime={formatDateTime(form.document_datetime || form.event_datetime)}
                           formTypeName={getFormTypeDisplay(form.form_type)}
-                          speciality={form.speciality || ''}
-                          src={form.senior_clinician || ''}
+                          speciality={getSpecialityDisplay(form.speciality)}
+                          src={form.senior_responsible_clinician || ''}
                         />
                       )}
                     </div>
@@ -448,9 +461,9 @@ export default function PatientRecord({
         >
           {/* New form / document button in the bottom left corner */}
           <div style={{ position: 'relative' }}>
-            <AddButton
-              ref={addButtonRef}
-              label="New form / document"
+            <AddButtonForPage
+              ref={addButtonRef as any}
+              label="New form or document"
               id="new-form-document-button"
               onClick={() => setShowAddMenu(prev => !prev)}
             />
@@ -470,28 +483,10 @@ export default function PatientRecord({
           {/* User Name input and Close button in the bottom right corner */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <input
-                id="username-input"
-                type="text"
+              <FbUserName
                 value={username}
-                onChange={(e) => handleUsernameChange(e.target.value)}
-                style={{
-                  width: '10rem',
-                  height: '2.0rem',
-                  paddingLeft: '0.4rem',
-                  border: '0.1rem solid silver',
-                  borderRadius: '0.4rem',
-                  fontFamily: "'Roboto', sans-serif",
-                  fontSize: '1rem',
-                  fontWeight: 400,
-                  color: 'black'
-                }}
-                onFocus={(e) => {
-                  e.target.style.backgroundColor = '#ffffcc';
-                }}
-                onBlur={(e) => {
-                  e.target.style.backgroundColor = 'white';
-                }}
+                onChange={handleUsernameChange}
+                style={{ width: '10rem' }}
               />
             </div>
 
@@ -514,7 +509,7 @@ export default function PatientRecord({
                 openInRoV: inlineActiveForm.openInRoV,
                 onClose: () => {
                   setInlineActiveForm(null);
-                  fetchPatientAndForms();
+                  fetchPatientAndForms({ showLoading: false });
                 }
               }}
             />
@@ -527,7 +522,7 @@ export default function PatientRecord({
                 openInRoV: inlineActiveForm.openInRoV,
                 onClose: () => {
                   setInlineActiveForm(null);
-                  fetchPatientAndForms();
+                  fetchPatientAndForms({ showLoading: false });
                 }
               }}
             />
@@ -541,7 +536,7 @@ export default function PatientRecord({
                 openInRoV: inlineActiveForm.openInRoV,
                 onClose: () => {
                   setInlineActiveForm(null);
-                  fetchPatientAndForms();
+                  fetchPatientAndForms({ showLoading: false });
                 }
               }}
             />

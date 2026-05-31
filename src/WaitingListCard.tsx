@@ -4,10 +4,11 @@ import { specialities } from "./data/specialities";
 import { fbAddressograph as Addressograph } from "./components/fbAddressograph";
 import { fbAuthControls as AuthControls } from "./components/fbAuthControls";
 import { fbDateControl as DateControl } from "./components/fbDateControl";
-import { fbSCTProcedureSelector as SCTProcedureSelector } from "./components/fbSCTProcedureSelector";
+import { fbSCTProcedure as FbSCTProcedure } from "./components/fbSCTProcedure";
 import { fbMSISelector as MSISelector } from "./components/fbMSISelector";
 import { fbDraftPopup as DraftPopup } from "./components/fbDraftPopup";
 import { fbPasswordPopup as PasswordPopup } from "./components/fbPasswordPopup";
+import { fbCancelPopup as CancelPopup } from "./components/fbCancelPopup";
 import { fbFinalControl as FinalControl } from "./components/fbFinalControl";
 import { WaitingListCardRoV } from "./WaitingListCardRoV";
 import { fbSaveCancelButtons as SaveCancelButtons } from "./components/fbSaveCancelButtons";
@@ -19,15 +20,27 @@ import { fbTextArea as FbTextArea } from "./components/fbTextArea";
 import { fbNumberInput as FbNumberInput } from "./components/fbNumberInput";
 import { fbSection as FbSection } from "./components/fbSection";
 import { fbQuestionRow as FbQuestionRow } from "./components/fbQuestionRow";
+import { fbQuestionRowCell as FbQuestionRowCell } from "./components/fbQuestionRowCell";
 import { fbQuestion as FbQuestion } from "./components/fbQuestion";
 import { fbRadio as FbRadio } from "./components/fbRadio";
 import { fbCheck as FbCheck } from "./components/fbCheck";
 import { fbGroup as FbGroup } from "./components/fbGroup";
 import { fbTableCell as FbTableCell } from "./components/fbTableCell";
+import {
+  fbTable as FbTable,
+  fbTableHeader as FbTableHeader,
+  fbTableBody as FbTableBody,
+  fbTableRow as FbTableRow,
+  fbTableHeaderCell as FbTableHeaderCell
+} from "./components/fbTable";
 import { fbLayout as FbLayout, SectionSpec, areAllSectionsComplete, getSectionStatus as getSectionStatusHelper } from "./components/fbLayout";
 import { createClient } from "@supabase/supabase-js";
 import { projectId, publicAnonKey } from "../utils/supabase/info";
 import { compareFormStatesObj, cleanArrayOfObjects } from "./utils/formStateUtils";
+import { generateUUID } from "./utils/formUtils";
+import { formatClinicalDate } from "./utils/dateFormat";
+import { useEditFormAutoExpandTextareas, useEditFormLabelEqualization } from "./utils/formLayoutEffects";
+import { appendRow, removeRowIfMultiple, updateRowById } from "./utils/rowState";
 
 // Create Supabase client
 const supabase = createClient(
@@ -35,27 +48,7 @@ const supabase = createClient(
   publicAnonKey,
 );
 
-// Helper function to format date
-const formatDate = (date: Date): string => {
-  const monthNames = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  const day = date.getDate();
-  const month = monthNames[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day.toString().padStart(2, "0")}-${month}-${year}`;
-};
+const formatDate = formatClinicalDate;
 
 interface Patient {
   uuid: string;
@@ -77,6 +70,14 @@ interface InlineProps {
   formUuid?: string;
   openInRoV?: boolean;
   onClose: () => void;
+  initialFormState?: Record<string, any>;
+  initialProcedures?: Array<{ id: number; side: string; procedure: string; additionalInfo: string }>;
+  hideRoVButton?: boolean;
+  onSaved?: (summary: {
+    uuid: string;
+    formState: Record<string, any>;
+    procedures: Array<{ side?: string; procedure?: string }>;
+  }) => void;
 }
 
 export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineProps } = {}) {
@@ -225,6 +226,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
   const [showDraftPopup, setShowDraftPopup] = React.useState<boolean>(false);
   const [showPasswordPopup, setShowPasswordPopup] =
     React.useState<boolean>(false);
+  const [showCancelPopup, setShowCancelPopup] = React.useState<boolean>(false);
   const [openedFromPatientRecord, setOpenedFromPatientRecord] =
     React.useState<boolean>(() => {
       if (inlineProps) return true;
@@ -264,8 +266,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
       id: "section-from",
       name: "From",
       requiredFields: ["organisation", "speciality", "hospital", "seniorClinician"]
-    },
-    {
+    }, {
       id: "section-listing",
       name: "Listing & priority",
       requiredFields: ["dateListed", "urgency"],
@@ -275,12 +276,10 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         }
         return 0;
       }
-    },
-    {
+    }, {
       id: "section-procedure",
       name: "Planned procedure(s)",
-    },
-    {
+    }, {
       id: "section-risks",
       name: "Specific operative risks",
       getIncompleteCount: (state) => {
@@ -305,21 +304,17 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         }
         return count;
       }
-    },
-    {
+    }, {
       id: "section-preop",
       name: "Pre-operative",
       requiredFields: ["intendedManagement"]
-    },
-    {
+    }, {
       id: "section-anaesthesia",
       name: "Anaesthesia",
-    },
-    {
+    }, {
       id: "section-postop",
       name: "Post-op",
-    },
-    {
+    }, {
       id: "section-other",
       name: "Other",
     }
@@ -353,7 +348,43 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
       setUsername(state.username);
     }
 
+    const applyNewFormDefaults = () => {
+      const fState = {
+        ...defaultFormStateValues,
+        dateListed: formatDate(new Date()),
+        ...(inlineProps?.initialFormState || {}),
+      };
+      const procs = inlineProps?.initialProcedures || [{ id: 1, side: "", procedure: "", additionalInfo: "" }];
+      const anticoag = {
+        doac: false,
+        warfarin: false,
+        aspirin: false,
+        clopidogrel: false,
+        other: false,
+      };
+      const hSensitive = false;
+      const fChecked = false;
+
+      setFormState(fState);
+      setProcedures(procs);
+      setAnticoagChecked(anticoag);
+      setHighlySensitive(hSensitive);
+      setFinalChecked(fChecked);
+
+      setInitialSnapshot({
+        formState: fState,
+        procedures: procs,
+        anticoagChecked: anticoag,
+        highlySensitive: hSensitive,
+        finalChecked: fChecked,
+      });
+      setFormChanged(false);
+    };
+
     if (!state?.patientUuid) {
+      if (inlineProps?.initialFormState || inlineProps?.initialProcedures) {
+        applyNewFormDefaults();
+      }
       return;
     }
 
@@ -393,6 +424,8 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
 
           if (formError) {
             console.error("Error loading form:", formError);
+            alert(`Error loading waiting list card: ${formError.message}`);
+            navigateBack();
           } else if (formData?.form_data) {
             const fState = { ...formData.form_data };
             const procs = (formData.form_data.procedures || [
@@ -432,37 +465,15 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
               highlySensitive: hSensitive,
               finalChecked: fChecked,
             });
+          } else {
+            const message = `Waiting list card ${state.formUuid} was not found.`;
+            console.error(message);
+            alert(message);
+            navigateBack();
           }
         } else {
           setOpenedFromPatientRecord(!!(state && typeof state.openInRoV !== "undefined"));
-          const fState = {
-            ...defaultFormStateValues,
-            dateListed: formatDate(new Date())
-          };
-          const procs = [{ id: 1, side: "", procedure: "", additionalInfo: "" }];
-          const anticoag = {
-            doac: false,
-            warfarin: false,
-            aspirin: false,
-            clopidogrel: false,
-            other: false,
-          };
-          const hSensitive = false;
-          const fChecked = false;
-
-          setFormState(fState);
-          setProcedures(procs);
-          setAnticoagChecked(anticoag);
-          setHighlySensitive(hSensitive);
-          setFinalChecked(fChecked);
-
-          setInitialSnapshot({
-            formState: fState,
-            procedures: procs,
-            anticoagChecked: anticoag,
-            highlySensitive: hSensitive,
-            finalChecked: fChecked,
-          });
+          applyNewFormDefaults();
         }
       } catch (err) {
         console.error("Exception loading data:", err);
@@ -477,136 +488,15 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
 
 
 
-  React.useLayoutEffect(() => {
-    if (isReadOnlyView) return;
-
-    const adjustLabelHeights = () => {
-      const isMobile = window.innerWidth < 768;
-
-      if (isMobile) {
-        // On mobile/narrow screens where columns stack vertically,
-        // reset all label styles to auto height and zero top padding.
-        // This avoids creating unwanted big vertical whitespace gaps.
-        const allLabels = document.querySelectorAll(
-          ".edit-view-form .question-container > label:not(.radio-checkbox-item)"
-        );
-        allLabels.forEach((lbl) => {
-          const hElement = lbl as HTMLElement;
-          hElement.style.height = "auto";
-          hElement.style.paddingTop = "0px";
-          hElement.style.display = "block";
-        });
-        return;
-      }
-
-      // Find all question rows inside the edit view form to avoid targeting outer page containers
-      const rows = document.querySelectorAll(".edit-view-form .questions-row, .edit-view-form .grid");
-      rows.forEach((row) => {
-        // Ensure this grid/row actually has at least one direct question-container
-        if (!row.querySelector(".question-container")) return;
-
-        // Query all question container labels under this row
-        const labels = Array.from(
-          row.querySelectorAll(
-            ".question-container > label:not(.radio-checkbox-item)"
-          )
-        ) as HTMLElement[];
-
-        // Filter labels to only include top-level field labels for this row.
-        // If a label has an ancestor of class "subfield" or "subfield-wrapper" before reaching the row,
-        // it is a subfield label and should not be aligned with standard top-row fields.
-        const rowLabels = labels.filter((lbl) => {
-          let parent = lbl.parentElement;
-          while (parent && parent !== row) {
-            if (
-              parent.classList.contains("subfield") ||
-              parent.classList.contains("subfield-wrapper")
-            ) {
-              return false;
-            }
-            parent = parent.parentElement;
-          }
-          return true;
-        });
-
-        if (rowLabels.length <= 1) return;
-
-        // 1. Reset heights to auto and top-padding to 0 to safely measure the natural word-wrap height
-        rowLabels.forEach((lbl) => {
-          lbl.style.height = "auto";
-          lbl.style.paddingTop = "0px";
-          lbl.style.display = "block";
-        });
-
-        // 2. Measure actual natural heights
-        const heights = rowLabels.map((lbl) => lbl.getBoundingClientRect().height);
-        const maxHeight = Math.max(...heights);
-
-        // 3. Apply the max height and adjust paddingTop to align label texts to the bottom edge.
-        // This keeps upper borders of actual controls aligned without turning the labels
-        // into flex column containers (which breaks natural line wrap with nested elements/spans!).
-        if (maxHeight > 0) {
-          rowLabels.forEach((lbl, idx) => {
-            const naturalHeight = heights[idx];
-            const diff = maxHeight - naturalHeight;
-            lbl.style.boxSizing = "border-box";
-            lbl.style.height = `${maxHeight}px`;
-            lbl.style.paddingTop = `${diff}px`;
-            lbl.style.display = "block"; // Keep standard block formatting context for reliable word wrap
-          });
-        }
-      });
-    };
-
-    // Run initially using a small safe deferral to make sure the view is fully mounted and styled
-    const timer = setTimeout(adjustLabelHeights, 50);
-
-    // Recheck on window resize (especially handles switching between mobile and desktop dynamically!)
-    window.addEventListener("resize", adjustLabelHeights);
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("resize", adjustLabelHeights);
-    };
-  }, [
+  useEditFormLabelEqualization(isReadOnlyView, [
     procedures,
-    isReadOnlyView,
     formState.operatingSurgeon,
     formState.imagingRequired,
     formState.risks,
     formState,
   ]);
 
-  React.useLayoutEffect(() => {
-    if (isReadOnlyView) return;
-
-    const textareas = document.querySelectorAll(".edit-view-form textarea");
-    const listeners: Array<{
-      element: HTMLTextAreaElement;
-      handler: () => void;
-    }> = [];
-
-    textareas.forEach((ta) => {
-      const textarea = ta as HTMLTextAreaElement;
-
-      const adjustHeight = () => {
-        textarea.style.height = "auto";
-        const defaultHeight = 44; // Approx 2 lines
-        textarea.style.height = `${Math.max(defaultHeight, textarea.scrollHeight)}px`;
-      };
-
-      adjustHeight();
-
-      textarea.addEventListener("input", adjustHeight);
-      listeners.push({ element: textarea, handler: adjustHeight });
-    });
-
-    return () => {
-      listeners.forEach(({ element, handler }) => {
-        element.removeEventListener("input", handler);
-      });
-    };
-  }, [procedures, isReadOnlyView, formState]);
+  useEditFormAutoExpandTextareas(isReadOnlyView, [procedures, formState]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -644,7 +534,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
           version = existingVersions[0].version + 1;
         }
       } else {
-        formUuid = crypto.randomUUID();
+        formUuid = generateUUID();
       }
 
       const formDataToSave = {
@@ -661,12 +551,18 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
       const eventDate =
         formState.dateListed || formState.date || new Date().toISOString();
 
+      const patientUuidForSave =
+        patient?.uuid ||
+        inlineProps?.patientUuid ||
+        (location.state as { patientUuid?: string } | null)?.patientUuid ||
+        null;
+
       const { error: insertError } = await supabase
         .from("waiting_list_cards")
         .insert({
           uuid: formUuid,
           version: version,
-          patient_uuid: patient?.uuid || null,
+          patient_uuid: patientUuidForSave,
           event_datetime: eventDate,
           form_status: "final",
           form_data: formDataToSave,
@@ -678,7 +574,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         form_uuid: formUuid,
         form_version: version,
         form_type: "waiting_list_card",
-        patient_uuid: patient?.uuid || null,
+        patient_uuid: patientUuidForSave,
         event_datetime: eventDate,
         document_datetime: new Date().toISOString(),
         form_status: "final",
@@ -697,6 +593,12 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
 
       setFormChanged(false);
       setPassword("");
+
+      inlineProps?.onSaved?.({
+        uuid: formUuid,
+        formState: { ...formDataToSave, uuid: formUuid },
+        procedures: [...procedures],
+      });
 
       navigateBack();
     } catch (error) {
@@ -736,7 +638,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
           version = existingVersions[0].version + 1;
         }
       } else {
-        formUuid = crypto.randomUUID();
+        formUuid = generateUUID();
       }
 
       const formDataToSave = {
@@ -753,12 +655,18 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
       const eventDate =
         formState.dateListed || formState.date || new Date().toISOString();
 
+      const patientUuidForSave =
+        patient?.uuid ||
+        inlineProps?.patientUuid ||
+        (location.state as { patientUuid?: string } | null)?.patientUuid ||
+        null;
+
       const { error: insertError } = await supabase
         .from("waiting_list_cards")
         .insert({
           uuid: formUuid,
           version: version,
-          patient_uuid: patient?.uuid || null,
+          patient_uuid: patientUuidForSave,
           event_datetime: eventDate,
           form_status: "draft",
           form_data: formDataToSave,
@@ -770,7 +678,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         form_uuid: formUuid,
         form_version: version,
         form_type: "waiting_list_card",
-        patient_uuid: patient?.uuid || null,
+        patient_uuid: patientUuidForSave,
         event_datetime: eventDate,
         document_datetime: new Date().toISOString(),
         form_status: "draft",
@@ -789,6 +697,12 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
 
       setFormChanged(false);
       setPassword("");
+
+      inlineProps?.onSaved?.({
+        uuid: formUuid,
+        formState: { ...formDataToSave, uuid: formUuid },
+        procedures: [...procedures],
+      });
 
       navigateBack();
     } catch (error) {
@@ -815,32 +729,34 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
 
   // Procedure table functions
   const addProcedureRow = () => {
-    const newId = Math.max(...procedures.map((p) => p.id)) + 1;
-    setProcedures([
-      ...procedures,
-      { id: newId, side: "", procedure: "", additionalInfo: "", procedure_coded: false },
-    ]);
+    setProcedures(
+      appendRow(procedures, (id) => ({
+        id,
+        side: "",
+        procedure: "",
+        additionalInfo: "",
+        procedure_coded: false,
+      })),
+    );
     setFormChanged(true);
   };
 
   const deleteProcedureRow = (id: number) => {
-    if (procedures.length > 1) {
-      setProcedures(procedures.filter((p) => p.id !== id));
+    const nextProcedures = removeRowIfMultiple(procedures, id);
+    if (nextProcedures !== procedures) {
+      setProcedures(nextProcedures);
       setFormChanged(true);
     }
   };
 
   const updateProcedure = (id: number, field: string, value: string, coded?: boolean) => {
     setProcedures(
-      procedures.map((p) => {
-        if (p.id === id) {
-          const updated = { ...p, [field]: value };
-          if (coded !== undefined) {
-            updated[`${field}_coded`] = coded;
-          }
-          return updated;
+      updateRowById(procedures, id, (procedure) => {
+        const updated = { ...procedure, [field]: value };
+        if (coded !== undefined) {
+          updated[`${field}_coded`] = coded;
         }
-        return p;
+        return updated;
       }),
     );
     setFormChanged(true);
@@ -873,88 +789,84 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
   return (
     <>
       <style>{`
-        .bottom-control-btn-rov,
-        .bottom-control-item,
-        .bottom-control-username,
-        .bottom-control-password,
-        .bottom-control-final,
-        .bottom-control-btn-save,
-        .bottom-control-btn-cancel {
+        .fb-bottom-control-btn-rov,
+        .fb-bottom-control-item,
+        .fb-bottom-control-username,
+        .fb-bottom-control-password,
+        .fb-bottom-control-final,
+        .fb-bottom-btn-save,
+        .fb-bottom-btn-cancel,
           transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
 
-        .bottom-control-btn-rov:hover,
-        .bottom-control-btn-rov:focus {
+        .fb-bottom-control-btn-rov:hover,
+        .fb-bottom-control-btn-rov:focus,
           background-color: #fee715 !important;
           color: black !important;
         }
 
-        .bottom-control-item {
           transition: background-color 0.2s ease, color 0.2s ease;
         }
-
-        .bottom-control-item:hover,
-        .bottom-control-item:focus-within {
           background-color: #fee715 !important;
           color: black !important;
         }
 
-        .bottom-control-username:hover,
-        .bottom-control-username:focus,
-        .bottom-control-password:hover,
-        .bottom-control-password:focus {
+        .fb-bottom-control-username:hover,
+        .fb-bottom-control-username:focus,
+        .fb-bottom-control-password:hover,
+        .fb-bottom-control-password:focus,
           background-color: #fee715 !important;
           color: black !important;
         }
 
-        .bottom-control-final:not(.disabled):focus-within {
+        .fb-bottom-control-final:not(.disabled):focus-within,
           background-color: #fee715 !important;
           color: black !important;
         }
         /* Handle hover unless the required fields are incomplete and it's silver, but wait, the prompt says */
         /* "when hovered or focussed, their background color should change to the standard yellow" so yes, hover always triggers yellow */
-        .bottom-control-final:not(.disabled):hover {
+        .fb-bottom-control-final:not(.disabled):hover,
           background-color: #fee715 !important;
           color: black !important;
         }
 
-        .bottom-control-btn-save:not(:disabled):hover,
-        .bottom-control-btn-save:not(:disabled):focus {
+        .fb-bottom-btn-save:not(:disabled):hover,
+        .fb-bottom-btn-save:not(:disabled):focus,
           background-color: #fee715 !important;
           color: black !important;
         }
 
-        .bottom-control-btn-cancel:hover,
-        .bottom-control-btn-cancel:focus {
+        .fb-bottom-btn-cancel:hover,
+        .fb-bottom-btn-cancel:focus,
           background-color: #fee715 !important;
           color: black !important;
         }
 
-        .add-procedure-btn {
+        .fb-add-button {
           transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
 
-        .add-procedure-btn:hover,
-        .add-procedure-btn:focus-visible {
+        .fb-add-button:hover,
+        .fb-add-button:focus-visible {
           background-color: #fee715 !important;
           color: black !important;
           border-color: #fee715 !important;
         }
 
-        .edit-view-form .questions-row, .edit-view-form .grid {
+        .fb-layout-edit-view-form .questions-row, .fb-layout-edit-view-form .grid {
           column-gap: 1.0rem !important;
           row-gap: 0.4rem !important;
           margin-bottom: 0.4rem !important;
           margin-top: 0 !important;
         }
-        .edit-view-form .question-container {
+        .fb-layout-edit-view-form .fb-question-container,
           margin-top: 0 !important;
           margin-bottom: 0 !important;
           padding-top: 0.2rem !important;
           padding-bottom: 0.2rem !important;
           box-sizing: border-box !important;
         }
-        .edit-view-form .subfield {
+        .fb-layout-edit-view-form .fb-subquestion,
           margin-top: 0 !important;
           margin-bottom: 0 !important;
           padding-top: 0.2rem !important;
@@ -965,10 +877,10 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
           padding-left: 0.4rem !important;
           padding-right: 0.4rem !important;
         }
-        .edit-view-form .subfield.pl-6 {
+        .fb-layout-edit-view-form .fb-subquestion.pl-6,
           padding-left: 1.5rem !important;
         }
-        .edit-view-form h3 {
+        .fb-layout-edit-view-form h3 {
           font-weight: 500 !important;
           font-size: 1rem !important;
           line-height: 1.1rem !important;
@@ -976,35 +888,35 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
           margin: 0 !important;
           background-color: rgb(27, 110, 194) !important;
         }
-        .nav-section-name {
+        .fb-layout-nav-section-name {
           font-weight: 500 !important;
           font-size: 1rem !important;
           line-height: 1.1rem !important;
           padding: 0.2rem 0.2rem 0.2rem 0.4rem !important;
           height: auto !important;
         }
-        .nav-counter-box {
+        .fb-layout-nav-counter-box {
           font-weight: 500 !important;
           font-size: 1rem !important;
           line-height: 1.1rem !important;
           padding: 0.2rem 0.2rem 0.2rem 0.4rem !important;
           height: auto !important;
         }
-        .edit-view-form .subfield-wrapper,
-        .edit-view-form .radio-checkbox-item {
+        .fb-layout-edit-view-form .fb-subquestion-wrapper,
+        .fb-layout-edit-view-form .fb-radio-checkbox-item,
           margin-top: 0 !important;
           margin-bottom: 0 !important;
           padding-top: 0 !important;
           padding-bottom: 0 !important;
           box-sizing: border-box !important;
         }
-        .edit-view-form input:not([type="radio"]):not([type="checkbox"]),
-        .edit-view-form select,
-        .edit-view-form textarea,
-        .edit-view-form .msi-selector-input,
-        .edit-view-form .sct-procedure-selector-input,
-        .edit-view-form .date-control-input,
-        .edit-view-form input.border {
+        .fb-layout-edit-view-form input:not([type="radio"]):not([type="checkbox"]),
+        .fb-layout-edit-view-form select,
+        .fb-layout-edit-view-form textarea,
+        .fb-layout-edit-view-form .fb-msi-selector-input,
+        .fb-layout-edit-view-form .fb-sct-procedure-selector-input,
+        .fb-layout-edit-view-form .fb-date-control-input,
+        .fb-layout-edit-view-form input.border {
           border: 0.1rem solid silver !important;
           border-radius: 0.4rem !important;
           background-color: white !important;
@@ -1012,30 +924,30 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
           padding-bottom: 0.2rem !important;
           box-sizing: border-box !important;
         }
-        .edit-view-form input:not([type="radio"]):not([type="checkbox"]):hover,
-        .edit-view-form select:hover,
-        .edit-view-form textarea:hover {
+        .fb-layout-edit-view-form input:not([type="radio"]):not([type="checkbox"]):hover,
+        .fb-layout-edit-view-form select:hover,
+        .fb-layout-edit-view-form textarea:hover {
           background-color: white !important;
         }
-        .edit-view-form input:not([type="radio"]):not([type="checkbox"]):focus,
-        .edit-view-form select:focus,
-        .edit-view-form textarea:focus,
-        .edit-view-form input.border:focus,
-        .edit-view-form .hideBorderInRoV:focus {
+        .fb-layout-edit-view-form input:not([type="radio"]):not([type="checkbox"]):focus,
+        .fb-layout-edit-view-form select:focus,
+        .fb-layout-edit-view-form textarea:focus,
+        .fb-layout-edit-view-form input.border:focus,
+        .fb-layout-edit-view-form .fb-hide-border-in-rov:focus,
           background-color: white !important;
           outline: none !important;
           border-color: silver !important;
           border: 0.1rem solid silver !important;
           box-shadow: none !important;
         }
-        .edit-view-form .input-with-units {
+        .fb-layout-edit-view-form .fb-input-with-units,
           border: 0.1rem solid silver !important;
           border-radius: 0.4rem !important;
           height: 2.0rem !important;
           overflow: hidden;
         }
-        .edit-view-form .input-with-units input,
-        .edit-view-form .input-with-units input:not([type="radio"]):not([type="checkbox"]) {
+        .fb-layout-edit-view-form .fb-input-with-units input,
+        .fb-layout-edit-view-form .fb-input-with-units input:not([type="radio"]):not([type="checkbox"]),
           border: none !important;
           border-width: 0px !important;
           outline: none !important;
@@ -1103,7 +1015,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
           onSubmit={handleSubmit}
           bottomControls={
             <BottomControlsRow
-              openedFromPatientRecord={openedFromPatientRecord}
+              openedFromPatientRecord={openedFromPatientRecord || !!inlineProps?.hideRoVButton}
               onRoVClick={() => {
                 setClickedRoVButton(true);
                 setIsReadOnlyView(true);
@@ -1120,12 +1032,20 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
               passwordTimeoutRef={passwordTimeoutRef}
               formChanged={formChanged}
               onCancel={() => {
-                const s = location.state as { formUuid?: string } | null;
-                const isEditOfExisting = s?.formUuid || inlineProps?.formUuid;
-                if (isEditOfExisting) {
-                  setIsReadOnlyView(true);
+                if (formChanged) {
+                  setShowCancelPopup(true);
                 } else {
-                  navigateBack();
+                  if (inlineProps && !inlineProps.openInRoV) {
+                    navigateBack();
+                    return;
+                  }
+                  const s = location.state as { formUuid?: string } | null;
+                  const isEditOfExisting = inlineProps ? !!inlineProps.formUuid : !!s?.formUuid;
+                  if (isEditOfExisting) {
+                    setIsReadOnlyView(true);
+                  } else {
+                    navigateBack();
+                  }
                 }
               }}
               saveLabel="Save and close"
@@ -1144,14 +1064,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                         value={formState.organisation || ""}
                         onChange={(val) => handleFieldChange("organisation", val)}
                         options={[
-                          { value: "aneurin-bevan", label: "Aneurin Bevan" },
-                          { value: "betsi-cadwaladr", label: "Betsi Cadwaladr" },
-                          { value: "cardiff-vale", label: "Cardiff & Vale" },
-                          { value: "cwm-taf", label: "Cwm Taf Morgannwg" },
-                          { value: "hywel-dda", label: "Hywel Dda" },
-                          { value: "powys", label: "Powys" },
-                          { value: "swansea-bay", label: "Swansea Bay" },
-                          { value: "velindre", label: "Velindre" },
+                          { value: "aneurin-bevan", label: "Aneurin Bevan" }, { value: "betsi-cadwaladr", label: "Betsi Cadwaladr" }, { value: "cardiff-vale", label: "Cardiff & Vale" }, { value: "cwm-taf", label: "Cwm Taf Morgannwg" }, { value: "hywel-dda", label: "Hywel Dda" }, { value: "powys", label: "Powys" }, { value: "swansea-bay", label: "Swansea Bay" }, { value: "velindre", label: "Velindre" },
                         ]}
                       />
 
@@ -1175,9 +1088,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                         value={formState.hospital || ""}
                         onChange={(val) => handleFieldChange("hospital", val)}
                         options={[
-                          { value: "prince-charles", label: "Prince Charles Hospital, Merthyr Tydfil" },
-                          { value: "royal-glamorgan", label: "Royal Glamorgan Hospital, Llantrisant" },
-                          { value: "princess-wales", label: "Princess of Wales Hospital, Bridgend" },
+                          { value: "prince-charles", label: "Prince Charles Hospital, Merthyr Tydfil" }, { value: "royal-glamorgan", label: "Royal Glamorgan Hospital, Llantrisant" }, { value: "princess-wales", label: "Princess of Wales Hospital, Bridgend" },
                         ]}
                       />
 
@@ -1191,7 +1102,6 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             handleFieldChange("seniorClinician", value, coded)
                           }
                           required
-                          hasLabel={false}
                         />
                       </FbQuestion>
                     </FbQuestionRow>
@@ -1213,7 +1123,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                         />
                       </FbQuestion>
 
-                      <div className="md:col-span-2">
+                      <FbQuestionRowCell span={2}>
                         <FbQuestion label="Listed by">
                           <MSISelector
                             key={`listedBy-${viewChangeCounter.current}`}
@@ -1223,10 +1133,9 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             onChange={(value, coded) =>
                               handleFieldChange("listedBy", value, coded)
                             }
-                            hasLabel={false}
                           />
                         </FbQuestion>
-                      </div>
+                      </FbQuestionRowCell>
                     </FbQuestionRow>
 
                     {/* Row 2 - 4-column row containing Urgency, Operating surgeon, Patient available at short notice, and Royal College of Surgeons priority */}
@@ -1261,17 +1170,13 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             {
                               label: "Any grade with supervision",
                               value: "supervision",
-                            },
-                            {
+                            }, {
                               label: "Discuss with consultant",
                               value: "discuss",
-                            },
-                            { label: "Consultant only", value: "consultant" },
-                            {
+                            }, { label: "Consultant only", value: "consultant" }, {
                               label: "Named clinician",
                               value: "named_clinician",
-                            },
-                            {
+                            }, {
                               label: "Unknown or not recorded",
                               value: "unknown",
                             },
@@ -1309,9 +1214,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                       <FbQuestion label="Patient available at short notice">
                         <div className="flex flex-col">
                           {[
-                            { label: "Yes", value: "yes" },
-                            { label: "No", value: "no" },
-                            {
+                            { label: "Yes", value: "yes" }, { label: "No", value: "no" }, {
                               label: "Unknown or not recorded",
                               value: "unknown",
                             },
@@ -1336,13 +1239,10 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                       <FbQuestion label="Royal College of Surgeons priority">
                         <div className="flex flex-col">
                           {[
-                            { label: "2: Within 4 weeks", value: "p2" },
-                            { label: "3: Within 3 months", value: "p3" },
-                            {
+                            { label: "2: Within 4 weeks", value: "p2" }, { label: "3: Within 3 months", value: "p3" }, {
                               label: "4: Can be delayed more than 3 months",
                               value: "p4",
-                            },
-                            {
+                            }, {
                               label: "Unknown or not recorded",
                               value: "unknown",
                             },
@@ -1372,54 +1272,29 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                       style={{ marginTop: "0.4rem", marginBottom: "0.6rem" }}
                       className="space-y-4"
                     >
-                      <table
-                        className="min-w-full text-left font-sans font-light"
-                        style={{ width: "100%", borderCollapse: "collapse" }}
-                      >
-                        <thead>
-                          <tr style={{ borderBottom: "1px solid silver" }}>
-                            <th style={{ width: "5%", padding: "0px 0.4rem" }}></th>
-                            <th
-                              style={{
-                                width: "20%",
-                                padding: "0px 0.4rem",
-                                fontFamily: "'Roboto', sans-serif",
-                                fontSize: "0.8rem",
-                                fontStyle: "italic",
-                                fontWeight: 300,
-                                color: "#555555",
-                              }}
-                            >
+                      <FbTable>
+                        <FbTableHeader>
+                          <FbTableRow>
+                            <FbTableHeaderCell style={{ width: "5%", padding: "0px 0.4rem" }}></FbTableHeaderCell>
+                            <FbTableHeaderCell style={{ width: "20%", padding: "0px 0.4rem" }}>
                               Side
-                            </th>
-                            <th
-                              style={{
-                                width: "65%",
-                                padding: "0px 0.4rem",
-                                fontFamily: "'Roboto', sans-serif",
-                                fontSize: "0.8rem",
-                                fontStyle: "italic",
-                                fontWeight: 300,
-                                color: "#555555",
-                              }}
-                            >
+                            </FbTableHeaderCell>
+                            <FbTableHeaderCell style={{ width: "65%", padding: "0px 0.4rem" }}>
                               Procedure
-                            </th>
-                            <th
-                              style={{ width: "10%", padding: "0px 0.4rem" }}
-                            ></th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                            </FbTableHeaderCell>
+                            <FbTableHeaderCell style={{ width: "10%", padding: "0px 0.4rem" }}></FbTableHeaderCell>
+                          </FbTableRow>
+                        </FbTableHeader>
+                        <FbTableBody>
                           {(procedures.length === 0 || procedures.every(p => !p.procedure || String(p.procedure).trim() === '')) && (
-                            <tr>
+                            <FbTableRow>
                               <td colSpan={4} className="p-2" style={{fontSize: '0.8rem', fontWeight: 500, fontStyle: 'italic', color: '#d50000', borderBottom: '1px solid silver'}}>
                                 Enter at least one procedure
                               </td>
-                            </tr>
+                            </FbTableRow>
                           )}
                           {procedures.map((proc, index) => (
-                            <tr
+                            <FbTableRow
                               key={proc.id}
                               draggable
                               onDragStart={(e) => handleDragStart(e, index)}
@@ -1460,17 +1335,15 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                                   }
                                   placeholder="Select side"
                                   options={[
-                                    { value: "left", label: "Left" },
-                                    { value: "right", label: "Right" },
-                                    { value: "bilateral", label: "Bilateral" },
-                                    { value: "na", label: "Not applicable" },
+                                    { value: "left", label: "Left" }, { value: "right", label: "Right" }, { value: "bilateral", label: "Bilateral" }, { value: "na", label: "Not applicable" },
                                   ]}
                                   selectStyle={{ height: "auto" }}
                                 />
                               </FbTableCell>
                               <FbTableCell>
-                                <SCTProcedureSelector
+                                <FbSCTProcedure
                                   value={proc.procedure || ""}
+                                  name={`procedure-${proc.id}`}
                                   coded={proc.procedure_coded}
                                   onChange={(val, coded) =>
                                     updateProcedure(proc.id, "procedure", val, coded)
@@ -1504,10 +1377,10 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                                   </button>
                                 )}
                               </FbTableCell>
-                            </tr>
+                            </FbTableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </FbTableBody>
+                      </FbTable>
                       <AddButton
                         label="Add procedure"
                         onClick={addProcedureRow}
@@ -1522,14 +1395,10 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                       <FbQuestion label="Risks">
                         <div className="flex flex-col">
                           {[
-                            { label: "Diabetic", value: "diabetic" },
-                            { label: "Latex allergy", value: "latex" },
-                            { label: "MRSA", value: "mrsa" },
-                            {
+                            { label: "Diabetic", value: "diabetic" }, { label: "Latex allergy", value: "latex" }, { label: "MRSA", value: "mrsa" }, {
                               label: "Pacemaker/implant",
                               value: "pacemaker",
-                            },
-                            {
+                            }, {
                               label: "Blood transfusion refusal",
                               value: "blood",
                             },
@@ -1562,7 +1431,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             }
                             label="Previous anaesthetic reactions"
                           >
-                            <div className="subfield">
+                            <div className="fb-subquestion">
                               <FbTextArea
                                 id="riskReactionsDetail"
                                 name="riskReactionsDetail"
@@ -1587,7 +1456,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             }
                             label="Other"
                           >
-                            <div className="subfield">
+                            <div className="fb-subquestion">
                               <FbTextArea
                                 id="riskOtherDetail"
                                 name="riskOtherDetail"
@@ -1632,61 +1501,53 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                                   handleFieldChange("doac-name", value)
                                 }
                               />
-                              <div className="subfield">
-                                <label className="block" style={{ fontWeight: 300, fontSize: "1rem" }}>
-                                  Indication
-                                </label>
-                                <div className="space-y-1">
-                                  {[
-                                    {
-                                      label: "DVT/PE (acute)",
-                                      value: "dvt-pe-acute",
-                                    },
-                                    {
-                                      label: "DVT/PE (prevention)",
-                                      value: "dvt-pe-prev",
-                                    },
-                                    {
-                                      label: "Atrial fibrillation",
-                                      value: "af",
-                                    },
-                                    { label: "Other", value: "other" },
-                                  ].map((ind) => (
-                                    <FbRadio
-                                      key={ind.value}
-                                      name="doac-indication"
-                                      value={ind.value}
-                                      checked={
-                                        formState["doac-indication"] ===
-                                        ind.value
-                                      }
-                                      onChange={(e) =>
-                                        handleFieldChange(
-                                          "doac-indication",
-                                          e.target.value,
-                                        )
-                                      }
-                                      label={ind.label}
-                                    />
-                                  ))}
+                              <FbGroup label="Indication" className="fb-subquestion">
+                                {[
+                                  {
+                                    label: "DVT/PE (acute)",
+                                    value: "dvt-pe-acute",
+                                  }, {
+                                    label: "DVT/PE (prevention)",
+                                    value: "dvt-pe-prev",
+                                  }, {
+                                    label: "Atrial fibrillation",
+                                    value: "af",
+                                  }, { label: "Other", value: "other" },
+                                ].map((ind) => (
+                                  <FbRadio
+                                    key={ind.value}
+                                    name="doac-indication"
+                                    value={ind.value}
+                                    checked={
+                                      formState["doac-indication"] ===
+                                      ind.value
+                                    }
+                                    onChange={(e) =>
+                                      handleFieldChange(
+                                        "doac-indication",
+                                        e.target.value,
+                                      )
+                                    }
+                                    label={ind.label}
+                                  />
+                                ))}
+                              </FbGroup>
+                              {formState["doac-indication"] === "other" && (
+                                <div className="pl-6 pb-1">
+                                  <FbTextInput
+                                    id="doac-indication-other"
+                                    name="doac-indication-other"
+                                    placeholder="Specify"
+                                    value={formState["doac-indication-other"] || ""}
+                                    onChange={(value) =>
+                                      handleFieldChange(
+                                        "doac-indication-other",
+                                        value,
+                                      )
+                                    }
+                                  />
                                 </div>
-                                {formState["doac-indication"] === "other" && (
-                                  <div className="mt-1">
-                                    <FbTextInput
-                                      id="doac-indication-other"
-                                      name="doac-indication-other"
-                                      placeholder="Specify"
-                                      value={formState["doac-indication-other"] || ""}
-                                      onChange={(value) =>
-                                        handleFieldChange(
-                                          "doac-indication-other",
-                                          value,
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                )}
-                              </div>
+                              )}
                             </div>
                           </FbCheck>
 
@@ -1704,60 +1565,52 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             label="Warfarin"
                           >
                             <div className="flex flex-col">
-                              <div>
-                                <label className="block" style={{ fontWeight: 300, fontSize: "1rem" }}>
-                                  Indication
-                                </label>
-                                <div className="space-y-1">
-                                  {[
-                                    {
-                                      label: "DVT/PE (acute)",
-                                      value: "dvt-pe-acute",
-                                    },
-                                    {
-                                      label: "DVT/PE (prevention)",
-                                      value: "dvt-pe-prev",
-                                    },
-                                    {
-                                      label: "Atrial fibrillation",
-                                      value: "af",
-                                    },
-                                    { label: "Other", value: "other" },
-                                  ].map((ind) => (
-                                    <FbRadio
-                                      key={ind.value}
-                                      name="warfarin-indication"
-                                      value={ind.value}
-                                      checked={
-                                        formState["warfarin-indication"] === ind.value
-                                      }
-                                      onChange={(e) =>
-                                        handleFieldChange(
-                                          "warfarin-indication",
-                                          e.target.value,
-                                        )
-                                      }
-                                      label={ind.label}
-                                    />
-                                  ))}
+                              <FbGroup label="Indication" className="fb-subquestion">
+                                {[
+                                  {
+                                    label: "DVT/PE (acute)",
+                                    value: "dvt-pe-acute",
+                                  }, {
+                                    label: "DVT/PE (prevention)",
+                                    value: "dvt-pe-prev",
+                                  }, {
+                                    label: "Atrial fibrillation",
+                                    value: "af",
+                                  }, { label: "Other", value: "other" },
+                                ].map((ind) => (
+                                  <FbRadio
+                                    key={ind.value}
+                                    name="warfarin-indication"
+                                    value={ind.value}
+                                    checked={
+                                      formState["warfarin-indication"] === ind.value
+                                    }
+                                    onChange={(e) =>
+                                      handleFieldChange(
+                                        "warfarin-indication",
+                                        e.target.value,
+                                      )
+                                    }
+                                    label={ind.label}
+                                  />
+                                ))}
+                              </FbGroup>
+                              {formState["warfarin-indication"] === "other" && (
+                                <div className="pl-6 pb-1">
+                                  <FbTextInput
+                                    id="warfarin-indication-other"
+                                    name="warfarin-indication-other"
+                                    placeholder="Specify"
+                                    value={formState["warfarin-indication-other"] || ""}
+                                    onChange={(value) =>
+                                      handleFieldChange(
+                                        "warfarin-indication-other",
+                                        value,
+                                      )
+                                    }
+                                  />
                                 </div>
-                                {formState["warfarin-indication"] === "other" && (
-                                  <div className="mt-1">
-                                    <FbTextInput
-                                      id="warfarin-indication-other"
-                                      name="warfarin-indication-other"
-                                      placeholder="Specify"
-                                      value={formState["warfarin-indication-other"] || ""}
-                                      onChange={(value) =>
-                                        handleFieldChange(
-                                          "warfarin-indication-other",
-                                          value,
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                )}
-                              </div>
+                              )}
                             </div>
                           </FbCheck>
 
@@ -1775,97 +1628,83 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             label="Aspirin"
                           >
                             <div className="flex flex-col">
-                              <div className="subfield">
-                                <label className="block" style={{ fontWeight: 300, fontSize: "1rem" }}>
-                                  Indication
-                                </label>
-                                <div className="space-y-1">
-                                  {[
-                                    { label: "Pain", value: "pain" },
-                                    {
-                                      label: "Stroke prevention",
-                                      value: "stroke",
-                                    },
-                                    { label: "Other", value: "other" },
-                                  ].map((ind) => (
-                                    <FbRadio
-                                      key={ind.value}
-                                      name="aspirin-indication"
-                                      value={ind.value}
-                                      checked={
-                                        formState["aspirin-indication"] === ind.value
-                                      }
-                                      onChange={(e) =>
-                                        handleFieldChange(
-                                          "aspirin-indication",
-                                          e.target.value,
-                                        )
-                                      }
-                                      label={ind.label}
-                                    />
-                                  ))}
+                              <FbGroup label="Indication" className="fb-subquestion">
+                                {[
+                                  { label: "Pain", value: "pain" }, {
+                                    label: "Stroke prevention",
+                                    value: "stroke",
+                                  }, { label: "Other", value: "other" },
+                                ].map((ind) => (
+                                  <FbRadio
+                                    key={ind.value}
+                                    name="aspirin-indication"
+                                    value={ind.value}
+                                    checked={
+                                      formState["aspirin-indication"] === ind.value
+                                    }
+                                    onChange={(e) =>
+                                      handleFieldChange(
+                                        "aspirin-indication",
+                                        e.target.value,
+                                      )
+                                    }
+                                    label={ind.label}
+                                  />
+                                ))}
+                              </FbGroup>
+                              {formState["aspirin-indication"] === "other" && (
+                                <div className="pl-6 pb-1">
+                                  <FbTextInput
+                                    id="aspirin-indication-other"
+                                    name="aspirin-indication-other"
+                                    placeholder="Specify"
+                                    value={formState["aspirin-indication-other"] || ""}
+                                    onChange={(value) =>
+                                      handleFieldChange(
+                                        "aspirin-indication-other",
+                                        value,
+                                      )
+                                    }
+                                  />
                                 </div>
-                                {formState["aspirin-indication"] === "other" && (
-                                  <div className="mt-1">
-                                    <FbTextInput
-                                      id="aspirin-indication-other"
-                                      name="aspirin-indication-other"
-                                      placeholder="Specify"
-                                      value={formState["aspirin-indication-other"] || ""}
-                                      onChange={(value) =>
-                                        handleFieldChange(
-                                          "aspirin-indication-other",
-                                          value,
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="subfield">
-                                <label className="block" style={{ fontWeight: 300, fontSize: "1rem" }}>
-                                  Dose
-                                </label>
-                                <div className="space-y-1">
-                                  {[
-                                    { label: "75mg", value: "75mg" },
-                                    { label: "300mg", value: "300mg" },
-                                    { label: "Other", value: "other" },
-                                  ].map((d) => (
-                                    <FbRadio
-                                      key={d.value}
-                                      name="aspirin-dose"
-                                      value={d.value}
-                                      checked={
-                                        formState["aspirin-dose"] === d.value
-                                      }
-                                      onChange={(e) =>
-                                        handleFieldChange(
-                                          "aspirin-dose",
-                                          e.target.value,
-                                        )
-                                      }
-                                      label={d.label}
-                                    />
-                                  ))}
+                              )}
+                              <FbGroup label="Dose" className="fb-subquestion">
+                                {[
+                                  { label: "75mg", value: "75mg" }, { label: "300mg", value: "300mg" }, { label: "Other", value: "other" },
+                                ].map((d) => (
+                                  <FbRadio
+                                    key={d.value}
+                                    name="aspirin-dose"
+                                    value={d.value}
+                                    checked={
+                                      formState["aspirin-dose"] === d.value
+                                    }
+                                    onChange={(e) =>
+                                      handleFieldChange(
+                                        "aspirin-dose",
+                                        e.target.value,
+                                      )
+                                    }
+                                    label={d.label}
+                                  />
+                                ))}
+                              </FbGroup>
+                              {formState["aspirin-dose"] === "other" && (
+                                <div className="pl-6 pb-1">
+                                  <FbTextInput
+                                    id="aspirin-dose-other"
+                                    name="aspirin-dose-other"
+                                    placeholder="Specify"
+                                    value={formState["aspirin-dose-other"] || ""}
+                                    onChange={(value) =>
+                                      handleFieldChange(
+                                        "aspirin-dose-other",
+                                        value,
+                                      )
+                                    }
+                                  />
                                 </div>
-                                {formState["aspirin-dose"] === "other" && (
-                                  <div className="mt-1">
-                                    <FbTextInput
-                                      id="aspirin-dose-other"
-                                      name="aspirin-dose-other"
-                                      placeholder="Specify"
-                                      value={formState["aspirin-dose-other"] || ""}
-                                      onChange={(value) =>
-                                        handleFieldChange(
-                                          "aspirin-dose-other",
-                                          value,
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                )}
-                              </div>
+                              )}
                             </div>
                           </FbCheck>
 
@@ -1944,10 +1783,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                       <FbQuestion label="Intended management" required={true}>
                         <div className="flex flex-col">
                           {[
-                            { label: "Outpatient", value: "outpatient" },
-                            { label: "Daycase", value: "daycase" },
-                            { label: "Inpatient", value: "inpatient" },
-                            {
+                            { label: "Outpatient", value: "outpatient" }, { label: "Daycase", value: "daycase" }, { label: "Inpatient", value: "inpatient" }, {
                               label: "Unknown or not recorded",
                               value: "unknown",
                             },
@@ -2006,7 +1842,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             }
                             label="Yes"
                           >
-                            <div className="subfield">
+                            <div className="fb-subquestion">
                               <FbTextArea
                                 id="imagingDetails"
                                 name="imagingDetails"
@@ -2055,11 +1891,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                       <FbQuestion label="Planned anaesthetic type">
                         <div className="flex flex-col">
                           {[
-                            { label: "General", value: "general" },
-                            { label: "Regional", value: "regional" },
-                            { label: "Local", value: "local" },
-                            { label: "None", value: "none" },
-                            {
+                            { label: "General", value: "general" }, { label: "Regional", value: "regional" }, { label: "Local", value: "local" }, { label: "None", value: "none" }, {
                               label: "Unknown or not recorded",
                               value: "unknown",
                             },
@@ -2082,19 +1914,20 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                           ))}
                         </div>
                       </FbQuestion>
-                      <FbQuestion
-                        label="Anaesthesia special requirements or issues"
-                        className="md:col-span-2"
-                      >
-                        <FbTextArea
-                          id="anaesthesiaRequirements"
-                          name="anaesthesiaRequirements"
-                          value={formState.anaesthesiaRequirements || ""}
-                          onChange={(value) =>
-                            handleFieldChange("anaesthesiaRequirements", value)
-                          }
-                        />
-                      </FbQuestion>
+                      <FbQuestionRowCell span={2}>
+                        <FbQuestion
+                          label="Anaesthesia special requirements or issues"
+                        >
+                          <FbTextArea
+                            id="anaesthesiaRequirements"
+                            name="anaesthesiaRequirements"
+                            value={formState.anaesthesiaRequirements || ""}
+                            onChange={(value) =>
+                              handleFieldChange("anaesthesiaRequirements", value)
+                            }
+                          />
+                        </FbQuestion>
+                      </FbQuestionRowCell>
                     </FbQuestionRow>
                   </FbSection>
 
@@ -2113,11 +1946,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                       <FbQuestion label="Bed requirement">
                         <div className="flex flex-col justify-start">
                           {[
-                            { label: "ITU: Intensive care bed", value: "itu" },
-                            { label: "HDU: High dependency bed", value: "hdu" },
-                            { label: "PACU: Post-anaesthetic care unit bed", value: "pacu" },
-                            { label: "Ward bed", value: "ward" },
-                            {
+                            { label: "ITU: Intensive care bed", value: "itu" }, { label: "HDU: High dependency bed", value: "hdu" }, { label: "PACU: Post-anaesthetic care unit bed", value: "pacu" }, { label: "Ward bed", value: "ward" }, {
                               label: "Unknown or not recorded",
                               value: "unknown",
                             },
@@ -2159,9 +1988,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                       <FbQuestion label="Could this case be outsourced?">
                         <div className="flex flex-col">
                           {[
-                            { label: "Yes", value: "yes" },
-                            { label: "No", value: "no" },
-                            {
+                            { label: "Yes", value: "yes" }, { label: "No", value: "no" }, {
                               label: "Unknown or not recorded",
                               value: "unknown",
                             },
@@ -2182,16 +2009,18 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                           ))}
                         </div>
                       </FbQuestion>
-                      <FbQuestion label="Any other information" className="md:col-span-2">
-                        <FbTextArea
-                          id="otherInfo"
-                          name="otherInfo"
-                          value={formState.otherInfo || ""}
-                          onChange={(value) =>
-                            handleFieldChange("otherInfo", value)
-                          }
-                        />
-                      </FbQuestion>
+                      <FbQuestionRowCell span={2}>
+                        <FbQuestion label="Any other information">
+                          <FbTextArea
+                            id="otherInfo"
+                            name="otherInfo"
+                            value={formState.otherInfo || ""}
+                            onChange={(value) =>
+                              handleFieldChange("otherInfo", value)
+                            }
+                          />
+                        </FbQuestion>
+                      </FbQuestionRowCell>
                     </FbQuestionRow>
                   </FbSection>
                 </div>
@@ -2210,6 +2039,27 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         <PasswordPopup
           onConfirm={handlePasswordConfirm}
           onCancel={() => setShowPasswordPopup(false)}
+        />
+      )}
+
+      {showCancelPopup && (
+        <CancelPopup
+          onDiscard={() => {
+            setShowCancelPopup(false);
+            setFormChanged(false);
+            if (inlineProps && !inlineProps.openInRoV) {
+              navigateBack();
+              return;
+            }
+            const s = location.state as { formUuid?: string } | null;
+            const isEditOfExisting = inlineProps ? !!inlineProps.formUuid : !!s?.formUuid;
+            if (isEditOfExisting) {
+              setIsReadOnlyView(true);
+            } else {
+              navigateBack();
+            }
+          }}
+          onReturnToForm={() => setShowCancelPopup(false)}
         />
       )}
     </>

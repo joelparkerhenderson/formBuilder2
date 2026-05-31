@@ -1,7 +1,16 @@
 import React from 'react';
-import { fbAddressograph as Addressograph } from './components/fbAddressograph';
-import { fbDraftBadge as DraftBadge } from './components/fbDraftBadge';
-import { fbButton as FbButton } from './components/fbButton';
+import { fbRoVField as FbRoVField, fbRoVTableCell as FbRoVTableCell } from './components/fbRoVField';
+import { fbRoVFooter as FbRoVFooter, fbRoVHeader as FbRoVHeader } from './components/fbRoVShell';
+import {
+  fbTable as FbTable,
+  fbTableHeader as FbTableHeader,
+  fbTableBody as FbTableBody,
+  fbTableRow as FbTableRow,
+  fbTableHeaderCell as FbTableHeaderCell
+} from "./components/fbTable";
+import { fbQuestionRow as FbQuestionRow } from "./components/fbQuestionRow";
+import { fbQuestionRowCell as FbQuestionRowCell } from "./components/fbQuestionRowCell";
+import { hospitalLabels, organisationLabels, sideLabels, specialityLabels, yesNoUnknownLabels } from './data/formLabels';
 
 interface Patient {
   uuid: string;
@@ -88,46 +97,6 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
     };
   }, []);
 
-  // Lookup tables for display text
-  const organisationLabels: Record<string, string> = {
-    'aneurin-bevan': 'Aneurin Bevan',
-    'betsi-cadwaladr': 'Betsi Cadwaladr',
-    'cardiff-vale': 'Cardiff & Vale',
-    'cwm-taf': 'Cwm Taf Morgannwg',
-    'hywel-dda': 'Hywel Dda',
-    'powys': 'Powys',
-    'swansea-bay': 'Swansea Bay',
-    'velindre': 'Velindre'
-  };
-
-  const specialityLabels: Record<string, string> = {
-    'general-surgery': 'General Surgery',
-    'orthopaedics': 'Orthopaedics',
-    'cardiothoracic': 'Cardiothoracic Surgery',
-    'neurosurgery': 'Neurosurgery',
-    'urology': 'Urology',
-    'ent': 'ENT Surgery',
-    'ophthalmology': 'Ophthalmology',
-    'vascular': 'Vascular Surgery',
-    'colorectal': 'Colorectal Surgery',
-    'breast': 'Breast Surgery',
-    'plastic': 'Plastic Surgery',
-    'oral-maxillofacial': 'Oral & Maxillofacial Surgery'
-  };
-
-  const hospitalLabels: Record<string, string> = {
-    'prince-charles': 'Prince Charles Hospital, Merthyr Tydfil',
-    'royal-glamorgan': 'Royal Glamorgan Hospital, Llantrisant',
-    'princess-wales': 'Princess of Wales Hospital, Bridgend'
-  };
-
-  const sideLabels: Record<string, string> = {
-    'left': 'Left',
-    'right': 'Right',
-    'bilateral': 'Bilateral',
-    'na': 'Not applicable'
-  };
-
   const urgencyLabels: Record<string, string> = {
     'routine': 'Routine',
     'urgent': 'Urgent',
@@ -142,11 +111,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
     'unknown': 'Unknown or not recorded'
   };
 
-  const yesNoLabels: Record<string, string> = {
-    'yes': 'Yes',
-    'no': 'No',
-    'unknown': 'Unknown or not recorded'
-  };
+  const yesNoLabels = yesNoUnknownLabels;
 
   const rcsPriorityLabels: Record<string, string> = {
     'p2': '2: Within 4 weeks',
@@ -187,127 +152,20 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
     'other': 'Other'
   };
 
-  // Helper to render a read-only field
   const renderField = (label: string, value: any, lookupTable?: Record<string, string>, units?: string, coded?: boolean) => {
-    if (value === undefined || value === null || value === '' || value === 'select' || value === 'Select side') {
-      return <div></div>; // Empty div to preserve grid spacing
-    }
-    const displayValue = lookupTable && lookupTable[value] ? lookupTable[value] : value;
-    return (
-      <div className="space-y-2 question-container">
-        <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>{label}</label>
-        <div style={{ fontWeight: 500, marginLeft: '0.4rem', whiteSpace: 'pre-line', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <span>{displayValue}</span>
-          {units && <span style={{ fontWeight: 500 }}> {units}</span>}
-          {coded !== undefined && (
-            coded ? (
-              <span className="material-icons" style={{ color: '#008000', fontSize: '1.2rem', verticalAlign: 'middle' }} title="Coded">
-                check_circle_outline
-              </span>
-            ) : (
-              <span className="material-icons" style={{ color: '#fd8a10', fontSize: '1.2rem', verticalAlign: 'middle' }} title="Not coded">
-                warning
-              </span>
-            )
-          )}
-        </div>
-      </div>
-    );
+    return <FbRoVField label={label} value={value} lookupTable={lookupTable} units={units} coded={coded} />;
   };
 
   return (
-    <div className="bg-white h-screen max-h-screen overflow-hidden flex flex-col waiting-list-rov-container" style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden', fontFamily: "'Roboto', sans-serif", fontWeight: 300, lineHeight: 1.1 }}>
-      <style>{`
-        .nav-grid-rov {
-          display: grid;
-          grid-template-columns: 1fr auto;
-          gap: 0.1rem;
-          padding: 0;
-          align-items: center;
-        }
-        .nav-section-name-rov {
-          margin: 0.1rem;
-          margin-top: 0;
-          margin-bottom: 0;
-          padding: 0.2rem 0.2rem 0.2rem 0.4rem !important;
-          border: 0.2rem solid transparent;
-          border-top-left-radius: 0.8rem;
-          border-bottom-left-radius: 0.8rem;
-          text-align: right;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          transition: background-color 0.5s ease-out;
-          background-color: rgb(27, 110, 194);
-          color: white !important;
-          font-weight: 500 !important;
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          height: 1.8rem;
-          font-size: 1rem !important;
-          line-height: 1.1rem !important;
-          text-decoration: none;
-        }
-        .nav-section-name-rov:hover,
-        .nav-section-name-rov:focus {
-          background-color: #fee715;
-          color: black !important;
-        }
-        .nav-indicator-rov {
-          font-size: 1.2rem;
-          color: rgb(27, 110, 194);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 2rem;
-          height: 1.8rem;
-        }
-        .nav-indicator-rov.hidden {
-          visibility: hidden;
-        }
-      `}</style>
-      
-      {/* Fixed Top Section */}
-      <div style={{ borderBottom: '0.2rem solid rgb(27, 110, 194)', marginBottom: '0.2rem', padding: '0.4rem' }}>
-        <div className="flex justify-between items-center">
-          <div>
-            {formStatus === 'draft' && (
-              <>
-                <DraftBadge />
-                <br />
-              </>
-            )}
-            <h1 style={{ fontSize: '2rem', fontWeight: 500 }}>Waiting list card</h1>
-          </div>
-
-          {/* Addressograph */}
-          {patient ? (
-            <Addressograph
-              nhsNumber={patient.nhs_number}
-              surname={patient.surname}
-              forenames={patient.forenames}
-              title={patient.title}
-              addressLine1={patient.address_line1}
-              addressLine2={patient.address_line2}
-              addressLine3={patient.address_line3}
-              addressLine4={patient.address_line4}
-              crn={patient.crn}
-              dateOfBirth={patient.date_of_birth}
-              sex={patient.sex}
-            />
-          ) : (
-            <Addressograph />
-          )}
-        </div>
-      </div>
+    <div className="bg-white h-screen max-h-screen overflow-hidden flex flex-col fb-waiting-list-rov-container" style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden', fontFamily: "'Roboto', sans-serif", fontWeight: 300, lineHeight: 1.1 }}>
+      <FbRoVHeader title="Waiting list card" patient={patient} formStatus={formStatus} />
 
       {/* Middle Grid with Left Sidebar and Scrollable Content */}
       <div className="flex-1 flex overflow-hidden">
         
         {/* Navigation Panel (Omitting counters, with indicator arrows matching EV style) */}
         <nav className="w-64 overflow-y-auto hidden md:block" style={{ backgroundColor: 'white', padding: '0.4rem' }}>
-          <div className="nav-grid-rov">
+          <div className="fb-waiting-list-rov-nav-grid">
             {[
               { id: 'section-from', name: 'From' },
               { id: 'section-listing', name: 'Listing & priority' },
@@ -323,13 +181,13 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                 <React.Fragment key={section.id}>
                   <a
                     href={`#${section.id}`}
-                    className="nav-section-name-rov"
+                    className="fb-waiting-list-rov-nav-section-name"
                     id={`nav-${section.id}`}
                   >
                     {section.name}
                   </a>
                   <span
-                    className={`nav-indicator-rov ${!isActive ? "hidden" : ""}`}
+                    className={`fb-waiting-list-rov-nav-indicator ${!isActive ? "hidden" : ""}`}
                   >
                     ◄►
                   </span>
@@ -376,19 +234,19 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                 <div style={{ marginTop: '0.4rem' }}>
                   
                   {/* Row 1 */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <FbQuestionRow cols={4}>
                     {renderField('Date listed', formState.dateListed)}
-                    <div className="md:col-span-2">
+                    <FbQuestionRowCell span={2}>
                       {renderField('Listed by', formState.listedBy, undefined, undefined, formState.listedBy_coded)}
-                    </div>
+                    </FbQuestionRowCell>
                     <div></div>
-                  </div>
+                  </FbQuestionRow>
 
                   {/* Row 2 - Urgency, Operating surgeon, Patient available, Royal College of Surgeons priority */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       {formState.urgency && (
-                        <div className="space-y-2 question-container">
+                        <div className="space-y-2 fb-question-container">
                           <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Urgency</label>
                           <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                             ● {urgencyLabels[formState.urgency] || formState.urgency}
@@ -399,7 +257,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
 
                     <div>
                       {formState.operatingSurgeon && (
-                        <div className="space-y-2 question-container">
+                        <div className="space-y-2 fb-question-container">
                           <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Operating surgeon</label>
                           <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                             ● {operatingSurgeonLabels[formState.operatingSurgeon] || formState.operatingSurgeon}
@@ -416,7 +274,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
 
                     <div>
                       {formState.shortNotice && formState.shortNotice !== 'unknown' && (
-                        <div className="space-y-2 question-container">
+                        <div className="space-y-2 fb-question-container">
                           <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Patient available at short notice</label>
                           <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                             ● {yesNoLabels[formState.shortNotice] || formState.shortNotice}
@@ -427,7 +285,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
 
                     <div>
                       {formState.rcsPriority && formState.rcsPriority !== 'unknown' && (
-                        <div className="space-y-2 question-container">
+                        <div className="space-y-2 fb-question-container">
                           <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Royal College of Surgeons priority</label>
                           <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                             ● {rcsPriorityLabels[formState.rcsPriority] || formState.rcsPriority}
@@ -452,50 +310,20 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                   margin: 0
                 }}>Planned procedure(s)</h3>
                 <div style={{ marginTop: '0.4rem' }}>
-                  <table className="min-w-full text-left font-sans" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid silver' }}>
-                        <th style={{
-                          width: '25%',
-                          padding: '0.4rem',
-                          fontFamily: "'Roboto', sans-serif",
-                          fontSize: '0.8rem',
-                          fontStyle: 'italic',
-                          fontWeight: 300,
-                          color: '#555555'
-                        }}>Side</th>
-                        <th style={{
-                          width: '75%',
-                          padding: '0.4rem',
-                          fontFamily: "'Roboto', sans-serif",
-                          fontSize: '0.8rem',
-                          fontStyle: 'italic',
-                          fontWeight: 300,
-                          color: '#555555'
-                        }}>Procedure</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <FbTable>
+                    <FbTableHeader>
+                      <FbTableRow>
+                        <FbTableHeaderCell style={{ width: '25%' }}>Side</FbTableHeaderCell>
+                        <FbTableHeaderCell style={{ width: '75%' }}>Procedure</FbTableHeaderCell>
+                      </FbTableRow>
+                    </FbTableHeader>
+                    <FbTableBody>
                       {procedures.filter(p => p.procedure).map((proc) => (
-                        <tr key={proc.id} style={{ borderBottom: '1px solid #eee' }}>
-                          <td style={{
-                            padding: '0.4rem',
-                            fontFamily: "'Roboto', sans-serif",
-                            fontSize: '0.9rem',
-                            fontWeight: 400,
-                            color: '#333333',
-                            verticalAlign: 'top'
-                          }}>
+                        <FbTableRow key={proc.id}>
+                          <FbRoVTableCell>
                             {sideLabels[proc.side] || proc.side || '—'}
-                          </td>
-                          <td style={{
-                            padding: '0.4rem',
-                            fontFamily: "'Roboto', sans-serif",
-                            fontSize: '0.9rem',
-                            fontWeight: 400,
-                            color: '#333333',
-                            verticalAlign: 'top'
-                          }}>
+                          </FbRoVTableCell>
+                          <FbRoVTableCell>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                               <span>{proc.procedure}</span>
                               {proc.procedure_coded !== undefined && (
@@ -521,11 +349,11 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                                 {proc.additionalInfo}
                               </div>
                             )}
-                          </td>
-                        </tr>
+                          </FbRoVTableCell>
+                        </FbTableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </FbTableBody>
+                  </FbTable>
                 </div>
               </div>
             )}
@@ -546,7 +374,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                   {/* Column 1: Risks list */}
                   <div>
                     {formState.risks && formState.risks.length > 0 && (
-                      <div className="space-y-2 question-container">
+                      <div className="space-y-2 fb-question-container">
                         <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Risks</label>
                         <div className="space-y-2 pl-2">
                           {formState.risks.map((riskValue: string) => (
@@ -576,7 +404,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                   {/* Column 2: Anticoagulants */}
                   <div>
                     {formState.anticoagChecked && (
-                      <div className="space-y-3 question-container">
+                      <div className="space-y-3 fb-question-container">
                         <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Anticoagulants &amp; antiplatelets</label>
                         <div className="space-y-3 pl-2">
                           
@@ -584,7 +412,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                           {formState.anticoagChecked.doac && (
                             <div className="space-y-1">
                               <div style={{ fontWeight: 500 }}>☑ DOAC</div>
-                              <div className="pl-4 space-y-1 border-l-2 border-blue-200">
+                              <div className="pl-4 space-y-1">
                                 {formState['doac-name'] && (
                                   <div>
                                     <div style={{ fontWeight: 300, fontSize: '0.8rem' }}>Drug name</div>
@@ -609,7 +437,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                             <div className="space-y-1">
                               <div style={{ fontWeight: 500 }}>☑ Warfarin</div>
                               {(formState['warfarin-indication'] || formState['warp-indication']) && (
-                                <div className="pl-4 border-l-2 border-blue-200">
+                                <div className="pl-4">
                                   <div style={{ fontWeight: 300, fontSize: '0.8rem' }}>Indication</div>
                                   <div style={{ fontWeight: 500 }}>
                                     {doacIndicationLabels[formState['warfarin-indication'] || formState['warp-indication']] || formState['warfarin-indication'] || formState['warp-indication']}
@@ -624,7 +452,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                           {formState.anticoagChecked.aspirin && (
                             <div className="space-y-1">
                               <div style={{ fontWeight: 500 }}>☑ Aspirin</div>
-                              <div className="pl-4 space-y-1 border-l-2 border-blue-200">
+                              <div className="pl-4 space-y-1">
                                 {formState['aspirin-indication'] && (
                                   <div>
                                     <div style={{ fontWeight: 300, fontSize: '0.8rem' }}>Indication</div>
@@ -656,7 +484,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                           {formState.anticoagChecked.other && (
                             <div className="space-y-1">
                               <div style={{ fontWeight: 500 }}>☑ Other anticoagulant or antiplatelet</div>
-                              <div className="pl-4 space-y-1 border-l-2 border-blue-200">
+                              <div className="pl-4 space-y-1">
                                 {formState['anticoag-other-med'] && (
                                   <div>
                                     <div style={{ fontWeight: 300, fontSize: '0.8rem' }}>Medication</div>
@@ -701,7 +529,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       {formState.intendedManagement && formState.intendedManagement !== 'unknown' && (
-                        <div className="space-y-2 question-container">
+                        <div className="space-y-2 fb-question-container">
                           <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Intended management</label>
                           <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                             ● {managementLabels[formState.intendedManagement] || formState.intendedManagement}
@@ -713,7 +541,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                     {renderField('Estimated date of admission', formState.estimatedAdmission)}
                     <div>
                       {formState.imagingRequired && formState.imagingRequired !== 'unknown' && (
-                        <div className="space-y-2 question-container">
+                        <div className="space-y-2 fb-question-container">
                           <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Pre-operative imaging required</label>
                           <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                             ● {yesNoLabels[formState.imagingRequired] || formState.imagingRequired}
@@ -743,10 +571,10 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                   paddingLeft: '0.4rem',
                   margin: 0
                 }}>Anaesthesia</h3>
-                <div style={{ marginTop: '0.4rem' }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FbQuestionRow cols={3} style={{ marginTop: '0.4rem' }}>
                   <div>
                     {formState.anaestheticType && formState.anaestheticType !== 'unknown' && (
-                      <div className="space-y-2 question-container">
+                      <div className="space-y-2 fb-question-container">
                         <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Planned anaesthetic type</label>
                         <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                           ● {yesNoLabels[formState.anaestheticType] || operatingSurgeonLabels[formState.anaestheticType] || formState.anaestheticType}
@@ -754,10 +582,10 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                       </div>
                     )}
                   </div>
-                  <div className="md:col-span-2">
+                  <FbQuestionRowCell span={2}>
                     {renderField('Anaesthesia special requirements or issues', formState.anaesthesiaRequirements)}
-                  </div>
-                </div>
+                  </FbQuestionRowCell>
+                </FbQuestionRow>
               </div>
             )}
 
@@ -775,7 +603,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                   {renderField('Planned length of post-op stay', formState.postopStay, undefined, 'days')}
                   <div>
                     {formState.bedRequirement && formState.bedRequirement !== 'unknown' && (
-                      <div className="space-y-2 question-container">
+                      <div className="space-y-2 fb-question-container">
                         <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Bed requirement</label>
                         <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                           ● {bedLabels[formState.bedRequirement] || formState.bedRequirement}
@@ -798,10 +626,10 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                   paddingLeft: '0.4rem',
                   margin: 0
                 }}>Other</h3>
-                <div style={{ marginTop: '0.4rem' }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FbQuestionRow cols={3} style={{ marginTop: '0.4rem' }}>
                   <div>
                     {formState.outsourcing && formState.outsourcing !== 'unknown' && (
-                      <div className="space-y-2 question-container">
+                      <div className="space-y-2 fb-question-container">
                         <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Could this case be outsourced?</label>
                         <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                           ● {yesNoLabels[formState.outsourcing] || formState.outsourcing}
@@ -809,10 +637,10 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                       </div>
                     )}
                   </div>
-                  <div className="md:col-span-2">
+                  <FbQuestionRowCell span={2}>
                     {renderField('Any other information', formState.otherInfo)}
-                  </div>
-                </div>
+                  </FbQuestionRowCell>
+                </FbQuestionRow>
               </div>
             )}
 
@@ -820,44 +648,12 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
         </div>
       </div>
 
-      {/* Fixed Bottom Section */}
-      <div style={{ borderTop: '0.2rem solid rgb(27, 110, 194)', marginTop: '0.2rem', paddingTop: '0.2rem', paddingBottom: '0.2rem', paddingLeft: 0, paddingRight: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div className="flex-1"></div>
-          <div
-            style={{
-              display: 'inline-block',
-              height: '2.0rem',
-              lineHeight: '2rem',
-              marginLeft: '0.2rem',
-              padding: '0 0.5rem',
-              border: '0.1rem solid silver',
-              borderRadius: '0.4rem',
-              backgroundColor: 'white',
-              fontFamily: 'Roboto, sans-serif',
-              fontSize: '1rem',
-              fontWeight: 400,
-              color: 'black'
-            }}
-          >
-            {username}
-          </div>
-          <FbButton
-            variant="primary"
-            onClick={onSwitchToEV}
-            style={{ marginLeft: '0.4rem' }}
-          >
-            Edit
-          </FbButton>
-          <FbButton
-            variant="primary"
-            onClick={onBack}
-            style={{ marginLeft: '0.4rem' }}
-          >
-            Back
-          </FbButton>
-        </div>
-      </div>
+      <FbRoVFooter
+        username={username}
+        reachedByRoVButton={reachedByRoVButton}
+        onSwitchToEV={onSwitchToEV}
+        onBack={onBack}
+      />
 
     </div>
   );

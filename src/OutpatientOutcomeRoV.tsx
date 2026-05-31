@@ -1,7 +1,8 @@
 import React from 'react';
-import { fbAddressograph as Addressograph } from './components/fbAddressograph';
-import { fbDraftBadge as DraftBadge } from './components/fbDraftBadge';
-import { fbButton as FbButton } from './components/fbButton';
+import { fbRoVField as FbRoVField } from './components/fbRoVField';
+import { fbRoVFooter as FbRoVFooter, fbRoVHeader as FbRoVHeader } from './components/fbRoVShell';
+import { fbSmallAddButton as SmallAddButton } from './components/fbSmallAddButton';
+import { useFbTooltips } from './utils/useFbTooltips';
 
 interface Patient {
   uuid: string;
@@ -40,6 +41,8 @@ interface OutpatientOutcomeRoVProps {
   username: string;
   onSwitchToEV: () => void;
   onBack: () => void;
+  reachedByRoVButton?: boolean;
+  onOpenLinkedWaitingListCard?: () => void;
 }
 
 export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
@@ -64,20 +67,19 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
     openedFromPatientRecord,
     username,
     onSwitchToEV,
-    onBack
+    onBack,
+    reachedByRoVButton,
+    onOpenLinkedWaitingListCard
   } = props;
+  const { showTooltip, hideTooltip, renderTooltips } = useFbTooltips();
 
-  // Helper to render a read-only field
-  const renderField = (label: string, value: any) => {
-    if (!value || value === '' || value === 'select') {
-      return <div></div>;
-    }
-    return (
-      <div className="space-y-2 question-container">
-        <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>{label}</label>
-        <div style={{ fontWeight: 500, marginLeft: '0.4rem', whiteSpace: 'pre-line' }}>{value}</div>
-      </div>
-    );
+  const tooltipLabelProps = (text: string) => ({
+    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => showTooltip(text, e.currentTarget),
+    onMouseLeave: hideTooltip,
+  });
+
+  const renderField = (label: string, value: any, tooltip?: string) => {
+    return <FbRoVField label={label} value={value} labelProps={tooltip ? tooltipLabelProps(tooltip) : undefined} />;
   };
 
   // Human-readable labels for specific options
@@ -145,46 +147,14 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
   return (
     <div className="bg-white flex flex-col h-screen" style={{ height: '100vh', fontWeight: 300, lineHeight: 1.1 }}>
         <div className="flex flex-col h-full">
-          {/* Fixed Top Section */}
-          <div style={{ borderBottom: '0.2rem solid rgb(27, 110, 194)', marginBottom: '0.2rem', padding: '0.4rem' }}>
-            <div className="flex justify-between items-center">
-              <div>
-                {formStatus === 'draft' && (
-                  <>
-                    <DraftBadge />
-                    <br />
-                  </>
-                )}
-                <h1 style={{ fontSize: '2rem', fontWeight: 500 }}>Outpatient outcome</h1>
-              </div>
-
-              {/* Addressograph */}
-              {patient ? (
-                <Addressograph
-                  nhsNumber={patient.nhs_number}
-                  surname={patient.surname}
-                  forenames={patient.forenames}
-                  title={patient.title}
-                  addressLine1={patient.address_line1}
-                  addressLine2={patient.address_line2}
-                  addressLine3={patient.address_line3}
-                  addressLine4={patient.address_line4}
-                  crn={patient.crn}
-                  dateOfBirth={patient.date_of_birth}
-                  sex={patient.sex}
-                />
-              ) : (
-                <Addressograph />
-              )}
-            </div>
-          </div>
+          <FbRoVHeader title="Outpatient outcome" patient={patient} formStatus={formStatus} />
 
           {/* Scrollable Form Content */}
           <div className="flex-1 overflow-y-auto" style={{ scrollBehavior: 'smooth', minHeight: 0 }}>
             <div className="space-y-4" style={{ padding: '0.4rem' }}>
 
               {/* Appointment details */}
-              <div className="question-container">
+              <div className="fb-question-container">
                 <label style={{ fontWeight: 500, fontSize: '1rem', display: 'block', marginBottom: 0 }}>Appointment</label>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4" style={{ marginTop: '0.4rem' }}>
                   {renderField('Organisation', formState.organisation)}
@@ -194,14 +164,14 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4" style={{ marginTop: '0.4rem' }}>
                   {renderField('Clinic name', formState.clinicName)}
-                  {renderField('Date', formState.date)}
-                  {renderField('Time', formState.time)}
+                  {renderField('Date', formState.date, 'Date of consultation')}
+                  {renderField('Time', formState.time, 'Time of consultation')}
                 </div>
               </div>
 
               {/* Attendance */}
               {formState.attendedOption && (
-                <div className="question-container">
+                <div className="fb-question-container">
                   <label style={{ fontWeight: 500, fontSize: '1rem', display: 'block', marginBottom: 0 }}>Attendance</label>
                   <div style={{ fontWeight: 500, marginLeft: '0.4rem', marginTop: '0.4rem' }}>
                     ● {getAttendanceLabel(formState.attendedOption)}
@@ -265,8 +235,13 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
                 <>
                   {/* Urgent Suspected Cancer */}
                   {formState.usc && (
-                    <div className="question-container">
-                      <label style={{ fontWeight: 300, fontSize: '0.8rem' }}>Urgent suspected cancer</label>
+                    <div className="fb-question-container">
+                      <label
+                        style={{ fontWeight: 500, fontSize: '1rem' }}
+                        {...tooltipLabelProps('Required for monitoring performance against cancer targets')}
+                      >
+                        Urgent suspected cancer
+                      </label>
                       <div style={{ fontWeight: 500, marginLeft: '0.4rem' }}>
                         ● {formState.usc === 'yes' ? 'Yes' : 'No'}
                       </div>
@@ -274,10 +249,19 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
                   )}
 
                   {/* Working Diagnosis */}
-                  {formState.workingDiagnosis && renderField('Working diagnosis', formState.workingDiagnosis)}
+                  {formState.workingDiagnosis && (
+                    <div className="space-y-2 fb-question-container">
+                      <label style={{ fontWeight: 500, fontSize: '1rem', display: 'block', marginBottom: 0 }}>
+                        Working diagnosis
+                      </label>
+                      <div style={{ fontSize: '1rem', fontWeight: 500, marginLeft: '0.4rem', whiteSpace: 'pre-line' }}>
+                        {formState.workingDiagnosis}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Outcomes details */}
-                  <div className="question-container">
+                  <div className="fb-question-container">
                     <label style={{ fontWeight: 500, fontSize: '1rem', display: 'block', marginBottom: 0 }}>Outcome</label>
                     <div className="space-y-4" style={{ marginLeft: '0.4rem', marginTop: '0.4rem' }}>
 
@@ -318,6 +302,12 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
                         <div className="space-y-2">
                           <div style={{ fontWeight: 500 }}>● Add to waiting list for surgery or other treatment</div>
                           <div style={{ marginLeft: '1.5rem' }} className="space-y-2">
+                            {formState.linkedWaitingListCardUuid && (
+                              <SmallAddButton
+                                onClick={onOpenLinkedWaitingListCard}
+                                label="Open waiting list card"
+                              />
+                            )}
                             {formState.wlOptions && renderField('Waiting list', getWlOptionLabel(formState.wlOptions))}
                             {formState.treatmentPlanned && renderField('Treatment planned', formState.treatmentPlanned)}
                           </div>
@@ -354,12 +344,22 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
                       )}
 
                       {formState.stopRefClock && (
-                        <div style={{ fontWeight: 500 }}>● Stop referral to treatment clock</div>
+                        <div
+                          style={{ fontWeight: 500 }}
+                          {...tooltipLabelProps('Checking this indicates that the patient should not be offered active treatment. Treatment here means: surgery, chemotherapy, radiotherapy, biological therapy and transplant')}
+                        >
+                          ● Stop referral to treatment clock
+                        </div>
                       )}
 
                       {refToTherapies && (
                         <div className="space-y-2">
-                          <div style={{ fontWeight: 500 }}>● Referred to therapies</div>
+                          <div
+                            style={{ fontWeight: 500 }}
+                            {...tooltipLabelProps('Checking this does not generate a referral')}
+                          >
+                            ● Referred to therapies
+                          </div>
                           {formState.therapyDetails && (
                             <div style={{ marginLeft: '1.5rem' }}>
                               {renderField('Therapy details', formState.therapyDetails)}
@@ -370,7 +370,12 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
 
                       {refToConsultant && (
                         <div className="space-y-2">
-                          <div style={{ fontWeight: 500 }}>● Referred to another consultant, speciality or hospital</div>
+                          <div
+                            style={{ fontWeight: 500 }}
+                            {...tooltipLabelProps('Checking this does not generate a referral')}
+                          >
+                            ● Referred to another consultant, speciality or hospital
+                          </div>
                           {formState.consultantDetails && (
                             <div style={{ marginLeft: '1.5rem' }}>
                               {renderField('Consultant details', formState.consultantDetails)}
@@ -416,44 +421,13 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
             </div>
           </div>
 
-          {/* Fixed Bottom Section */}
-          <div style={{ borderTop: '0.2rem solid rgb(27, 110, 194)', marginTop: '0.2rem', paddingTop: '0.2rem', paddingBottom: '0.2rem', paddingLeft: 0, paddingRight: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div className="flex-1"></div>
-              <div
-                style={{
-                  display: 'inline-block',
-                  height: '2.0rem',
-                  lineHeight: '2rem',
-                  marginLeft: '0.2rem',
-                  padding: '0 0.5rem',
-                  border: '0.1rem solid silver',
-                  borderRadius: '0.4rem',
-                  backgroundColor: 'white',
-                  fontFamily: 'Roboto, sans-serif',
-                  fontSize: '1rem',
-                  fontWeight: 400,
-                  color: 'black'
-                }}
-              >
-                {username}
-              </div>
-              <FbButton
-                variant="primary"
-                onClick={onSwitchToEV}
-                style={{ marginLeft: '0.4rem' }}
-              >
-                Edit
-              </FbButton>
-              <FbButton
-                variant="primary"
-                onClick={onBack}
-                style={{ marginLeft: '0.4rem' }}
-              >
-                Back
-              </FbButton>
-            </div>
-          </div>
+          <FbRoVFooter
+            username={username}
+            reachedByRoVButton={reachedByRoVButton}
+            onSwitchToEV={onSwitchToEV}
+            onBack={onBack}
+          />
+          {renderTooltips(true)}
 
         </div>
       </div>
