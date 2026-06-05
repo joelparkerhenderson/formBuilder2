@@ -21,7 +21,7 @@ export const fbHeader: React.FC<fbHeaderProps> = ({
     <div
       className="fb-header-with-divider"
       style={{
-        backgroundColor: '#f8f9fa',
+        backgroundColor: 'white',
         borderBottom: '0.2rem solid #1b6ec2',
         padding: '0.4rem 0.8rem',
         boxSizing: 'border-box',

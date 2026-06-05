@@ -38,6 +38,8 @@ export interface WaitingListCardRoVProps {
   onSwitchToEV: () => void;
   onBack: () => void;
   reachedByRoVButton?: boolean;
+  superseded?: boolean;
+  onHistory?: (anchorRect: DOMRect) => void;
 }
 
 export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
@@ -50,7 +52,9 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
     username,
     onSwitchToEV,
     onBack,
-    reachedByRoVButton
+    reachedByRoVButton,
+    superseded,
+    onHistory
   } = props;
 
   const [activeSection, setActiveSection] = React.useState<string>('section-from');
@@ -158,7 +162,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
 
   return (
     <div className="bg-white h-screen max-h-screen overflow-hidden flex flex-col fb-waiting-list-rov-container" style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden', fontFamily: "'Roboto', sans-serif", fontWeight: 300, lineHeight: 1.1 }}>
-      <FbRoVHeader title="Waiting list card" patient={patient} formStatus={formStatus} />
+      <FbRoVHeader title="Waiting list card" patient={patient} formStatus={formStatus} superseded={superseded} />
 
       {/* Middle Grid with Left Sidebar and Scrollable Content */}
       <div className="flex-1 flex overflow-hidden">
@@ -653,6 +657,8 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
         reachedByRoVButton={reachedByRoVButton}
         onSwitchToEV={onSwitchToEV}
         onBack={onBack}
+        superseded={superseded}
+        onHistory={onHistory}
       />
 
     </div>

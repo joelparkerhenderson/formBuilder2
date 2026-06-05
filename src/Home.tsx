@@ -2,14 +2,13 @@ import React from 'react';
 import { Link } from 'react-router';
 import { fbUserName as FbUserName } from './components/fbUserName';
 
+const DONALD_DUCK_PATIENT_UUID = 'fd55880a-7ada-47a8-adbb-65850af6f7e2';
+
 export default function Home() {
-  const [username, setUsername] = React.useState<string>(() => {
-    return localStorage.getItem('fb_username') || 'demoUser';
-  });
+  const [username, setUsername] = React.useState<string>('demoUser');
 
   const handleUsernameChange = (val: string) => {
     setUsername(val);
-    localStorage.setItem('fb_username', val);
   };
 
   React.useEffect(() => {
@@ -80,7 +79,7 @@ export default function Home() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <Link
               to="/waiting-list"
-              state={{ patientUuid: '12345678-1234-1234-1234-123456789012', username }}
+              state={{ patientUuid: DONALD_DUCK_PATIENT_UUID, username }}
               style={{
                 display: 'block',
                 padding: '1rem',
@@ -101,7 +100,7 @@ export default function Home() {
             </Link>
             <Link
               to="/operation-note"
-              state={{ patientUuid: '12345678-1234-1234-1234-123456789012', username }}
+              state={{ patientUuid: DONALD_DUCK_PATIENT_UUID, username }}
               style={{
                 display: 'block',
                 padding: '1rem',
@@ -122,7 +121,7 @@ export default function Home() {
             </Link>
             <Link
               to="/outpatient-outcome"
-              state={{ patientUuid: '12345678-1234-1234-1234-123456789012', username }}
+              state={{ patientUuid: DONALD_DUCK_PATIENT_UUID, username }}
               style={{
                 display: 'block',
                 padding: '1rem',
@@ -140,6 +139,27 @@ export default function Home() {
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgb(27, 110, 194)'}
             >
               Outpatient outcome
+            </Link>
+            <Link
+              to="/treatment-summary"
+              state={{ patientUuid: DONALD_DUCK_PATIENT_UUID, username }}
+              style={{
+                display: 'block',
+                padding: '1rem',
+                backgroundColor: 'rgb(27, 110, 194)',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: '0.4rem',
+                fontSize: '1.1rem',
+                fontWeight: 500,
+                textAlign: 'center',
+                transition: 'background-color 0.2s',
+                fontFamily: "'Roboto', sans-serif"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgb(21, 88, 156)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgb(27, 110, 194)'}
+            >
+              Treatment summary
             </Link>
             <Link
               to="/patient-registry"
@@ -183,7 +203,7 @@ export default function Home() {
             </Link>
             <Link
               to="/patient-record"
-              state={{ patientUuid: '12345678-1234-1234-1234-123456789012', username }}
+              state={{ patientUuid: DONALD_DUCK_PATIENT_UUID, username }}
               style={{
                 display: 'block',
                 padding: '1rem',

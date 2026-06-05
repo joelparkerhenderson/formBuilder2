@@ -64,8 +64,9 @@ export const fbAuthControls: React.FC<AuthControlsProps> = ({
           }}
           onBlur={(e) => {
             e.target.style.backgroundColor = 'white';
+            const passwordAtBlur = e.currentTarget.value;
             // Set timeout to clear password after 2 seconds
-            if (password && handlePasswordChange) {
+            if (passwordAtBlur && handlePasswordChange) {
               passwordTimeoutRef.current = window.setTimeout(() => {
                 handlePasswordChange('');
                 passwordTimeoutRef.current = null;

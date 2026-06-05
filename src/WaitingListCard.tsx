@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from "react-router";
 import { specialities } from "./data/specialities";
 import { fbAddressograph as Addressograph } from "./components/fbAddressograph";
 import { fbAuthControls as AuthControls } from "./components/fbAuthControls";
-import { fbDateControl as DateControl } from "./components/fbDateControl";
+import { fbExactDate as ExactDate } from "./components/fbExactDate";
+import { fbPartialDate as PartialDate } from "./components/fbPartialDate";
 import { fbSCTProcedure as FbSCTProcedure } from "./components/fbSCTProcedure";
 import { fbMSISelector as MSISelector } from "./components/fbMSISelector";
 import { fbDraftPopup as DraftPopup } from "./components/fbDraftPopup";
@@ -26,6 +27,7 @@ import { fbRadio as FbRadio } from "./components/fbRadio";
 import { fbCheck as FbCheck } from "./components/fbCheck";
 import { fbGroup as FbGroup } from "./components/fbGroup";
 import { fbTableCell as FbTableCell } from "./components/fbTableCell";
+import { fbFormHistoryMenu as FbFormHistoryMenu, fbFormHistoryItem } from "./components/fbFormHistoryMenu";
 import {
   fbTable as FbTable,
   fbTableHeader as FbTableHeader,
@@ -34,21 +36,20 @@ import {
   fbTableHeaderCell as FbTableHeaderCell
 } from "./components/fbTable";
 import { fbLayout as FbLayout, SectionSpec, areAllSectionsComplete, getSectionStatus as getSectionStatusHelper } from "./components/fbLayout";
-import { createClient } from "@supabase/supabase-js";
-import { projectId, publicAnonKey } from "../utils/supabase/info";
+import { createClient } from './restClient';
 import { compareFormStatesObj, cleanArrayOfObjects } from "./utils/formStateUtils";
 import { generateUUID } from "./utils/formUtils";
-import { formatClinicalDate } from "./utils/dateFormat";
+import { clinicalDateToIsoDate, formatClinicalDate } from "./utils/dateFormat";
 import { useEditFormAutoExpandTextareas, useEditFormLabelEqualization } from "./utils/formLayoutEffects";
 import { appendRow, removeRowIfMultiple, updateRowById } from "./utils/rowState";
+import { useFormSaveFeedback } from "./utils/useFormSaveFeedback";
+import { loadFormHistory } from "./utils/formHistory";
 
-// Create Supabase client
-const supabase = createClient(
-  `https://${projectId}.supabase.co`,
-  publicAnonKey,
-);
+// Create REST client
+const restClient = createClient();
 
 const formatDate = formatClinicalDate;
+type SaveStatus = "final" | "draft";
 
 interface Patient {
   uuid: string;
@@ -68,6 +69,7 @@ interface Patient {
 interface InlineProps {
   patientUuid?: string;
   formUuid?: string;
+  formVersion?: number;
   openInRoV?: boolean;
   onClose: () => void;
   initialFormState?: Record<string, any>;
@@ -200,6 +202,15 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
 
   const [draggedRow, setDraggedRow] = React.useState<number | null>(null);
   const [formChanged, setFormChanged] = React.useState<boolean>(false);
+  const [selectedFormVersion, setSelectedFormVersion] = React.useState<number | undefined>(() => {
+    if (inlineProps?.formVersion) return inlineProps.formVersion;
+    return (location.state as { formVersion?: number } | null)?.formVersion;
+  });
+  const [currentFormVersion, setCurrentFormVersion] = React.useState<number | null>(null);
+  const [latestFormVersion, setLatestFormVersion] = React.useState<number | null>(null);
+  const [formHistory, setFormHistory] = React.useState<fbFormHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = React.useState<boolean>(false);
+  const [historyAnchorRect, setHistoryAnchorRect] = React.useState<DOMRect | null>(null);
   const [finalChecked, setFinalChecked] = React.useState<boolean>(false);
   const [highlySensitive, setHighlySensitive] = React.useState<boolean>(false);
 
@@ -221,11 +232,8 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
     return state?.openInRoV || false;
   });
   const [clickedRoVButton, setClickedRoVButton] = React.useState<boolean>(false);
-  const [password, setPassword] = React.useState<string>("");
   const [username, setUsername] = React.useState<string>("demoUser");
   const [showDraftPopup, setShowDraftPopup] = React.useState<boolean>(false);
-  const [showPasswordPopup, setShowPasswordPopup] =
-    React.useState<boolean>(false);
   const [showCancelPopup, setShowCancelPopup] = React.useState<boolean>(false);
   const [openedFromPatientRecord, setOpenedFromPatientRecord] =
     React.useState<boolean>(() => {
@@ -237,7 +245,21 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
   const [activeSection, setActiveSection] =
     React.useState<string>("section-from");
   const viewChangeCounter = React.useRef<number>(0);
-  const passwordTimeoutRef = React.useRef<number | null>(null);
+  const {
+    password,
+    setPassword,
+    passwordTimeoutRef,
+    showPasswordPopup,
+    isSaving,
+    requestSave,
+    confirmPassword,
+    cancelPassword,
+    renderSaveFeedbackPopups,
+  } = useFormSaveFeedback<SaveStatus>({
+    onSave: saveWaitingListCard,
+    onSaved: navigateBack,
+    onError: () => setFormChanged(true),
+  });
 
   const handleFieldChange = (fieldName: string, value: any, coded?: boolean) => {
     setFormState((prev) => {
@@ -335,10 +357,12 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
     const state = inlineProps ? {
       patientUuid: inlineProps.patientUuid,
       formUuid: inlineProps.formUuid,
+      formVersion: selectedFormVersion,
       openInRoV: inlineProps.openInRoV,
       username: username
     } : (location.state as {
       formUuid?: string;
+      formVersion?: number;
       patientUuid?: string;
       openInRoV?: boolean;
       username?: string;
@@ -399,7 +423,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
       try {
         setLoadingData(true);
 
-        const { data: patientData, error: patientError } = await supabase
+        const { data: patientData, error: patientError } = await restClient
           .from("patients")
           .select("*")
           .eq("uuid", state.patientUuid)
@@ -414,19 +438,29 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         }
 
         if (state.formUuid) {
-          const { data: formData, error: formError } = await supabase
+          let formQuery = restClient
             .from("waiting_list_cards")
             .select("*")
             .eq("uuid", state.formUuid)
             .order("version", { ascending: false })
-            .limit(1)
-            .single();
+            .limit(1);
+
+          if (state.formVersion !== undefined) {
+            formQuery = formQuery.eq("version", state.formVersion);
+          }
+
+          const { data: formData, error: formError } = await formQuery.single();
 
           if (formError) {
             console.error("Error loading form:", formError);
             alert(`Error loading waiting list card: ${formError.message}`);
             navigateBack();
           } else if (formData?.form_data) {
+            const historyState = await loadFormHistory(restClient, "waiting_list_cards", state.formUuid, formData.version ?? null);
+            setCurrentFormVersion(historyState.currentVersion);
+            setLatestFormVersion(historyState.latestVersion);
+            setFormHistory(historyState.history);
+
             const fState = { ...formData.form_data };
             const procs = (formData.form_data.procedures || [
               { id: 1, side: "", procedure: "", additionalInfo: "" },
@@ -472,6 +506,9 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
             navigateBack();
           }
         } else {
+          setCurrentFormVersion(null);
+          setLatestFormVersion(null);
+          setFormHistory([]);
           setOpenedFromPatientRecord(!!(state && typeof state.openInRoV !== "undefined"));
           applyNewFormDefaults();
         }
@@ -484,7 +521,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
     };
 
     loadData();
-  }, [location.state, inlineProps]);
+  }, [location.state, inlineProps, selectedFormVersion]);
 
 
 
@@ -506,22 +543,15 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
       return;
     }
 
-    if (!password) {
-      setShowPasswordPopup(true);
-      return;
-    }
+    requestSave("final");
+  };
 
-    if (passwordTimeoutRef.current !== null) {
-      window.clearTimeout(passwordTimeoutRef.current);
-      passwordTimeoutRef.current = null;
-    }
-
-    try {
+  async function saveWaitingListCard(formStatus: SaveStatus, passwordToSave: string) {
       let formUuid = formState.uuid;
       let version = 0;
 
       if (formUuid) {
-        const { data: existingVersions, error: versionError } = await supabase
+        const { data: existingVersions, error: versionError } = await restClient
           .from("waiting_list_cards")
           .select("version")
           .eq("uuid", formUuid)
@@ -542,14 +572,14 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         uuid: formUuid,
         procedures,
         anticoagChecked,
-        password: password,
+        password: passwordToSave,
         username: username,
-        finalChecked: finalChecked,
+        finalChecked: formStatus === "final",
         highlySensitive: highlySensitive,
       };
 
       const eventDate =
-        formState.dateListed || formState.date || new Date().toISOString();
+        clinicalDateToIsoDate(formState.dateListed) || new Date().toISOString();
 
       const patientUuidForSave =
         patient?.uuid ||
@@ -557,28 +587,29 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         (location.state as { patientUuid?: string } | null)?.patientUuid ||
         null;
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await restClient
         .from("waiting_list_cards")
         .insert({
           uuid: formUuid,
           version: version,
           patient_uuid: patientUuidForSave,
           event_datetime: eventDate,
-          form_status: "final",
+          form_status: formStatus,
           form_data: formDataToSave,
         });
 
       if (insertError) throw insertError;
 
-      const { error: indexError } = await supabase.from("forms_index").insert({
+      const { error: indexError } = await restClient.from("forms_index").insert({
         form_uuid: formUuid,
         form_version: version,
         form_type: "waiting_list_card",
         patient_uuid: patientUuidForSave,
         event_datetime: eventDate,
         document_datetime: new Date().toISOString(),
-        form_status: "final",
+        form_status: formStatus,
         event_or_document: "Document",
+        details: username,
       });
 
       if (indexError) throw indexError;
@@ -588,143 +619,26 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         procedures: [...procedures],
         anticoagChecked: { ...anticoagChecked },
         highlySensitive: highlySensitive,
-        finalChecked: true,
+        finalChecked: formStatus === "final",
       });
 
       setFormChanged(false);
-      setPassword("");
 
       inlineProps?.onSaved?.({
         uuid: formUuid,
         formState: { ...formDataToSave, uuid: formUuid },
         procedures: [...procedures],
       });
-
-      navigateBack();
-    } catch (error) {
-      console.error("Error saving form:", error);
-      alert("Error saving form: " + (error as Error).message);
-    }
-  };
+  }
 
   const handleSaveAsDraft = async () => {
     setShowDraftPopup(false);
 
-    if (!password) {
-      setShowPasswordPopup(true);
-      return;
-    }
-
-    if (passwordTimeoutRef.current !== null) {
-      window.clearTimeout(passwordTimeoutRef.current);
-      passwordTimeoutRef.current = null;
-    }
-
-    try {
-      let formUuid = formState.uuid;
-      let version = 0;
-
-      if (formUuid) {
-        const { data: existingVersions, error: versionError } = await supabase
-          .from("waiting_list_cards")
-          .select("version")
-          .eq("uuid", formUuid)
-          .order("version", { ascending: false })
-          .limit(1);
-
-        if (versionError) throw versionError;
-
-        if (existingVersions && existingVersions.length > 0) {
-          version = existingVersions[0].version + 1;
-        }
-      } else {
-        formUuid = generateUUID();
-      }
-
-      const formDataToSave = {
-        ...formState,
-        uuid: formUuid,
-        procedures,
-        anticoagChecked,
-        password: password,
-        username: username,
-        finalChecked: finalChecked,
-        highlySensitive: highlySensitive,
-      };
-
-      const eventDate =
-        formState.dateListed || formState.date || new Date().toISOString();
-
-      const patientUuidForSave =
-        patient?.uuid ||
-        inlineProps?.patientUuid ||
-        (location.state as { patientUuid?: string } | null)?.patientUuid ||
-        null;
-
-      const { error: insertError } = await supabase
-        .from("waiting_list_cards")
-        .insert({
-          uuid: formUuid,
-          version: version,
-          patient_uuid: patientUuidForSave,
-          event_datetime: eventDate,
-          form_status: "draft",
-          form_data: formDataToSave,
-        });
-
-      if (insertError) throw insertError;
-
-      const { error: indexError } = await supabase.from("forms_index").insert({
-        form_uuid: formUuid,
-        form_version: version,
-        form_type: "waiting_list_card",
-        patient_uuid: patientUuidForSave,
-        event_datetime: eventDate,
-        document_datetime: new Date().toISOString(),
-        form_status: "draft",
-        event_or_document: "Document",
-      });
-
-      if (indexError) throw indexError;
-
-      setInitialSnapshot({
-        formState: { ...formState, uuid: formUuid },
-        procedures: [...procedures],
-        anticoagChecked: { ...anticoagChecked },
-        highlySensitive: highlySensitive,
-        finalChecked: finalChecked,
-      });
-
-      setFormChanged(false);
-      setPassword("");
-
-      inlineProps?.onSaved?.({
-        uuid: formUuid,
-        formState: { ...formDataToSave, uuid: formUuid },
-        procedures: [...procedures],
-      });
-
-      navigateBack();
-    } catch (error) {
-      console.error("Error saving draft:", error);
-      alert("Error saving draft: " + (error as Error).message);
-    }
+    requestSave("draft");
   };
 
   const handlePasswordConfirm = (pwd: string) => {
-    setPassword(pwd);
-    setShowPasswordPopup(false);
-
-    if (passwordTimeoutRef.current !== null) {
-      window.clearTimeout(passwordTimeoutRef.current);
-    }
-
-    passwordTimeoutRef.current = window.setTimeout(
-      () => {
-        setPassword("");
-      },
-      10 * 60 * 1000,
-    ); // 10 minutes timeout
+    confirmPassword(pwd);
   };
 
   // Procedure table functions
@@ -969,8 +883,13 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
             setClickedRoVButton(false);
             setIsReadOnlyView(false);
           }}
-          onBack={navigateBack}
+          onBack={currentFormVersion !== null && latestFormVersion !== null && currentFormVersion < latestFormVersion ? () => setSelectedFormVersion(undefined) : navigateBack}
           reachedByRoVButton={clickedRoVButton}
+          superseded={currentFormVersion !== null && latestFormVersion !== null && currentFormVersion < latestFormVersion}
+          onHistory={(anchorRect) => {
+            setHistoryAnchorRect(anchorRect);
+            setShowHistory(true);
+          }}
         />
       ) : (
         <FbLayout
@@ -1031,6 +950,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
               onPasswordChange={setPassword}
               passwordTimeoutRef={passwordTimeoutRef}
               formChanged={formChanged}
+              isSaving={isSaving}
               onCancel={() => {
                 if (formChanged) {
                   setShowCancelPopup(true);
@@ -1112,7 +1032,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                     {/* Row 1 */}
                     <FbQuestionRow cols={3}>
                       <FbQuestion label="Date listed" required={true}>
-                        <DateControl
+                        <ExactDate
                           key={`dateListed-${viewChangeCounter.current}`}
                           name="dateListed"
                           value={formState.dateListed || ""}
@@ -1818,7 +1738,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                       />
 
                       <FbQuestion label="Estimated date of admission">
-                        <DateControl
+                        <PartialDate
                           key={`estimatedAdmission-${viewChangeCounter.current}`}
                           name="estimatedAdmission"
                           value={formState.estimatedAdmission || ""}
@@ -2027,6 +1947,19 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         </FbLayout>
       )}
 
+      {showHistory && (
+        <FbFormHistoryMenu
+          history={formHistory}
+          anchorRect={historyAnchorRect}
+          onViewVersion={(version) => {
+            setShowHistory(false);
+            setSelectedFormVersion(version);
+            setIsReadOnlyView(true);
+          }}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
+
       {/* Popups */}
       {showDraftPopup && (
         <DraftPopup
@@ -2038,9 +1971,11 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
       {showPasswordPopup && (
         <PasswordPopup
           onConfirm={handlePasswordConfirm}
-          onCancel={() => setShowPasswordPopup(false)}
+          onCancel={cancelPassword}
         />
       )}
+
+      {renderSaveFeedbackPopups()}
 
       {showCancelPopup && (
         <CancelPopup

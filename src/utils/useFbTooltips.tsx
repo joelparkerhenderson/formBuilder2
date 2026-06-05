@@ -17,12 +17,89 @@ interface FbTooltipRequest {
   text: string;
   element: HTMLElement;
   offsetRight?: boolean;
+  showClose?: boolean;
+  placeBelowLabel?: boolean;
+  horizontalAnchorElement?: HTMLElement;
+  horizontalOffsetPx?: number;
 }
 
 export const useFbTooltips = () => {
   const [activeTooltips, setActiveTooltips] = React.useState<FbTooltipState[]>([]);
   const tooltipTimeoutRef = React.useRef<number | null>(null);
   const tooltipRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const tooltipElementIds = React.useRef(new WeakMap<HTMLElement, number>());
+  const nextTooltipElementId = React.useRef(1);
+
+  const tooltipStateFromRequest = ({
+    text,
+    element,
+    offsetRight = false,
+    showClose = true,
+    placeBelowLabel = false,
+    horizontalAnchorElement,
+    horizontalOffsetPx = 0,
+  }: FbTooltipRequest): FbTooltipState => ({
+    text,
+    x: 0,
+    y: 0,
+    targetElement: element,
+    offsetRight,
+    showClose,
+    placeBelowLabel,
+    horizontalAnchorElement,
+    horizontalOffsetPx,
+  });
+
+  const getLabelText = (element: Element | null) => {
+    return element?.textContent?.replace(/\s+/g, ' ').trim() || '';
+  };
+
+  const getAncestorTooltipRequests = (element: HTMLElement): FbTooltipRequest[] => {
+    const requests: FbTooltipRequest[] = [];
+    const questionContainers = Array.from(element.closest('.fb-section-block')?.querySelectorAll('.fb-question-container') || [])
+      .filter((container) => container instanceof HTMLElement && container.contains(element)) as HTMLElement[];
+
+    questionContainers.forEach((container) => {
+      const label = Array.from(container.children).find((child) => child instanceof HTMLLabelElement);
+      if (label instanceof HTMLElement) {
+        const text = getLabelText(label);
+        if (text) requests.push({ text, element: label, showClose: false });
+      }
+    });
+
+    const section = element.closest('.fb-section-block');
+    const sectionHeading = section?.querySelector('h3');
+    if (sectionHeading instanceof HTMLElement) {
+      const text = getLabelText(sectionHeading);
+      if (text) requests.push({ text, element: sectionHeading, showClose: false });
+    }
+
+    return requests;
+  };
+
+  const dedupeTooltipRequests = (requests: FbTooltipRequest[]) => {
+    const seen = new Set<string>();
+    return requests.filter((request) => {
+      let elementId = tooltipElementIds.current.get(request.element);
+      if (!elementId) {
+        elementId = nextTooltipElementId.current;
+        nextTooltipElementId.current += 1;
+        tooltipElementIds.current.set(request.element, elementId);
+      }
+      const key = `${request.text}::${elementId}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const showTooltipRequests = (requests: FbTooltipRequest[]) => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    setActiveTooltips(dedupeTooltipRequests(requests).map(tooltipStateFromRequest));
+  };
 
   const showTooltip = (
     text: string,
@@ -30,27 +107,17 @@ export const useFbTooltips = () => {
     offsetRight: boolean = false,
     showClose: boolean = true
   ) => {
-    if (tooltipTimeoutRef.current) {
-      clearTimeout(tooltipTimeoutRef.current);
-      tooltipTimeoutRef.current = null;
-    }
-    setActiveTooltips([{ text, x: 0, y: 0, targetElement: element, offsetRight, showClose, placeBelowLabel: false }]);
+    showTooltipRequests([
+      { text, element, offsetRight, showClose },
+      ...getAncestorTooltipRequests(element),
+    ]);
   };
 
   const showMultipleTooltips = (tooltips: FbTooltipRequest[]) => {
-    if (tooltipTimeoutRef.current) {
-      clearTimeout(tooltipTimeoutRef.current);
-      tooltipTimeoutRef.current = null;
-    }
-    setActiveTooltips(tooltips.map(({ text, element, offsetRight = false }) => ({
-      text,
-      x: 0,
-      y: 0,
-      targetElement: element,
-      offsetRight,
-      showClose: true,
-      placeBelowLabel: false,
-    })));
+    showTooltipRequests(tooltips.flatMap((tooltip) => [
+      tooltip,
+      ...getAncestorTooltipRequests(tooltip.element),
+    ]));
   };
 
   const isVisibleElement = (element: Element | null) => {
@@ -118,17 +185,18 @@ export const useFbTooltips = () => {
       ? inputAnchor
       : undefined;
 
-    setActiveTooltips([{
-      text,
-      x: 0,
-      y: 0,
-      targetElement: anchor,
-      offsetRight: false,
-      showClose: !belowLabel,
-      placeBelowLabel,
-      horizontalAnchorElement,
-      horizontalOffsetPx: horizontalAnchorElement ? 32 : 0,
-    }]);
+    showTooltipRequests([
+      {
+        text,
+        element: anchor,
+        offsetRight: false,
+        showClose: !belowLabel,
+        placeBelowLabel,
+        horizontalAnchorElement,
+        horizontalOffsetPx: horizontalAnchorElement ? 32 : 0,
+      },
+      ...getAncestorTooltipRequests(element),
+    ]);
   };
 
   React.useLayoutEffect(() => {

@@ -42,6 +42,8 @@ interface OutpatientOutcomeRoVProps {
   onSwitchToEV: () => void;
   onBack: () => void;
   reachedByRoVButton?: boolean;
+  superseded?: boolean;
+  onHistory?: (anchorRect: DOMRect) => void;
   onOpenLinkedWaitingListCard?: () => void;
 }
 
@@ -69,6 +71,8 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
     onSwitchToEV,
     onBack,
     reachedByRoVButton,
+    superseded,
+    onHistory,
     onOpenLinkedWaitingListCard
   } = props;
   const { showTooltip, hideTooltip, renderTooltips } = useFbTooltips();
@@ -147,7 +151,7 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
   return (
     <div className="bg-white flex flex-col h-screen" style={{ height: '100vh', fontWeight: 300, lineHeight: 1.1 }}>
         <div className="flex flex-col h-full">
-          <FbRoVHeader title="Outpatient outcome" patient={patient} formStatus={formStatus} />
+          <FbRoVHeader title="Outpatient outcome" patient={patient} formStatus={formStatus} superseded={superseded} />
 
           {/* Scrollable Form Content */}
           <div className="flex-1 overflow-y-auto" style={{ scrollBehavior: 'smooth', minHeight: 0 }}>
@@ -426,6 +430,8 @@ export function OutpatientOutcomeRoV(props: OutpatientOutcomeRoVProps) {
             reachedByRoVButton={reachedByRoVButton}
             onSwitchToEV={onSwitchToEV}
             onBack={onBack}
+            superseded={superseded}
+            onHistory={onHistory}
           />
           {renderTooltips(true)}
 

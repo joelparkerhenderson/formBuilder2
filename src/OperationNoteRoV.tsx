@@ -45,6 +45,8 @@ interface OperationNoteRoVProps {
   onSwitchToEV: () => void;
   onBack: () => void;
   reachedByRoVButton?: boolean;
+  superseded?: boolean;
+  onHistory?: (anchorRect: DOMRect) => void;
 }
 
 export function OperationNoteRoV(props: OperationNoteRoVProps) {
@@ -68,7 +70,9 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
     openedFromPatientRecord,
     onSwitchToEV,
     onBack,
-    reachedByRoVButton
+    reachedByRoVButton,
+    superseded,
+    onHistory
   } = props;
 
   // Track active section based on scroll position
@@ -104,7 +108,7 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
   return (
     <div className="bg-white flex flex-col h-screen" style={{ height: '100vh', fontWeight: 300, lineHeight: 1.1 }}>
         <div className="flex flex-col h-full">
-          <FbRoVHeader title="Operation note" patient={patient} formStatus={formStatus} />
+          <FbRoVHeader title="Operation note" patient={patient} formStatus={formStatus} superseded={superseded} />
 
           {/* Middle Section - Nav Panel and Scrollable Content */}
           <div className="flex-1 flex overflow-hidden">
@@ -378,6 +382,8 @@ export function OperationNoteRoV(props: OperationNoteRoVProps) {
             reachedByRoVButton={reachedByRoVButton}
             onSwitchToEV={onSwitchToEV}
             onBack={onBack}
+            superseded={superseded}
+            onHistory={onHistory}
           />
         </div>
       </div>

@@ -3,14 +3,10 @@ import { useNavigate } from 'react-router';
 import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbButton as FbButton } from './components/fbButton';
 import { fbUserName as FbUserName } from './components/fbUserName';
-import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { createClient } from './restClient';
 import PatientRecord from './PatientRecord';
 
-const supabase = createClient(
-  `https://${projectId}.supabase.co`,
-  publicAnonKey
-);
+const restClient = createClient();
 
 interface Patient {
   uuid: string;
@@ -33,15 +29,10 @@ export default function PatientRegistry() {
   const [patients, setPatients] = React.useState<Patient[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [activePatientUuid, setActivePatientUuid] = React.useState<string | null>(null);
-
-  // Custom userName control state with localStorage persistence
-  const [username, setUsername] = React.useState<string>(() => {
-    return localStorage.getItem('fb_username') || 'demoUser';
-  });
+  const [username, setUsername] = React.useState<string>('demoUser');
 
   const handleUsernameChange = (val: string) => {
     setUsername(val);
-    localStorage.setItem('fb_username', val);
   };
 
   React.useEffect(() => {
@@ -55,7 +46,7 @@ export default function PatientRegistry() {
 
       // Select distinct latest versions of patients using our mock view
       // Ordered by surname (ascending), then forenames (ascending), then date_of_birth (ascending)
-      const { data, error } = await supabase
+      const { data, error } = await restClient
         .from('patients_current')
         .select('*')
         .order('surname', { ascending: true })

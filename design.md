@@ -1,48 +1,35 @@
 # formBuilder2
 
-This document details the complete design specification, styling rules, behavioral policies, state engines, database schemas, and visual paradigms for the clinical-form editing environment. It contains all information required to regenerate the application from scratch without additional prompting.
+formBuilder2 is a re-implentation of the original shadesOfPale formBuilder form design and forms engine using techniques and technologies that may be easier to reproduce.
+
+The shadesOfPale formDesign form design is the reference design for eForms in the WCP and associated applications.
+
+This document is a manifestation of the design principles and is intended to include a compelte description of the functionality, layouts and styling required as is. It should contain enough information for both humans and LLMs to re-create the design and regenerate the application from scratch without additional prompting.
 
 ---
 
 ## Document conventions
 
-The document uses standard prefix tags and variables to represent repeated design elements:
-- `fbXxx` represents a custom React component or visual framework element.
-- `fbRed` represents the deep red colour value `color: #d50000;`.
-- `fbGreen` represents the clinical green colour value `color: #008000;`.
-- `fbBlue` represents the royal blue theme colour value `color: #1b6ec2;`.
-- `fbActiveLighterYellow` represents the light highlighting colour value `color: #ffffcc;`.
-- `fbActiveDarkerYellow` represents the rich hover highlighting and active focus colour value `color: #fee715;`.
-- `fbSilver` represents the standard border colour value `color: silver;` (hex `#c0c0c0`).
-- `fbOrange` represents the uncoded warning indicator colour value `color: #fd8a10;` or `color: #f59e0b;`.
-- `fbLightBlue` represents the tooltip and meta visual header background colour value `color: #8cd2e7;`.
-- `fbWhite` represents the baseline background colour value `color: #ffffff;`.
-- `fbBlack` represents the text and dark alignment colour value `color: #000000;`.
-- `fbLayoutMain` represents the global application wrapper structure.
+'fbXxx' denotes a standardised part of the design which should be described in detail somewhere in this document. There is often a corresponding React component, CSS class or Typescript constant.
 
 ---
 
 ## Document overview
-
-The documentation is organized into the following direct modules:
-- Introductory paragraph
-- Document conventions
-- Document overview
 - Language rules
 - Colours and typography
-- Description of features common to all forms
-- The RoV "rules"
-- List of the custom components
-- A description of navigation through the application
-- A description of each form
-- The algorithms and javascript fragments used to provide the features common to all forms
-- Detailed description of the complex custom controls
-- The CSS rules and declarations
-- Brief technical overview of the whole app
-- List of compile and runtime dependencies
-- Brief description of compile and deploy steps
-- The database tables, described using SQL DDL
-- Templates for the SQL Queries used by the app
+- Features common to all forms and pages
+- Read-only views
+- Custom components
+- Navigation
+- Forms and pages
+- Algorithms (including javascript fragments) used to provide  features common to all forms and pages
+- Complex custom controls
+- CSS rules and declarations
+- Technical overview of the application
+- Compile and runtime dependencies
+- Compile and deploy steps
+- Database schema
+- SQL queries
 
 ---
 
@@ -62,41 +49,62 @@ The documentation is organized into the following direct modules:
 - NHS addressograph cards are explicitly excluded from Roboto enforcement and use Arial/Helvetica to match the printed-card style.
 - The primary application theme is high-contrast clinical light mode.
 - Standard borders use `border: 0.1rem solid silver;` and `borderRadius: 0.4rem;`.
+- All forms use `backgroundColor: white;` for the form shell, central workspace, header, and footer. Coloured fills are reserved for section title bars, status badges, buttons, warnings, active highlights, and popups.
 - The following visual color constants are configured:
-  - `fbRed`: `#d50000`
-  - `fbGreen`: `#008000`
-  - `fbBlue`: `#1b6ec2`
-  - `fbActiveLighterYellow`: `#ffffcc`
-  - `fbActiveDarkerYellow`: `#fee715`
-  - `fbSilver`: `#c0c0c0`
-  - `fbWhite`: `#ffffff`
-  - `fbBlack`: `#000000`
-  - `fbOrange`: `#fd8a10`
-  - `fbLightBlue`: `#8cd2e7`
+    - `fbRed`: `#d50000`
+    - `fbGreen`: `#008000`
+    - `fbBlue`: `#1b6ec2`
+    - `fbActiveLighterYellow`: `#ffffcc`
+    - `fbActiveDarkerYellow`: `#fee715`
+    - `fbSilver`: `#c0c0c0`
+    - `fbWhite`: `#ffffff`
+    - `fbBlack`: `#000000`
+    - `fbOrange`: `#fd8a10`
+    - `fbLightBlue`: `#8cd2e7`
+    - `fbFaintGreen`: `#C5E1A5`
 
 ---
 
-## Description of features common to all forms
+## Icons
+
+Material Icons render as ligature text inside elements with `className="material-icons"` or `className="material-icons-outlined"`. HTML renderers that load the Material Icons stylesheet display the glyphs directly; renderers without that font still show the ligature name as readable fallback text.
+
+| Icon | Rendered HTML | Used for |
+| :--- | :--- | :--- |
+| `check_circle_outline` | <span class="material-icons" aria-hidden="true">check_circle_outline</span> | Coded / confirmed status indicators in MSI, SNOMED CT, and RoV fields. |
+| `warning` | <span class="material-icons" aria-hidden="true">warning</span> | Not-coded / unconfirmed status indicators in MSI, SNOMED CT, and RoV fields. |
+| `swap_vertical_circle` | <span class="material-icons" aria-hidden="true">swap_vertical_circle</span> | Drag handles in procedure, diagnosis, and specimen tables. |
+| `highlight_off` | <span class="material-icons" aria-hidden="true">highlight_off</span> | Delete/remove row actions in editable clinical tables. |
+
+---
+
+## Features common to all forms
 
 ### General layout
 - All forms are nested inside the `fbLayout` global page wrapper component.
 - The scrolling behaviour uses `overflowY: 'auto';` on a main central workspace container.
 - The top header consists of `fbHeader`, containing the form title on the left and `fbAddressograph` on the right.
-- The header uses `borderBottom: "0.2rem solid " + fbBlue;` with a subtle grey `backgroundColor: '#f8f9fa';`.
+- The header uses `borderBottom: "0.2rem solid " + fbBlue;` with `backgroundColor: white;`.
 - The form footer consists of `fbBottomControlsRow` at the absolute bottom of the viewport.
-- The footer uses `borderTop: "0.2rem solid " + fbBlue;` with a solid white `backgroundColor: '#ffffff';`.
+- The footer uses `borderTop: "0.2rem solid " + fbBlue;` with `backgroundColor: white;`.
 - The sidebar navigation panel is visible in both edit and read-only views on the left-hand side.
 - Visual width of the navigation panel is constrained to `width: 16rem;` (`w-64`).
 - If the viewport is very narrow (width `< 768px`), the navigation panel is hidden.
+- Sidebar section names and counter boxes are buttons that smooth-scroll the central scroll panel to the matching section; they must not use plain hash anchors that can close inline forms or route away.
+- Editable-form sidebar section-name buttons use white text on `fbBlue`; complete counter boxes display a check mark and incomplete counter boxes display the incomplete count.
+- Editable-form sidebar section-name and counter buttons deliberately leave a visible white grid gap between the section name and the fixed-width counter box. The normal form nav grid uses `display: "grid"`, `alignItems: "stretch"`, `columnGap: "0.3rem"`, and `rowGap: "0.1rem"`; the earlier `0.15rem` column gap is too narrow and visually swallows the separator. Counter boxes should stretch to the same rendered height as the section-name button in their row.
+- Sidebar active indicators render exactly two triangles: one left-pointing and one right-pointing. Source code must use Unicode escapes `'\u25c0\u25b6'` rather than pasted glyphs, because pasted triangles have previously been saved as mojibake and made Controller nav rows too tall.
+- The central form workspace uses the full available width of its panel rather than imposing a redundant max-width wrapper.
+- Normal edit-form central workspace padding is `0.8rem 0 4rem 0`; the left and right padding values are deliberately zero to avoid redundant white space around the main form content.
 - Desktop rows stacked in grids collapse into single-column layouts on narrow screens.
 - All dynamic label heights are equalized across columns on desktop viewports and reset on mobile viewports.
-- Edit-form label equalization and textarea auto-expansion are implemented by `/src/utils/formLayoutEffects.ts`; the shared hooks deliberately preserve the desktop label-alignment behaviour while resetting heights on mobile to avoid redundant vertical whitespace.
+- Edit-form label equalization and textarea auto-expansion are implemented by `/src/utils/formLayoutEffects.ts`; the shared hooks deliberately preserve the desktop label-alignment behaviour while resetting heights on mobile to avoid redundant vertical whitespace. The label equalisation row scan includes normal `.questions-row`/`.grid` rows and Controller `.fb-designer-question-row` flex rows.
 - Simple textarea input resizing also uses `/src/utils/formLayoutEffects.ts` (`resizeTextareaToContent`) so manual `onInput` handlers match the automatic edit-form textarea behaviour.
 - Tooltip state, delayed hide behaviour, screen-position calculation, and rendering are implemented by `/src/utils/useFbTooltips.tsx`; Operation Note, Outpatient Outcome, and relevant read-only views share this hook while preserving their existing tooltip triggers.
 - Default clinical date display strings use `/src/utils/dateFormat.ts` (`formatClinicalDate`) for the `dd-Mmm-yyyy` format used when initializing form dates.
 
-### Overview of sections, section headers, question rows, question row cells, questions and subquestions
-- Clinical forms are partitioned into multiple high-level container components `fbSection`.
+### Sections, rows, questions and subquestions
+- Forms are partitioned into multiple high-level container components `fbSection`.
 - Each `fbSection` container includes a dedicated section header, implemented via the `fbSectionHeader` component displaying a high-contrast visual title bar, followed by a list of child controls.
 - Inside each `fbSection`, the child content is structured as a list of `fbQuestionRow` containers (or sometimes just individual questions that are not grouped inside a row).
 - Row elements use the `fbQuestionRow` layout blocks to arrange questions horizontally using CSS grid.
@@ -105,19 +113,20 @@ The documentation is organized into the following direct modules:
 - Individual fields are wrapped in `fbQuestion`, which provides visual labels and structured padding.
 - Hidden display-conditional subquestions render recursively nested inline beneath selected parent triggers inside matching sections.
 
-### List of question types with names of associated custom controls
-- Standard text input: `fbTextInput` (alphanumeric text).
-- Multi-line description text blocks: `fbTextArea` (auto-expanding inputs).
-- Fixed option selectors: `fbDropdown` (native drop-downs).
-- Quantity fields: `fbNumberInput` (input with side units).
-- Single choice lists: `fbRadio` (radio select buttons).
-- Multi-choice items: `fbCheck` (checkbox selectors).
-- Date values: `fbDateControl` (date off-set controller).
-- Terminology procedure tags: `fbSCTProcedure` (SNOMED CT autocomplete wrapper around `fbSCTSelector`).
-- Terminology diagnosis tags: `fbSCTDiagnosis` (SNOMED CT diagnosis autocomplete wrapper around `fbSCTSelector`).
-- Clinical staff index tags: `fbMSISelector` (hospital clinician autocomplete).
+### Question types
+- `fbTextInput`: Standard alphanumeric text input.
+- `fbTextArea`: Multi-line, auto-expanding description text block.
+- `fbDropdown`: Fixed-option native dropdown selector.
+- `fbNumberInput`: Quantity input with side units.
+- `fbRadio`: Single-choice radio selector.
+- `fbCheck`: Multi-choice checkbox selector.
+- `fbPartialDate`: Date control that accepts exact, month-only, or year-only dates.
+- `fbExactDate`: Date control that accepts only complete dates and stores database-facing exact dates.
+- `fbSCTProcedure`: SNOMED CT procedure autocomplete wrapper around `fbSCTSelector`.
+- `fbSCTDiagnosis`: SNOMED CT diagnosis autocomplete wrapper around `fbSCTSelector`.
+- `fbMSISelector`: Hospital clinician autocomplete.
 
-### Description of the required indicator for controls with and without labels
+### Required (mandatory field) indicator
 - Handled centrally by `fbQuestion`, `fbTextInput`, `fbTextArea`, and `fbMSISelector` components.
 - If the target question field is required, it displays a red asterisk using `color: fbRed;` (`*`).
 - If a label exists, the asterisk is grouped with the last word of the label string in a single word-wrap container (`whiteSpace: 'nowrap';`).
@@ -125,25 +134,26 @@ The documentation is organized into the following direct modules:
 - If there is no label (e.g., hidden nested subquestions), the asterisk is displayed immediately to the right of the control.
 - In unlabelled scenarios, the indicator is top-aligned with the control with zero line breaks.
 
-### Description of subquestions and their behaviour
+### Subquestions
 - There is no standalone `fbSubquestion` component. Conditional subquestions are rendered by `fbRadio` and `fbCheck` when they receive `children`; those components emit the `fb-subquestion-wrapper` and `fb-subquestion` class hooks used by highlighting, label equalisation, and tooltip placement.
 - Visually aligned under parent options with deep indentation style `paddingLeft: '1.5rem';` (`pl-6`).
 - Fully enclosed inside conditional React renders `{parentValue === 'yes' && (...) }` to prevent initial pre-flashes.
 - Stored inputs of subquestions are explicitly reset to empty strings if parent values are changed.
 - Inputs utilize a direct two-way binding pattern linked to the active parent state.
 
-### Description of how textareas behave - autoexpand, line break preservation
+### Mulit-line text input 
 - All multi-line `fbTextArea` components initialize with standard heights `rows={2}`.
+- The default maximum width of an `fbTextArea` is `37rem`; when a form specification marks the textarea as full width, it occupies the full width of its containing component instead.
 - Textareas dynamically expand heights based on character volume tracking `textarea.scrollHeight`.
 - Line breaks (`\n`) and returns (`\r`) in user descriptions are preserved.
 - When rendered inside read-only views, fields are styled with `whiteSpace: 'pre-line';` to retain formatting.
 
-### Description of peculiarities of any other controls
+### 'fbInputWithUnits'
 - Quantity-with-unit inputs use a `.fb-input-with-units` wrapper.
 - Container borders override standard elements; internal state input elements suppress native outlines (`border: none;`).
 - Normalization ensures a simple vertical separator divider is drawn between quantity values and text unit blocks.
 
-### Overview of MSISelector, SCTProcedure and SCTDiagnosis and any other complex controls
+### 'fbMSISelector', 'fbSCTProcedure' and 'fbSCTDiagnosis'
 - Connect to HTTP endpoints on shadesofpale.net.
 - Autocomplete search text is processed securely with base auth (`dhcw:dhcw`).
 - Dropdowns show results with a double-pane column layout.
@@ -155,7 +165,7 @@ The documentation is organized into the following direct modules:
 - Selection confirmations record a `_coded` boolean value inside parent form states.
 - Handled index listings update confirmed status immediately back to unconfirmed when users edit strings.
 
-### Description of the highlighting system
+### Highlighting system
 - A hierarchical hover/focus yellow alternate highlighting system is used for questions and groups.
 - Elements trigger highlights when hovered, focused, or focused within `focus-within`.
 - Outer question containers use `backgroundColor: fbActiveLighterYellow;`.
@@ -167,44 +177,50 @@ The documentation is organized into the following direct modules:
 - To prevent whole-row flashes, hovering custom controls highlights the active table cell rather than the row.
 - Nesting level checks count `TD` table elements as a level to ensure radio choices inside cells highlight correctly.
 
-### Description of the tooltip behaviour
+### Tooltips
 - Handled using the custom component `fbToolTip`.
 - Absolute coordinates position help-bubbles directly near related clinical labels.
 - Interactive tooltips are non-intrusive and avoid layout shift.
 - Manual close buttons on tooltips require a solid black border (`border: 0.1rem solid black;`).
 - Tooltip dimensions are kept compact using a `padding: '0 0.3rem';` button scale.
+- When a hovered or focused child control opens a custom tooltip, the tooltip controller also opens custom tooltips for the containing `fbQuestion` label(s) and nearest `fbSection` heading. This is an application-level cascade implemented by `/src/utils/useFbTooltips.tsx`, not standard browser `title` tooltip behaviour.
 - For radios/checks in grouped questions, tooltip bubbles appear just below the option label and align approximately `2rem` to the right of the actual radio/checkbox control.
 - Tooltip bubbles clamp their horizontal position inside the viewport so they do not bleed off the right edge of the page.
 - When a radio/check option has an open subquestion beneath it, the tooltip moves above the option label so it does not obscure the subquestion fields.
 - Read-only views may render the same custom tooltip bubbles for clinical labels where explanatory text still matters.
 - Open-subquestion detection uses component-generated wrappers (`fb-subquestion-wrapper`) and namespaced manual subquestion blocks (`fb-subquestion`) used in Outpatient Outcome.
 
-### Description of the save enabled / disabled functionality
+### Save enabled / disabled
 - Evaluates form state completeness via validation scripts `areRequiredFieldsComplete()`.
 - If required questions are incomplete, footer action items are locked.
 - Disabled buttons use a solid grey background `backgroundColor: fbSilver;` with white text.
 - If changes have occurred, the save button variant alternates to `backgroundColor: fbGreen;`.
 - If no changes exist, the button is disabled using standard grey.
+- While a save operation is in progress, `fbSavingPopup` displays the modal title "Saving..." and the footer save button is disabled.
+- If a save operation appears successful, `fbSavedPopup` displays the modal title "Data saved" for 1000 ms before the form closes.
+- If a save operation reports an error, `fbSaveErrorPopup` displays the modal title "Error", the message "Changes may not have been saved", raw error details, and a white-on-green `fbButton` labelled "Return to form". Returning to the form leaves saving enabled so the user can retry.
+- Shared save feedback, pending password-popup continuation, password capture, and save-status popup rendering are owned by `/src/utils/useFormSaveFeedback.tsx`; individual forms provide only their form-specific database save function and success/error side effects.
+- The footer password field clears 2 seconds after losing focus. If Save is clicked before that timeout expires, the shared save hook captures the current password immediately and uses that captured value for the save operation.
 
-### Description of the save as draft behaviour and final control
+### Draft / final state
 - Unfinalised forms save with a status of `'draft'`.
 - Saving as a draft prompts the user with the `fbDraftPopup` confirmation message.
 - Draft indicators display `fbDraftBadge` (white bold text on `backgroundColor: fbRed;` with zero border-radius).
 - Finalized states are reached by checking `fbFinalControl` checkmarks in footers.
 - Complete finalization locks forms into permanent read-only event logs.
 
-### What happens when RoV, Save and Cancel are clicked
+### RoV, EV, Save and Cancel buttons
 - **RoV Toggle Button**: Triggered via toggle buttons in active edit views.
-  - Checks if state has changes.
-  - If changes exist, prompts users with authentication re-entry.
-  - Passes modified transient state directly to read-only drawers without database writes.
+    - Checks if state has changes.
+    - If changes exist, prompts users with authentication re-entry.
+    - Passes modified transient state directly to read-only drawers without database writes.
 - **Save and Close**: Triggered in footers.
-  - Checks if password has been re-entered when changes exist.
-  - Checks if finalization marks are unchecked to prompt `fbDraftPopup`.
-  - Appends clinical record entries to Supabase.
+    - Checks if password has been re-entered when changes exist.
+    - Checks if finalization marks are unchecked to prompt `fbDraftPopup`.
+    - Appends clinical record entries through the REST API.
 - **Cancel Button**: Triggered via specialized `fbCancelFormButton` red button.
-  - Shows `fbCancelPopup` warning layout if modifications are present.
-  - Dismissing warning discards changes and routes away.
+    - Shows `fbCancelPopup` warning layout if modifications are present.
+    - Dismissing warning discards changes and routes away.
 
 ### `<Enter>` key behaviour
 - Forms prevent the `<Enter>` key from submitting inputs inadvertently.
@@ -214,7 +230,7 @@ The documentation is organized into the following direct modules:
 
 ---
 
-## The RoV "rules"
+## Read-only view rules
 
 - Omit missing details and empty questions in read-only layouts.
 - Spacing grids must be preserved to prevent layout collapse.
@@ -238,468 +254,486 @@ The documentation is organized into the following direct modules:
 - Repeated RoV table-cell typography is centralized in `fbRoVTableCell`, with related CSS selectors named under the `fb-rov-*` component namespace.
 - Repeated RoV header and footer chrome is centralized in `fbRoVHeader` and `fbRoVFooter`; the shared shell owns the draft badge, addressograph, username display, and EV/Edit/Back controls.
 - Shared clinical option display labels live in `/src/data/formLabels.ts` for organisation, speciality, hospital, side, and yes/no/unknown values.
+- RoVs for current form versions show a white-on-blue History button in the footer bottom left, immediately to the right of EV when EV is present.
+- Clicking History opens `fbFormHistoryMenu`, a popup table of saved versions with "Date and time", "Saved by", and a `fbViewOldVersion` View button.
+- Clicking View loads that exact saved version into RoV.
+- If the viewed RoV is not the most recent saved version of the form, `fbSupersededBadge` appears above the title, to the left of any draft badge. Superseded RoVs show Back only, with no Edit or EV control. Back reloads the most recent version of that form.
 
 ---
 
-## List of the custom components
+## Custom components
+
+### Components for patient form specification
+
+These components are part of the form-specification vocabulary. A human designer, a JSON form spec, or an LLM recreating a patient form should use these names rather than lower-level layout details.
 
 | Component | File | Purpose | Arguments | Structure / Layout & CSS |
 | :--- | :--- | :--- | :--- | :--- |
-| `fbButton` | `/src/components/fbButton.tsx` | Standard action button with hover checks | `variant`, `disabled`, `onClick`, `style` | `<button className="fb-button">` with transition `border: 0.1rem solid fbActiveDarkerYellow;` on hover. |
-| `fbTextInput` | `/src/components/fbTextInput.tsx` | Standard textual field input | `id`, `name`, `label`, `required`, `value`, `onChange` | Rendered via `fbQuestion` as `<div className="fb-question-container">` with inner `<input>` styled with `border: 0.1rem solid silver;`. |
-| `fbTextArea` | `/src/components/fbTextArea.tsx` | Standard auto-expanding textarea | `id`, `name`, `label`, `required`, `value`, `onChange` | Rendered via `fbQuestion` as `<div className="fb-question-container">` with inner `<textarea>` resizing via layout effects. |
-| `fbDropdown` | `/src/components/fbDropdown.tsx` | Native styled dropdown element | `id`, `name`, `label`, `required`, `value`, `onChange`, `options` | `<select>` having overrides `border: 0.1rem solid silver;` and standard padding `0.2rem;`. |
-| `fbNumberInput` | `/src/components/fbNumberInput.tsx` | Input box supporting side units | `id`, `name`, `label`, `required`, `value`, `onChange`, `units` | Uses the shared `fbQuestion` wrapper and, when units are present, the namespaced `fb-input-with-units` side-unit styling. |
-| `fbSection` | `/src/components/fbSection.tsx` | Group container with a blue heading | `title`, `children` | `<div className="fb-section-block">` hosting the `fbSectionHeader` element and structural questions lists. |
-| `fbSectionHeader` | *Part of `fbSection`* | Section visual bar displaying title | `title` | `<h3>` styled with royal blue background, sans-serif font, white text and sentence case. |
-| `fbQuestionRow` | `/src/components/fbQuestionRow.tsx` | Multi-column grid layout row | `cols`, `children` | `<div className="questions-row grid">` with robust responsive column sizes. |
-| `fbQuestionRowCell` | `/src/components/fbQuestionRowCell.tsx` | Column spanning grid cell | `span`, `children` | `<div className="question-row-cell">` with span mapping selectors. |
-| `fbQuestion` | `/src/components/fbQuestion.tsx` | Label and asterisk helper | `label`, `required`, `children` | Wraps children with elegant top-aligned sentence-case question labels. |
-| `fbRadio` | `/src/components/fbRadio.tsx` | Direct single-option radio click | `id`, `name`, `value`, `checked`, `label`, `onChange` | `<label className="fb-radio-checkbox-item">` inside `fb-subquestion-wrapper`, supporting highlight nesting and conditional children. |
-| `fbCheck` | `/src/components/fbCheck.tsx` | Direct multi-choice check option | `id`, `name`, `checked`, `label`, `onChange` | `<label className="fb-radio-checkbox-item">` inside `fb-subquestion-wrapper`, supporting nested conditional children. |
-| `fbGroup` | `/src/components/fbGroup.tsx` | Aligns list selectors under questions | `label`, `children` | `<div className="fb-radio-checkbox-group-container">` grouping choice controls; optional group labels are Roboto 300, 1rem, black. |
-| `fbTable` | `/src/components/fbTable.tsx` | Unified custom grid tabular list layout | `children` | Exports elements `FbTable` through `FbTableCell` utilizing clean borders. |
-| `fbTableCell` | `/src/components/fbTableCell.tsx` | Hoverable cell for procedures lists | `children`, `style` | `<td>` supporting transition classes `hover:bg-fbActiveLighterYellow;` without row flashes. |
-| `fbAddressograph` | `/src/components/fbAddressograph.tsx` | Standard clinical patient card | `patient`, `style` | Card using `fontFamily: Arial;` of size `90mm` by `11pt` with standard tooltips. |
-| `fbHeader` | `/src/components/fbHeader.tsx` | Clinical form top heading block | `title`, `patient` | Left title paired with right-aligned demographics inside a grey header strip. |
-| `fbLayout` | `/src/components/fbLayout.tsx` | Main application shell layout wrapper | `children`, `title` | Incorporates layout areas, sidebar drawers, and footer blocks. |
-| `fbDraftBadge` | `/src/components/fbDraftBadge.tsx` | Unsaved indicator badge | None | Square block using `backgroundColor: fbRed;` with white text. |
-| `fbDraftPopup` | `/src/components/fbDraftPopup.tsx` | Confirms save on drafts | `isOpen`, `onConfirm`, `onCancel` | Modal with blue border prompts for draft status saves. |
-| `fbPasswordPopup` | `/src/components/fbPasswordPopup.tsx` | Enforces active password validations | `isOpen`, `onSave`, `onCancel` | Modal using `fbPassword` inputs requesting passwords. |
-| `fbCancelPopup` | `/src/components/fbCancelPopup.tsx` | Asks to save modified state | `isOpen`, `onDiscard`, `onCancel` | Warning box prompting to discard changes or return to form. |
-| `fbCancelFormButton` | `/src/components/fbCancelFormButton.tsx` | Special dismiss button | `onClick` | Special red button component labeled with sentence-case variant `'Cancel'`. |
-| `fbUserName` | `/src/components/fbUserName.tsx` | Interactive username updater | `value`, `onChange` | `<input>` reflecting `demoUser` stored inside footers with yellow highlight support. |
-| `fbAddButton` | `/src/components/fbAddButton.tsx` | Unified custom inline plus action button | `onClick`, `label` | High contrast button triggers row append events inside medical list tables. |
-| `fbSmallAddButton` | `/src/components/fbSmallAddButton.tsx` | Compact inline add/open action button | `onClick`, `label` | Same behaviour and visual language as `fbAddButton`, with `fontSize: 0.8rem` and reduced vertical scale for inline subquestions. |
-| `fbAddButtonForPage` | `/src/components/fbAddButtonForPage.tsx` | Prominent header card action button | `onClick`, `label` | Centered action block offering quick access to trigger new form creation popups. |
-| `fbAddFormMenu` | `/src/components/fbAddFormMenu.tsx` | Form launch list selector overlay | `onSelect`, `isOpen`, `onClose` | Overlay dashboard selector to choose and spin up empty clinical document instances. |
-| `fbAuthAndSensitivity` | `/src/components/fbAuthAndSensitivity.tsx` | Form security & validation settings banner | `highlySensitive`, `onToggleSensitivity` | Security panel grouping the document-wide lock and clinical signature elements. |
-| `fbAuthControls` | `/src/components/fbAuthControls.tsx` | Active confirmation password controls bar | `onVerify`, `onChange` | Action confirmation fields verifying credentials before executing state transitions. |
-| `fbAutoExpandingTextarea` | `/src/components/fbAutoExpandingTextarea.tsx` | Content volume auto-resizable description area | `id`, `name`, `value`, `onChange` | Custom textbox extending vertical height dynamically to fit text breaks cleanly. |
-| `fbFinalControl` | `/src/components/fbFinalControl.tsx` | Terminal document completion checkbox | `checked`, `onChange` | Form completion toggle setting record status to either final or active draft in footer. |
-| `fbFormTile` | `/src/components/fbFormTile.tsx` | Historical clinical file timeline entry card | `form`, `onOpen` | Responsive panel indexing record versions, dates, draft states, and clinicians. |
-| `fbNavigationPanel` | `/src/components/fbNavigationPanel.tsx` | Structural slide-out sidebar navigation list | `sections`, `activeSection`, `onScroll` | Vertical timeline index aiding rapid navigation between form chapters on desktop. |
-| `fbOutpatientAppointmentTile` | `/src/components/fbOutpatientAppointmentTile.tsx` | Visual clinics index registry tile | `appointment`, `onOpen` | Demographics list card tracking clinic schedules, status badges and consultant owners. |
-| `fbPassword` | `/src/components/fbPassword.tsx` | Masked security credential input element | `value`, `onChange` | Secure input element containing custom character masking and clear icons. |
-| `fbSaveCancelButtons` | `/src/components/fbSaveCancelButtons.tsx` | Aggregated bottom edit actions bar | `onSave`, `onCancel`, `disabled` | Unified action grouping managing form save pipelines, draft badges and exit routes. |
-| `fbSearchInput` | `/src/components/fbSearchInput.tsx` | Instant-focus index text filter widget | `value`, `onChange`, `onClear` | Standard filter field with matching cleaning symbols and focused state tracking. |
-| `fbTextInputWithUnits` | `/src/components/fbTextInputWithUnits.tsx` | Technical measurement numerical control | `id`, `value`, `onChange`, `units` | Composite text fields appending diagnostic measurement parameters standardly. |
-| `fbBottomControlsRow` | `/src/components/fbBottomControlsRow.tsx` | Footer strip layout container | None | Full-width grey bottom strip displaying demo user text and local time displays. |
-| `fbDateControl` | `/src/components/fbDateControl.tsx` | Highly customized precision date picker | `name`, `value`, `onChange`, `placeholder`, `required` | Keyboard inputs matching date regexes and double stepper calendars selectors. |
-| `fbMSISelector` | `/src/components/fbMSISelector.tsx` | Live searching clinician input field | `name`, `value`, `coded`, `onChange`, `required` | Dynamic lookup field showing validation coded tick or warning indicators. |
-| `fbRoVHeader` | `/src/components/fbRoVShell.tsx` | Shared read-only-view title/header chrome | `title`, `patient`, `formStatus` | Renders the draft badge, page title, and addressograph with consistent RoV blue divider spacing. |
-| `fbRoVFooter` | `/src/components/fbRoVShell.tsx` | Shared read-only-view footer chrome | `username`, `reachedByRoVButton`, `onSwitchToEV`, `onBack` | Renders username plus EV/Edit/Back controls with consistent RoV blue divider spacing. |
-| `fbRoVField` | `/src/components/fbRoVField.tsx` | Shared read-only field renderer | `label`, `value`, `lookupTable`, `units`, `coded` | Preserves RoV grid spacing for empty values, prints labels and pre-line values consistently, and renders coded/not-coded indicators where supplied. |
-| `fbRoVTableCell` | `/src/components/fbRoVField.tsx` | Shared read-only table cell renderer | `tone`, `verticalAlign`, standard `<td>` props | Applies repeated RoV table cell typography through `fb-rov-*` CSS classes. |
-| `fbSCTSelector` | `/src/components/fbSCTSelector.tsx` | Shared double-pane SNOMED CT selector engine | `name`, `value`, `onChange`, `searchCommand`, `mode`, `coded` | Internal generic component containing SCT search, history, popup positioning, parser use, and coded/not-coded indicators. |
-| `fbSCTDiagnosis` | `/src/components/fbSCTDiagnosis.tsx` | Diagnosis-specific SNOMED CT wrapper | `value`, `name`, `onChange`, `placeholder` | Documentation/specification-facing wrapper around `fbSCTSelector` using disorder search behaviour. |
-| `fbSCTProcedure` | `/src/components/fbSCTProcedure.tsx` | Procedure-specific SNOMED CT wrapper | `value`, `name`, `coded`, `onChange`, `placeholder` | Documentation/specification-facing wrapper around `fbSCTSelector` using procedure search behaviour. |
-| `fbToolTip` | `/src/components/fbToolTip.tsx` | Hover overlay message tooltips helper | `id`, `text`, `children` | Custom label layouts spawning responsive popup description bubbles instantly. |
+| `fbSection` | `/src/components/fbSection.tsx` | High-level titled form section | `id`, `title`, `children` | Blue title bar with white text followed by child rows/questions. |
+| `fbQuestionRow` | `/src/components/fbQuestionRow.tsx` | Responsive multi-column question row | `cols`, `children`, `style` | CSS grid row; collapses to one column on narrow screens. |
+| `fbQuestionCell` / `fbQuestionRowCell` | `/src/components/fbQuestionRowCell.tsx` | Cell inside a question row | `span`, `children` | Provides column span semantics within `fbQuestionRow`. |
+| `fbTextInput` / `fbTextArea` / `fbTextInputWithUnits` | `/src/components/fbTextInput.tsx`, `/src/components/fbTextArea.tsx`, `/src/components/fbTextInputWithUnits.tsx` | Textual fields | `id`, `name`, `label`, `required`, `value`, `onChange` | Wrapped by `fbQuestion`; textareas auto-expand and preserve line breaks in RoV. |
+| `fbFieldWithUnits` / `fbNumberInput` | `/src/components/fbNumberInput.tsx` | Numeric or textual field with units | `id`, `name`, `label`, `value`, `onChange`, `units`, `min` | Uses `.fb-input-with-units` with a value box and unit label separated by a vertical divider. |
+| `fbCheck` | `/src/components/fbCheck.tsx` | Checkbox option, including conditional subquestions | `id`, `name`, `checked`, `label`, `onChange`, `children` | Uses `fb-radio-checkbox-item`; children render as indented subquestions. |
+| `fbRadio` | `/src/components/fbRadio.tsx` | Radio option, including conditional subquestions | `id`, `name`, `value`, `checked`, `label`, `onChange`, `children` | Same highlighting and nested subquestion behaviour as `fbCheck`. |
+| `fbDropdown` | `/src/components/fbDropdown.tsx` | Native dropdown selector | `id`, `name`, `label`, `required`, `value`, `onChange`, `options` | Standard silver border, compact padding, and sentence-case labels. |
+| `fbGroup` | `/src/components/fbGroup.tsx` | Groups checks/radios under one legend | `label`, `children` | Optional legend in Roboto 300; children stack vertically. |
+| `fbPartialDate` | `/src/components/fbPartialDate.tsx` | Date control allowing day, month, or year precision | `name`, `value`, `onChange`, `placeholder`, `required` | Accepts `dd-Mmm-yyyy`, `Mmm-yyyy`, `yyyy`, slash, and dot variants; calendar includes exact/month/year selection buttons. |
+| `fbExactDate` | `/src/components/fbExactDate.tsx` | Exact date control for complete database dates | Same as `fbPartialDate` except no `exactOnly` prop is exposed | Same visual calendar as `fbPartialDate`; typed input must resolve to a complete day date and the month/year/exact-date selection buttons are hidden. Exact dates should be saved through DATE/TIMESTAMP database fields, not only JSON strings. |
+| `fbTable`, `fbTableHeader`, `fbTableBody`, `fbTableRow`, `fbTableHeaderCell`, `fbTableCell` | `/src/components/fbTable.tsx`, `/src/components/fbTableCell.tsx` | Clinical tables and row lists | Standard table children and cell props | Silver borders, compact cells, optional drag handle and delete-button columns. |
+| `fbAddButton` | `/src/components/fbAddButton.tsx` | Inline add-row/add-item control | `label`, `onClick` | Blue-on-white add control used below dynamic clinical row lists. |
+| `fbMSISelector` | `/src/components/fbMSISelector.tsx` | Clinician autocomplete | `name`, `value`, `coded`, `onChange`, `required` | Searches the MSI endpoint and stores coded/unconfirmed state. |
+| `fbSCTProcedure` | `/src/components/fbSCTProcedure.tsx` | SNOMED CT procedure autocomplete | `name`, `value`, `coded`, `onChange`, `placeholder` | Wrapper around `fbSCTSelector` using procedure search. |
+| `fbSCTDiagnosis` | `/src/components/fbSCTDiagnosis.tsx` | SNOMED CT diagnosis autocomplete | `name`, `value`, `coded`, `onChange`, `placeholder` | Wrapper around `fbSCTSelector` using disorder search. |
+
+### Components for internal use
+
+These components are application chrome, persistence workflow controls, read-only view helpers, or lower-level infrastructure. They may appear in generated pages, but they are not ordinary patient-form specification elements.
+
+| Component | File | Purpose | Arguments | Structure / Layout & CSS |
+| :--- | :--- | :--- | :--- | :--- |
+| `fbButton` | `/src/components/fbButton.tsx` | Standard action button | `variant`, `disabled`, `onClick`, `style` | Blue, green, red, and disabled button variants with yellow hover transitions. |
+| `fbAddressograph` | `/src/components/fbAddressograph.tsx` | Patient demographic card | Patient demographic fields | Arial/Helvetica addressograph card, right aligned in headers. |
+| `fbHeader` / `fbLayout` / `fbBottomControlsRow` | `/src/components/fbHeader.tsx`, `/src/components/fbLayout.tsx`, `/src/components/fbBottomControlsRow.tsx` | Shared edit-form shell | Header, footer, section state, save/RoV handlers | Owns sidebar navigation, footer controls, layout scrolling, highlighting, and responsive behaviour. |
+| `fbDraftBadge` | `/src/components/fbDraftBadge.tsx` | Draft status badge | None | White bold text on red square badge. |
+| `fbSupersededBadge` | `/src/components/fbSupersededBadge.tsx` | Old-version RoV badge | None | Same visual treatment as `fbDraftBadge`, with legend "Superseded". |
+| `fbDraftPopup`, `fbPasswordPopup`, `fbSavingPopup`, `fbSavedPopup`, `fbSaveErrorPopup`, `fbCancelPopup` | `/src/components/` | Save, password, draft, and cancellation modals | Modal-specific callbacks | Blue-bordered or password-popup styled workflow modals. |
+| `fbAuthControls`, `fbAuthAndSensitivity`, `fbFinalControl`, `fbPassword`, `fbSaveCancelButtons`, `fbCancelFormButton` | `/src/components/` | Edit-form authentication/finalisation controls | Form state and callback props | Footer and modal controls for credentials, final/draft state, high-sensitivity status, save, and cancel. |
+| `fbUserName` | `/src/components/fbUserName.tsx` | Active username control | `value`, `onChange` | Stores the visible username in local storage and footer state. |
+| `fbAddButtonForPage` / `fbAddFormMenu` | `/src/components/` | Patient-record new-form launcher | Button/menu callbacks | Bottom-left patient-record popup for creating WLC, OO, and op note forms. |
+| `fbSmallAddButton` | `/src/components/fbSmallAddButton.tsx` | Compact internal inline action | `label`, `onClick` | Reduced-size add/open action used inside dense subquestion areas. |
+| `fbFormTile` / `fbOutpatientAppointmentTile` | `/src/components/` | Patient-record timeline tiles | Form/appointment display props | Show chronological document and appointment summaries with badges. |
+| `fbFormHistoryMenu` | `/src/components/fbFormHistoryMenu.tsx` | RoV version-history popup | `history`, `onViewVersion`, `onClose` | Table with "Date and time", "Saved by", and a `fbViewOldVersion` button for each saved form version. |
+| `fbViewOldVersion` | `/src/components/fbViewOldVersion.tsx` | History row action | `onClick` | Standard `fbButton` labelled "View". |
+| `fbNavigationPanel` | `/src/components/fbNavigationPanel.tsx` | Edit/RoV sidebar navigation | `sections`, `activeSection`, `onScroll` | Desktop vertical section navigator. |
+| `fbRoVHeader` / `fbRoVFooter` | `/src/components/fbRoVShell.tsx` | Shared read-only view chrome | `title`, `patient`, `formStatus`, `superseded`, `onHistory`, `onBack`, `onSwitchToEV` | Header renders draft/superseded badges; footer renders EV, History, Edit, and Back according to context. |
+| `fbRoVField` / `fbRoVTableCell` | `/src/components/fbRoVField.tsx` | Shared read-only data renderers | Field/table-cell props | Preserve grid spacing, typography, coded indicators, and pre-line text. |
+| `fbSCTSelector` | `/src/components/fbSCTSelector.tsx` | Internal SNOMED CT popup engine | `searchCommand`, `mode`, `coded`, `onChange` | Shared autocomplete implementation used by SCT wrappers. |
+| `fbSearchInput` | `/src/components/fbSearchInput.tsx` | Patient search input | `value`, `onChange`, `onClear` | Focused search box with clear control. |
+| `fbToolTip` | `/src/components/fbToolTip.tsx` | Custom tooltip display | Tooltip text and child props | Absolute-positioned hover/focus help bubbles. |
+| `fbAutoExpandingTextarea` | `/src/components/fbAutoExpandingTextarea.tsx` | Internal textarea helper | `id`, `name`, `value`, `onChange` | Lower-level auto-resize component. |
 
 ---
 
-## Global routing and navigation matrix
+## Navigation
 
 - Navigation is structured around five central screens: Home page, Patient registry, Patient search, Patient record, and clinical document editor.
 - **Home page (`/`)**:
-  - Serves as the application landing screen.
-  - Displays primary links: "Patient registry" and "Patient search".
-  - Active user session details are persisted as `"demoUser"` in local storage.
+    - Serves as the application landing screen.
+    - Displays primary links: "Patient registry" and "Patient search".
+    - Active user session details are persisted as `"demoUser"` in local storage.
 - **Patient registry**:
-  - Reached via the home page.
-  - Lists patients alphabetically by Surname, then Forenames, then DOB.
-  - Clicking on a patient card dynamically toggles display styles, opening Patient record view inline on the same page.
+    - Reached via the home page.
+    - Loads current patient rows from `patients_current`/`patients` through the REST client.
+    - Lists patients alphabetically by surname, then forenames, then date of birth.
+    - Each row/card must show enough identifiers to distinguish patients safely: surname, forenames, title if present, date of birth, NHS number, CRN, and sex.
+    - Clicking a patient card dynamically hides the registry list and opens Patient record inline on the same page, preserving the selected patient UUID.
+    - Closing the inline Patient record returns to the registry list without clearing the already loaded registry.
 - **Patient search**:
-  - Reached via the home page.
-  - Focuses search inputs instantly on mount and queries using Postgres pg_trgm fuzzy similarity.
-  - Matches open Patient record sheets inline.
+    - Reached via the home page.
+    - Focuses search inputs instantly on mount and queries using Postgres pg_trgm fuzzy similarity.
+    - Uses `fbSearchInput` with a visible clear control. Clearing the value clears results and re-focuses the input.
+    - Search calls `search_patients_fuzzy(search_term)` through the compatibility layer, which maps to `POST /api/patients/search`.
+    - Results use the same patient identifier display as Patient registry.
+    - Empty non-blank searches show a plain "No matches found" message.
+    - Clicking a result hides the search result list and opens Patient record inline for the selected patient UUID.
+    - Closing the inline Patient record returns to the search screen with the previous query/results still available unless the user cleared them.
 - **Patient record**:
-  - Displays patient demography and chronological EHR history list.
-  - Highlights future clinics using "Future appt" and non-outcomed visits using "Not outcomed".
-  - Add additions trigger "New form or document" launches standard creation modals.
-  - "Open" triggers load clinical forms in RoV inline, hiding parent dashboards.
+    - Displays patient demography and chronological EHR history list.
+    - Loads the patient by UUID and renders the addressograph in the top right; if no patient is loaded, the default Donald Duck addressograph may appear only as a fallback.
+    - Loads current form index entries from `forms_index_current` filtered by `patient_uuid`, ordered by `event_datetime DESC`.
+    - Loads appointment detail rows only for appointment UUIDs present in the forms/index list.
+    - The main record list is a single-column clinical timeline with date/time, form/document type, speciality, senior responsible clinician, and status badges.
+    - Highlights future clinics using "Future appt" and non-outcomed visits using "Not outcomed".
+    - Draft documents display `fbDraftBadge`.
+    - Add additions trigger "New form or document" from the bottom-left `fbAddButtonForPage`, opening `fbAddFormMenu`.
+    - Creating a form inline passes the active patient UUID, username, and `openInRoV: false`.
+    - "Open" triggers load clinical forms in RoV inline, hiding parent dashboards.
+    - Opening existing WLC, OO, or op note records passes form UUID, patient UUID, username, and `openInRoV: true`; closing the inline form refreshes the patient-record list without a full page reload.
+    - Appointment rows show an "Outcome form" button only for non-future appointments. If an outcome form already exists, it opens that form; otherwise it creates a new OO for the appointment.
+    - The Patient record Close button returns to the route recorded in `location.state.from` or Home if none is provided.
 - **Clinical form edit views (wlc, oo, op note)**:
-  - Reached from records dashboards.
-  - Cancel and Back buttons navigate back depending on origin context (`location.state.openInRoV`).
-  - If openInRoV is undefined, Cancel routes clinicians back to Home page (`'/'`).
-  - If openInRoV is defined, Cancel routes clinicians back to the active Patient record screen.
+    - Reached from records dashboards.
+    - Cancel and Back buttons navigate back depending on origin context (`location.state.openInRoV`).
+    - If openInRoV is undefined, Cancel routes clinicians back to Home page (`'/'`).
+    - If openInRoV is defined, Cancel routes clinicians back to the active Patient record screen.
 
 ---
 
-### Description of each form
+### Forms and pages
 
-### Forms about patients
+### Patient forms
 
-#### 1. Waiting List Card (`wlc`)
+#### 1. Waiting list card (`wlc`)
 - Reached from "New form or document" popup selections inside Patient Record.
-- Fetches static baseline parameters from Supabase to load active clinical profiles.
+- Fetches static baseline parameters through the REST client to load active clinical profiles.
 - Form contents include:
-  - `fbSection`: From
-    - `fbDropdown`: Organisation (required, default: `'cwm-taf'`)
-      - `aneurin-bevan`: Aneurin Bevan
-      - `betsi-cadwaladr`: Betsi Cadwaladr
-      - `cardiff-vale`: Cardiff & Vale
-      - `cwm-taf`: Cwm Taf Morgannwg
-      - `hywel-dda`: Hywel Dda
-      - `powys`: Powys
-      - `swansea-bay`: Swansea Bay
-      - `velindre`: Velindre
-    - `fbDropdown`: Speciality (required, loaded from `./data/specialities`)
-    - `fbDropdown`: Hospital (required, default: `'princess-wales'`)
-      - `prince-charles`: Prince Charles Hospital, Merthyr Tydfil
-      - `royal-glamorgan`: Royal Glamorgan Hospital, Llantrisant
-      - `princess-wales`: Princess of Wales Hospital, Bridgend
-    - `fbMSISelector`: Senior responsible clinician (required, key: `seniorClinician`)
-  - `fbSection`: Listing and priority
-    - `fbQuestionRow`
-      - `fbQuestionRowCell span={2}`
-        - `fbDateControl`: Date listed (required, key: `dateListed`, default: today)
-      - `fbQuestionRowCell span={2}`
-        - `fbMSISelector`: Listed by clinician (key: `listedBy`)
-    - `fbQuestionRow`
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Urgency (required)
-          - `fbRadio`: Routine
-          - `fbRadio`: Urgent
-          - `fbRadio`: USC - Urgent Suspected Cancer
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Operating surgeon
-          - `fbRadio`: Any grade with supervision
-          - `fbRadio`: Discuss with consultant
-          - `fbRadio`: Consultant only
-          - `fbRadio`: Named clinician
-            - `fbMSISelector`: Clinician name (required, key: `namedClinicianName`, unlabelled required asterisk placed on right side)
-          - `fbRadio`: Unknown (default)
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Patient available at short notice
-          - `fbRadio`: Yes
-          - `fbRadio`: No
-          - `fbRadio`: Unknown (default)
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Royal College of Surgeons priority
-          - `fbRadio`: Yes
-          - `fbRadio`: No
-          - `fbRadio`: Unknown (default)
-  - `fbSection`: Planned procedure(s)
-    - `fbTable`: Drag-and-drop interactive procedures table list
-      - `fbTableCell` (left-most position): Drag handle column (displays icon `swap_vertical_circle`)
-      - `fbTableCell`: Surgical side selection column
-        - `fbDropdown`: Surgical side selection (key: `side`)
-          - `left`: Left
-          - `right`: Right
-          - `bilateral`: Bilateral
-          - `na`: Not applicable
-      - `fbTableCell`: Core procedure name column (`fbSCTProcedure` autocomplete search selector)
-      - `fbTableCell`: Supplementary notes column (standard textual input)
-      - `fbTableCell` (extreme right): Delete row column (displays icon `highlight_off` to trigger instant row deletion code)
-  - `fbSection`: Specific operative risks
-    - `fbQuestionRow`
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Risks
-          - `fbCheck`: Diabetic
-          - `fbCheck`: Latex allergy
-          - `fbCheck`: MRSA
-          - `fbCheck`: Pacemaker
-          - `fbCheck`: Blood transfusion refusal
-          - `fbCheck`: Previous anaesthetic reactions
-            - `fbTextArea`: Previous anaesthetic reactions details (required, key: `riskReactionsDetail`)
-          - `fbCheck`: Other
-            - `fbTextArea`: Other risk details (required, key: `riskOtherDetail`, asterisk on right)
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup` — Anticoagulants & antiplatelet agents (using fbQuestion container wrapping):
-          - `fbCheck`: DOAC
-            - `fbTextInput`: Drug name (required, key: `doac-name`)
-            - `fbGroup`: Indication (key: `doac-indication`)
-              - `fbRadio`: DVT/PE (acute)
-              - `fbRadio`: DVT/PE (prevention)
-              - `fbRadio`: Atrial fibrillation
-              - `fbRadio`: Other
-                - `fbTextInput`: Specify (key: `doac-indication-other`)
-          - `fbCheck`: Warfarin
-            - `fbGroup`: Indication (key: `warfarin-indication`)
-              - `fbRadio`: DVT/PE (acute)
-              - `fbRadio`: DVT/PE (prevention)
-              - `fbRadio`: Atrial fibrillation
-              - `fbRadio`: Other
-                - `fbTextInput`: Specify (key: `warfarin-indication-other`)
-          - `fbCheck`: Aspirin
-            - `fbGroup`: Indication (key: `aspirin-indication`)
-              - `fbRadio`: Pain
-              - `fbRadio`: Stroke prevention
-              - `fbRadio`: Other
-                - `fbTextInput`: Specify (key: `aspirin-indication-other`)
-            - `fbGroup`: Dose (key: `aspirin-dose`)
-              - `fbRadio`: 75mg
-              - `fbRadio`: 300mg
-              - `fbRadio`: Other
-                - `fbTextInput`: Specify (key: `aspirin-dose-other`)
-          - `fbCheck`: Clopidogrel
-          - `fbCheck`: Other anticoagulant or antiplatelet
-            - `fbTextInput`: Medication and dose (required, key: `anticoag-other-med`)
-            - `fbTextInput`: Indication (required, key: `anticoag-other-indication`)
-      - `fbQuestionRowCell span={2}`
-        - `fbTextArea`: Surgeon's specific anticoagulant instructions (key: `anticoagInstructions`)
-  - `fbSection`: Pre-operative
-    - `fbQuestionRow`
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Intended management (required)
-          - `fbRadio`: Outpatient
-          - `fbRadio`: Daycase
-          - `fbRadio`: Inpatient
-          - `fbRadio`: Unknown (default)
-      - `fbQuestionRowCell span={1}`
-        - `fbNumberInput`: Admit before surgery (key: `admitBefore`, units: `'days'`, default: 0)
-      - `fbQuestionRowCell span={1}`
-        - `fbDateControl`: Estimated date of admission (key: `estimatedAdmission`)
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Pre-operative imaging required
-          - `fbRadio`: Yes
-            - `fbTextArea`: Pre-op imaging details (required, key: `imagingDetail`)
-          - `fbRadio`: No
-          - `fbRadio`: Unknown (default)
-  - `fbSection`: Anaesthesia
-    - `fbQuestionRow`
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Planned anaesthetic type
-          - `fbRadio`: General
-          - `fbRadio`: Regional
-          - `fbRadio`: Local
-          - `fbRadio`: None
-          - `fbRadio`: Unknown (default)
-      - `fbQuestionRowCell span={3}`
-        - `fbTextArea`: Anaesthesia requirements (key: `anaesthesiaRequirements`)
-  - `fbSection`: Post-op
-    - `fbQuestionRow`
-      - `fbQuestionRowCell span={1}`
-        - `fbNumberInput`: Planned length of post-op stay (key: `postopStay`, units: `'days'`)
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Bed requirement
-          - `fbRadio`: ITU
-          - `fbRadio`: HDU
-          - `fbRadio`: PACU
-          - `fbRadio`: Ward bed
-          - `fbRadio`: Unknown (default)
-      - `fbQuestionRowCell span={2}`
-        - `fbTextArea`: Post-operative requirements (key: `postopRequirements`)
-  - `fbSection`: Other
-    - `fbQuestionRow`
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Could this case be outsourced?
-          - `fbRadio`: Yes
-          - `fbRadio`: No
-          - `fbRadio`: Unknown (default)
-      - `fbQuestionRowCell span={3}`
-        - `fbTextArea`: Any other information (key: `otherInfo`)
+    - `fbSection`: From
+        - `fbDropdown`: Organisation (required, default: `'cwm-taf'`)
+            - `aneurin-bevan`: Aneurin Bevan
+            - `betsi-cadwaladr`: Betsi Cadwaladr
+            - `cardiff-vale`: Cardiff & Vale
+            - `cwm-taf`: Cwm Taf Morgannwg
+            - `hywel-dda`: Hywel Dda
+            - `powys`: Powys
+            - `swansea-bay`: Swansea Bay
+            - `velindre`: Velindre
+        - `fbDropdown`: Speciality (required, loaded from `./data/specialities`)
+        - `fbDropdown`: Hospital (required, default: `'princess-wales'`)
+            - `prince-charles`: Prince Charles Hospital, Merthyr Tydfil
+            - `royal-glamorgan`: Royal Glamorgan Hospital, Llantrisant
+            - `princess-wales`: Princess of Wales Hospital, Bridgend
+        - `fbMSISelector`: Senior responsible clinician (required, key: `seniorClinician`)
+    - `fbSection`: Listing and priority
+        - `fbQuestionRow`
+            - `fbQuestionRowCell span={2}`
+                - `fbExactDate`: Date listed (required, key: `dateListed`, default: today)
+            - `fbQuestionRowCell span={2}`
+                - `fbMSISelector`: Listed by clinician (key: `listedBy`)
+        - `fbQuestionRow`
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Urgency (required)
+                    - `fbRadio`: Routine
+                    - `fbRadio`: Urgent
+                    - `fbRadio`: USC - Urgent Suspected Cancer
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Operating surgeon
+                    - `fbRadio`: Any grade with supervision
+                    - `fbRadio`: Discuss with consultant
+                    - `fbRadio`: Consultant only
+                    - `fbRadio`: Named clinician
+                        - `fbMSISelector`: Clinician name (required, key: `namedClinicianName`, unlabelled required asterisk placed on right side)
+                    - `fbRadio`: Unknown (default)
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Patient available at short notice
+                    - `fbRadio`: Yes
+                    - `fbRadio`: No
+                    - `fbRadio`: Unknown (default)
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Royal College of Surgeons priority
+                    - `fbRadio`: Yes
+                    - `fbRadio`: No
+                    - `fbRadio`: Unknown (default)
+    - `fbSection`: Planned procedure(s)
+        - `fbTable`: Drag-and-drop interactive procedures table list
+            - `fbTableCell` (left-most position): Drag handle column (displays icon `swap_vertical_circle`)
+            - `fbTableCell`: Surgical side selection column
+                - `fbDropdown`: Surgical side selection (key: `side`)
+                    - `left`: Left
+                    - `right`: Right
+                    - `bilateral`: Bilateral
+                    - `na`: Not applicable
+            - `fbTableCell`: Core procedure name column (`fbSCTProcedure` autocomplete search selector)
+            - `fbTableCell`: Supplementary notes column (standard textual input)
+            - `fbTableCell` (extreme right): Delete row column (displays icon `highlight_off` to trigger instant row deletion code)
+    - `fbSection`: Specific operative risks
+        - `fbQuestionRow`
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Risks
+                    - `fbCheck`: Diabetic
+                    - `fbCheck`: Latex allergy
+                    - `fbCheck`: MRSA
+                    - `fbCheck`: Pacemaker
+                    - `fbCheck`: Blood transfusion refusal
+                    - `fbCheck`: Previous anaesthetic reactions
+                        - `fbTextArea`: Previous anaesthetic reactions details (required, key: `riskReactionsDetail`)
+                    - `fbCheck`: Other
+                        - `fbTextArea`: Other risk details (required, key: `riskOtherDetail`, asterisk on right)
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Anticoagulants & antiplatelet agents (using fbQuestion container wrapping):
+                    - `fbCheck`: DOAC
+                        - `fbTextInput`: Drug name (required, key: `doac-name`)
+                        - `fbGroup`: Indication (key: `doac-indication`)
+                            - `fbRadio`: DVT/PE (acute)
+                            - `fbRadio`: DVT/PE (prevention)
+                            - `fbRadio`: Atrial fibrillation
+                            - `fbRadio`: Other
+                                - `fbTextInput`: Specify (key: `doac-indication-other`)
+                    - `fbCheck`: Warfarin
+                        - `fbGroup`: Indication (key: `warfarin-indication`)
+                            - `fbRadio`: DVT/PE (acute)
+                            - `fbRadio`: DVT/PE (prevention)
+                            - `fbRadio`: Atrial fibrillation
+                            - `fbRadio`: Other
+                                - `fbTextInput`: Specify (key: `warfarin-indication-other`)
+                    - `fbCheck`: Aspirin
+                        - `fbGroup`: Indication (key: `aspirin-indication`)
+                            - `fbRadio`: Pain
+                            - `fbRadio`: Stroke prevention
+                            - `fbRadio`: Other
+                                - `fbTextInput`: Specify (key: `aspirin-indication-other`)
+                        - `fbGroup`: Dose (key: `aspirin-dose`)
+                            - `fbRadio`: 75mg
+                            - `fbRadio`: 300mg
+                            - `fbRadio`: Other
+                                - `fbTextInput`: Specify (key: `aspirin-dose-other`)
+                    - `fbCheck`: Clopidogrel
+                    - `fbCheck`: Other anticoagulant or antiplatelet
+                        - `fbTextInput`: Medication and dose (required, key: `anticoag-other-med`)
+                        - `fbTextInput`: Indication (required, key: `anticoag-other-indication`)
+            - `fbQuestionRowCell span={2}`
+                - `fbTextArea`: Surgeon's specific anticoagulant instructions (key: `anticoagInstructions`)
+    - `fbSection`: Pre-operative
+        - `fbQuestionRow`
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Intended management (required)
+                    - `fbRadio`: Outpatient
+                    - `fbRadio`: Daycase
+                    - `fbRadio`: Inpatient
+                    - `fbRadio`: Unknown (default)
+            - `fbQuestionRowCell span={1}`
+                - `fbNumberInput`: Admit before surgery (key: `admitBefore`, units: `'days'`, default: 0)
+            - `fbQuestionRowCell span={1}`
+                - `fbPartialDate`: Estimated date of admission (key: `estimatedAdmission`)
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Pre-operative imaging required
+                    - `fbRadio`: Yes
+                        - `fbTextArea`: Pre-op imaging details (required, key: `imagingDetail`)
+                    - `fbRadio`: No
+                    - `fbRadio`: Unknown (default)
+    - `fbSection`: Anaesthesia
+        - `fbQuestionRow`
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Planned anaesthetic type
+                    - `fbRadio`: General
+                    - `fbRadio`: Regional
+                    - `fbRadio`: Local
+                    - `fbRadio`: None
+                    - `fbRadio`: Unknown (default)
+            - `fbQuestionRowCell span={3}`
+                - `fbTextArea`: Anaesthesia requirements (key: `anaesthesiaRequirements`)
+    - `fbSection`: Post-op
+        - `fbQuestionRow`
+            - `fbQuestionRowCell span={1}`
+                - `fbNumberInput`: Planned length of post-op stay (key: `postopStay`, units: `'days'`)
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Bed requirement
+                    - `fbRadio`: ITU
+                    - `fbRadio`: HDU
+                    - `fbRadio`: PACU
+                    - `fbRadio`: Ward bed
+                    - `fbRadio`: Unknown (default)
+            - `fbQuestionRowCell span={2}`
+                - `fbTextArea`: Post-operative requirements (key: `postopRequirements`)
+    - `fbSection`: Other
+        - `fbQuestionRow`
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Could this case be outsourced?
+                    - `fbRadio`: Yes
+                    - `fbRadio`: No
+                    - `fbRadio`: Unknown (default)
+            - `fbQuestionRowCell span={3}`
+                - `fbTextArea`: Any other information (key: `otherInfo`)
 
-#### 2. Outpatient Outcome (`oo`)
+#### 2. Outpatient outcome form (`oo`)
 - Reached via patient appointments list inside Patient Record.
 - Structured around visual Groups instead of sections. Suppresses EV sidebar navigation.
 - Form contents include:
-  - Group: Appointment
-    - Organisation (read-only label)
-    - Speciality (read-only label)
-    - Site (read-only label)
-    - Senior Clinician (read-only label)
-    - Clinic name (compact block label)
-    - Date and Time (compact block label)
-  - Group: Consultation Outcome
-    - `fbGroup`: Attendance (required)
-      - `fbRadio`: Attended
-        - `fbGroup`: Urgent suspected cancer (required, key: `usc`)
-          - `fbRadio`: Yes
-          - `fbRadio`: No
-          - In Outpatient Outcome RoV, the displayed `Urgent suspected cancer` label uses `fontWeight: 500; fontSize: '1rem';`.
-        - `fbSCTDiagnosis`: Working diagnosis (key: `workingDiagnosis`)
-      - `fbRadio`: Unable to attend
-        - `fbTextInput`: Reason (key: `unableReason`)
-        - `fbRadio`: Another appointment already made
-          - `fbDateControl`: Date (key: `anotherApptDate`)
-        - `fbRadio`: Send another appointment
-        - `fbRadio`: No further appointment
-          - `fbRadio`: Send system-generated letter to GP and patient
-          - `fbRadio`: Letter to GP and patient done
-      - `fbRadio`: Did not attend
-        - `fbCheck`: Was not brought
-        - `fbRadio`: Send another appointment
-        - `fbRadio`: No further appointment
-          - `fbRadio`: Send system-generated letter to GP and patient
-          - `fbRadio`: Letter to GP and patient done
-  - Group: Status / Referrals
-    - `fbCheck`: Discharge
-    - `fbCheck`: See on symptom
-      - `fbRadio`: Six months
-      - `fbRadio`: Twelve months
-    - `fbCheck`: Patient initiated follow-up
-    - `fbCheck`: Remote monitoring
-    - `fbCheck`: Tests requested
-      - `fbRadio`: Result required before deciding treatment
-      - `fbRadio`: Result required for monitoring or after treatment
-      - `fbTextArea`: Tests requested (key: `testsRequested`)
-    - `fbCheck`: Add to waiting list for surgery or other treatment
-      - Hidden field: `linkedWaitingListCardUuid`; persisted in database column `outpatient_outcomes.linked_waiting_list_card_uuid`, nullable UUID. It links the OO record to the WLC created/opened from this subquestion.
-      - First subquestion row in EV uses `fbSmallAddButton` controls. `Create waiting list card` is shown only when there is no linked WLC; `Open waiting list card` is shown only when `linkedWaitingListCardUuid` exists.
-        - `Create waiting list card` hides the OO form by setting its wrapper `style.display` to `none` and mounts an inline WLC EV for the same patient. It pre-fills organisation, speciality, hospital/site, senior responsible clinician, today's date as `dateListed`, and maps OO `Urgent suspected cancer` to WLC `Urgency > USC`. The inline WLC hides its own RoV button.
-        - `Open waiting list card` opens the linked WLC using the same display-toggle inline transition: from OO EV it opens WLC EV and Cancel returns to OO EV; from OO RoV it opens WLC RoV with Edit and Back buttons and no EV button.
-        - On successful WLC save and close, OO updates `linkedWaitingListCardUuid`, maps WLC `intendedManagement: daycase` to OO waiting-list `Day case`, maps `intendedManagement: inpatient` to OO waiting-list `Inpatient`, and populates `Treatment planned` from comma-separated `[side ]procedure` values from the WLC procedure rows. WLC side values of `na` / `Not applicable` are omitted from the OO display.
-      - In RoV, only `Open waiting list card` is shown, and only when `Add to waiting list...` is selected and `linkedWaitingListCardUuid` exists.
-      - `fbGroup`: Waiting list
-        - `fbRadio`: Day case
-        - `fbRadio`: Inpatient
-      - `fbTextArea`: Treatment planned (required, key: `treatmentPlanned`)
-    - `fbCheck`: Outpatient treatment planned
-      - `fbTextArea`: Treatment planned (required, key: `oprxTreatmentPlanned`)
-      - `fbGroup`: Priority
-        - `fbRadio`: Routine
-        - `fbRadio`: Urgent
-        - `fbRadio`: Urgent suspected cancer
-    - `fbCheck`: Admitted from clinic to wait or department
-    - `fbCheck`: MDT review
-    - `fbCheck`: Treatment given in clinic today
-      - `fbTextArea`: Treatment given (required, key: `treatmentGiven`)
-    - `fbCheck`: Stop referral to treatment clock
-    - `fbCheck`: Referred to therapies
-      - `fbTextArea`: Therapy or department (for example physiotherapy) (required, key: `therapyDetails`)
-    - `fbCheck`: Referred to another consultant, speciality or hospital
-      - `fbTextInput`: Consultant, speciality or hospital (required, key: `consultantDetails`)
-    - `fbCheck`: Follow up appointment
-      - `fbCheck`: Patient to remain on cancer pathway (key: `cancerPathway`)
-      - `fbTextInput`: Interval (required, key: `interval`)
-      - `fbCheck`: Must be seen in the same clinic (key: `sameClinic`)
-      - `fbCheck`: Must be seen by the same senior responsible clinician (key: `sameClinician`)
-      - `fbGroup`: Consultation type
-        - `fbRadio`: Face to face
-          - `fbTextInput`: Hospital (if different) (key: `hospitalDifferent`)
-        - `fbRadio`: Telephone consultation
-        - `fbRadio`: Video call
-        - `fbRadio`: Case review (patient not required to attend)
-      - `fbGroup`: Priority (appointment directive)
-        - `fbRadio`: A* : Overbook
-        - `fbRadio`: A : Do not postpone appointment
-        - `fbRadio`: B : Do not postpone appointment for more than four weeks
-        - `fbRadio`: D : After test results
-        - `fbRadio`: T : Add to outpatient treatment waiting list
-      - `fbTextInput`: Tests to be done on arrival (key: `testsOnArrival`)
-  - **Outcome check boxes enabling / disabling (mutual exclusivity) logic**:
-    - Outcome choices are categorized into **Tier 1** and **Tier 2** to enforce strict pathways:
-      - **Tier 1**: Discharged, SOS: See on symptom, PIFU: Patient initiated follow-up.
-      - **Tier 2**: Remote monitoring, Tests required, Wait listed, Outpatient treatment planned, Admitted from clinic, MDT review, and Follow up appointment.
-    - **Logic specifications**:
-      - If *any* Tier 1 checkbox is checked, *all* Tier 2 checkboxes are immediately disabled.
-      - If *any* Tier 1 checkbox is checked, all *other* Tier 1 checkboxes are immediately disabled (making Tier 1 completely mutually exclusive).
-      - If *any* Tier 2 checkbox is checked, *all* Tier 1 checkboxes are immediately disabled.
-      - The non-pathway checkboxes ("Treatment given in clinic today", "Referral to therapies", and "Referral to consultant") always remain active and enabled regardless of the selected Tier.
+    - Group: Appointment
+        - Organisation (read-only label)
+        - Speciality (read-only label)
+        - Site (read-only label)
+        - Senior Clinician (read-only label)
+        - Clinic name (compact block label)
+        - Date and Time (compact block label)
+    - Group: Consultation Outcome
+        - `fbGroup`: Attendance (required)
+            - `fbRadio`: Attended
+                - `fbGroup`: Urgent suspected cancer (required, key: `usc`)
+                    - `fbRadio`: Yes
+                    - `fbRadio`: No
+                    - In Outpatient Outcome RoV, the displayed `Urgent suspected cancer` label uses `fontWeight: 500; fontSize: '1rem';`.
+                - `fbSCTDiagnosis`: Working diagnosis (key: `workingDiagnosis`)
+            - `fbRadio`: Unable to attend
+                - `fbTextInput`: Reason (key: `unableReason`)
+                - `fbRadio`: Another appointment already made
+                    - `fbPartialDate`: Date (key: `anotherApptDate`)
+                - `fbRadio`: Send another appointment
+                - `fbRadio`: No further appointment
+                    - `fbRadio`: Send system-generated letter to GP and patient
+                    - `fbRadio`: Letter to GP and patient done
+            - `fbRadio`: Did not attend
+                - `fbCheck`: Was not brought
+                - `fbRadio`: Send another appointment
+                - `fbRadio`: No further appointment
+                    - `fbRadio`: Send system-generated letter to GP and patient
+                    - `fbRadio`: Letter to GP and patient done
+    - Group: Status / Referrals
+        - `fbCheck`: Discharge
+        - `fbCheck`: See on symptom
+            - `fbRadio`: Six months
+            - `fbRadio`: Twelve months
+        - `fbCheck`: Patient initiated follow-up
+        - `fbCheck`: Remote monitoring
+        - `fbCheck`: Tests requested
+            - `fbRadio`: Result required before deciding treatment
+            - `fbRadio`: Result required for monitoring or after treatment
+            - `fbTextArea`: Tests requested (key: `testsRequested`)
+        - `fbCheck`: Add to waiting list for surgery or other treatment
+            - Hidden field: `linkedWaitingListCardUuid`; persisted in database column `outpatient_outcomes.linked_waiting_list_card_uuid`, nullable UUID. It links the OO record to the WLC created/opened from this subquestion.
+            - First subquestion row in EV uses `fbSmallAddButton` controls. `Create waiting list card` is shown only when there is no linked WLC; `Open waiting list card` is shown only when `linkedWaitingListCardUuid` exists.
+                - `Create waiting list card` hides the OO form by setting its wrapper `style.display` to `none` and mounts an inline WLC EV for the same patient. It pre-fills organisation, speciality, hospital/site, senior responsible clinician, today's date as `dateListed`, and maps OO `Urgent suspected cancer` to WLC `Urgency > USC`. The inline WLC hides its own RoV button.
+                - `Open waiting list card` opens the linked WLC using the same display-toggle inline transition: from OO EV it opens WLC EV and Cancel returns to OO EV; from OO RoV it opens WLC RoV with Edit and Back buttons and no EV button.
+                - On successful WLC save and close, OO updates `linkedWaitingListCardUuid`, maps WLC `intendedManagement: daycase` to OO waiting-list `Day case`, maps `intendedManagement: inpatient` to OO waiting-list `Inpatient`, and populates `Treatment planned` from comma-separated `[side ]procedure` values from the WLC procedure rows. WLC side values of `na` / `Not applicable` are omitted from the OO display.
+            - In RoV, only `Open waiting list card` is shown, and only when `Add to waiting list...` is selected and `linkedWaitingListCardUuid` exists.
+            - `fbGroup`: Waiting list
+                - `fbRadio`: Day case
+                - `fbRadio`: Inpatient
+            - `fbTextArea`: Treatment planned (required, key: `treatmentPlanned`)
+        - `fbCheck`: Outpatient treatment planned
+            - `fbTextArea`: Treatment planned (required, key: `oprxTreatmentPlanned`)
+            - `fbGroup`: Priority
+                - `fbRadio`: Routine
+                - `fbRadio`: Urgent
+                - `fbRadio`: Urgent suspected cancer
+        - `fbCheck`: Admitted from clinic to wait or department
+        - `fbCheck`: MDT review
+        - `fbCheck`: Treatment given in clinic today
+            - `fbTextArea`: Treatment given (required, key: `treatmentGiven`)
+        - `fbCheck`: Stop referral to treatment clock
+        - `fbCheck`: Referred to therapies
+            - `fbTextArea`: Therapy or department (for example physiotherapy) (required, key: `therapyDetails`)
+        - `fbCheck`: Referred to another consultant, speciality or hospital
+            - `fbTextInput`: Consultant, speciality or hospital (required, key: `consultantDetails`)
+        - `fbCheck`: Follow up appointment
+            - `fbCheck`: Patient to remain on cancer pathway (key: `cancerPathway`)
+            - `fbTextInput`: Interval (required, key: `interval`)
+            - `fbCheck`: Must be seen in the same clinic (key: `sameClinic`)
+            - `fbCheck`: Must be seen by the same senior responsible clinician (key: `sameClinician`)
+            - `fbGroup`: Consultation type
+                - `fbRadio`: Face to face
+                    - `fbTextInput`: Hospital (if different) (key: `hospitalDifferent`)
+                - `fbRadio`: Telephone consultation
+                - `fbRadio`: Video call
+                - `fbRadio`: Case review (patient not required to attend)
+            - `fbGroup`: Priority (appointment directive)
+                - `fbRadio`: A* : Overbook
+                - `fbRadio`: A : Do not postpone appointment
+                - `fbRadio`: B : Do not postpone appointment for more than four weeks
+                - `fbRadio`: D : After test results
+                - `fbRadio`: T : Add to outpatient treatment waiting list
+            - `fbTextInput`: Tests to be done on arrival (key: `testsOnArrival`)
+    - **Outcome check boxes enabling / disabling (mutual exclusivity) logic**:
+        - Outcome choices are categorized into **Tier 1** and **Tier 2** to enforce strict pathways:
+            - **Tier 1**: Discharged, SOS: See on symptom, PIFU: Patient initiated follow-up.
+            - **Tier 2**: Remote monitoring, Tests required, Wait listed, Outpatient treatment planned, Admitted from clinic, MDT review, and Follow up appointment.
+        - **Logic specifications**:
+            - If *any* Tier 1 checkbox is checked, *all* Tier 2 checkboxes are immediately disabled.
+            - If *any* Tier 1 checkbox is checked, all *other* Tier 1 checkboxes are immediately disabled (making Tier 1 completely mutually exclusive).
+            - If *any* Tier 2 checkbox is checked, *all* Tier 1 checkboxes are immediately disabled.
+            - The non-pathway checkboxes ("Treatment given in clinic today", "Referral to therapies", and "Referral to consultant") always remain active and enabled regardless of the selected Tier.
 
-#### 3. Operation Note (`op note`)
+#### 3. Operation note (`op note`)
 - Reached from Patient Record forms menu.
 - Form contents include:
-  - `fbSection`: Basic information
-    - `fbDropdown`: Organisation (required, default: `'cwm-taf'`)
-      - `aneurin-bevan`: Aneurin Bevan
-      - `betsi-cadwaladr`: Betsi Cadwaladr
-      - `cardiff-vale`: Cardiff & Vale
-      - `cwm-taf`: Cwm Taf Morgannwg
-      - `hywel-dda`: Hywel Dda
-      - `powys`: Powys
-      - `swansea-bay`: Swansea Bay
-      - `velindre`: Velindre
-    - `fbDropdown`: Speciality (required, loaded from `./data/specialities`)
-    - `fbDropdown`: Hospital (required, default: `'princess-wales'`)
-      - `prince-charles`: Prince Charles Hospital, Merthyr Tydfil
-      - `royal-glamorgan`: Royal Glamorgan Hospital, Llantrisant
-      - `princess-wales`: Princess of Wales Hospital, Bridgend
-    - `fbQuestionRow`
-      - `fbQuestionRowCell span={1}`
-        - `fbGroup`: Urgency (required)
-          - `fbRadio`: Elective
-            - `fbRadio`: Routine
-            - `fbRadio`: Urgent
-            - `fbRadio`: USC (default)
-          - `fbRadio`: Emergency
-      - `fbQuestionRowCell span={1}`
-        - `fbDateControl`: Date (required, key: `date`, default: today)
-      - `fbQuestionRowCell span={1}`
-        - `fbTextInput`: Start (key: `startTime`, type: `'time'`)
-      - `fbQuestionRowCell span={1}`
-        - `fbTextInput`: End (key: `endTime`, type: `'time'`)
-  - `fbSection`: Surgeons and anaesthetists
-    - `fbQuestionRow`
-      - `fbQuestionRowCell span={2}`
-        - `fbGroup`: Surgeons
-          - `fbMSISelector`: Lead operating surgeon (required, key: `leadSurgeon`)
-          - `fbMSISelector`: Additional surgeons (key: `additionalSurgeons`)
-          - `fbAddButton`: Add surgeon
-          - `fbMSISelector`: Supervising surgeon present (key: `supervisingSurgeon`)
-          - `fbMSISelector`: Senior responsible clinician (required, key: `surgeonSRC`)
-      - `fbQuestionRowCell span={2}`
-        - `fbGroup`: Anaesthetists
-          - `fbMSISelector`: Lead anaesthetist (required, key: `leadAnaesthetist`)
-          - `fbMSISelector`: Additional anaesthetists (key: `additionalAnaesthetists`)
-          - `fbAddButton`: Add anaesthetist
-          - `fbMSISelector`: Supervising anaesthetist present (key: `supervisingAnaesthetist`)
-          - `fbMSISelector`: Senior responsible clinician (required, key: `anaesthetistSRC`)
-  - `fbSection`: Prophylaxis and other specific preop or intraop medication
-    - `fbQuestionRow`
-      - `fbQuestionRowCell span={1}`
-        - `fbTextArea`: Antibiotic prophylaxis (key: `antibioticProphylaxis`)
-      - `fbQuestionRowCell span={1}`
-        - `fbTextArea`: Venous thromboembolism prophylaxis (key: `vteProphylaxis`)
-      - `fbQuestionRowCell span={1}`
-        - `fbTextArea`: Other (key: `otherMedication`)
-  - `fbSection`: Procedure(s)
-    - `fbTable`: Planned procedures drag-to-reorder list
-      - `fbTableCell` (left-most position): Drag handle column (displays icon `swap_vertical_circle`)
-      - `fbTableCell`: Surgical side selection column
-        - `fbDropdown`: Side (key: `side`)
-          - `left`: Left
-          - `right`: Right
-          - `bilateral`: Bilateral
-          - `na`: Not applicable
-      - `fbTableCell`: Core procedure name column (`fbSCTProcedure` autocomplete search selector)
-      - `fbTableCell`: Supplementary notes column (standard textual input)
-      - `fbTableCell` (extreme right): Delete row column (displays icon `highlight_off` to trigger instant row deletion code)
-  - `fbSection`: Detail
-    - `fbTextArea`: Indication (key: `indication`)
-    - `fbTextArea`: Incision (key: `incision`)
-    - `fbTextArea`: Findings (key: `findings`)
-    - `fbGroup`: Operative diagnoses
-      - `fbTable`: Drag-to-reorder diagnoses list
-        - `fbTableCell` (left-most position): Drag handle column (displays icon `swap_vertical_circle`)
-        - `fbTableCell`: Core diagnosis name column (`fbSCTDiagnosis` autocomplete search selector)
-        - `fbTableCell` (extreme right): Delete row column (displays icon `highlight_off` to trigger instant row deletion code)
-      - `fbAddButton`: Add operative diagnosis
-    - `fbTextArea`: Procedure description (key: `procedureDescription`)
-    - `fbTextArea`: Extra procedures undertaken (key: `extraProcedures`)
-    - `fbNumberInput`: Estimated blood loss (key: `bloodLoss`, units: `'ml'`)
-    - `fbTextArea`: Specific surgical intraoperative problems encountered (key: `problems`)
-    - `fbTextArea`: Closure (key: `closure`)
-    - `fbTextArea`: Post-op instructions (key: `postOpInstructions`)
-    - `fbTextArea`: Follow-up (key: `followUp`)
-  - `fbSection`: Tissue removed and pathological specimens
-    - `fbTable`: Specimen lists and biopsies
-      - `fbTableCell` (left-most position): Drag handle column (displays icon `swap_vertical_circle`)
-      - `fbTableCell`: Specimen reference name block (standard text input)
-      - `fbTableCell`: Type / Description (standard textarea)
-      - `fbTableCell` (extreme right): Delete button (icon `highlight_off`)
-    - `fbAddButton`: Add specimen
-  - `fbSection`: Images
-    - Visual placeholder thumbnail blocks with a grid size repeat layout.
-  - `fbSection`: Implants - Scan for safety
-    - `fbTable`: Implants list
-      - `fbTableCell` (left-most position): Drag handle column (displays icon `swap_vertical_circle`)
-      - `fbTableCell`: Implant ID (standard input)
-      - `fbTableCell`: Description (standard textarea)
-      - `fbTableCell`: Does this implant require exchange or removal?
-        - `fbRadio`: Yes
-          - `fbDateControl`: Remove by (required, format: `dd-Mmm-yyyy`)
-        - `fbRadio`: No
-      - `fbTableCell` (extreme right): Delete row column (displays icon `highlight_off` to trigger instant row deletion code)
-    - `fbAddButton`: Add another implant
+    - `fbSection`: Basic information
+        - `fbDropdown`: Organisation (required, default: `'cwm-taf'`)
+            - `aneurin-bevan`: Aneurin Bevan
+            - `betsi-cadwaladr`: Betsi Cadwaladr
+            - `cardiff-vale`: Cardiff & Vale
+            - `cwm-taf`: Cwm Taf Morgannwg
+            - `hywel-dda`: Hywel Dda
+            - `powys`: Powys
+            - `swansea-bay`: Swansea Bay
+            - `velindre`: Velindre
+        - `fbDropdown`: Speciality (required, loaded from `./data/specialities`)
+        - `fbDropdown`: Hospital (required, default: `'princess-wales'`)
+            - `prince-charles`: Prince Charles Hospital, Merthyr Tydfil
+            - `royal-glamorgan`: Royal Glamorgan Hospital, Llantrisant
+            - `princess-wales`: Princess of Wales Hospital, Bridgend
+        - `fbQuestionRow`
+            - `fbQuestionRowCell span={1}`
+                - `fbGroup`: Urgency (required)
+                    - `fbRadio`: Elective
+                        - `fbRadio`: Routine
+                        - `fbRadio`: Urgent
+                        - `fbRadio`: USC (default)
+                    - `fbRadio`: Emergency
+            - `fbQuestionRowCell span={1}`
+                - `fbExactDate`: Date of operation (required, key: `date`, default: today)
+            - `fbQuestionRowCell span={1}`
+                - `fbTextInput`: Start (key: `startTime`, type: `'time'`)
+            - `fbQuestionRowCell span={1}`
+                - `fbTextInput`: End (key: `endTime`, type: `'time'`)
+    - `fbSection`: Surgeons and anaesthetists
+        - `fbQuestionRow`
+            - `fbQuestionRowCell span={2}`
+                - `fbGroup`: Surgeons
+                    - `fbMSISelector`: Lead operating surgeon (required, key: `leadSurgeon`)
+                    - `fbMSISelector`: Additional surgeons (key: `additionalSurgeons`)
+                    - `fbAddButton`: Add surgeon
+                    - `fbMSISelector`: Supervising surgeon present (key: `supervisingSurgeon`)
+                    - `fbMSISelector`: Senior responsible clinician (required, key: `surgeonSRC`)
+            - `fbQuestionRowCell span={2}`
+                - `fbGroup`: Anaesthetists
+                    - `fbMSISelector`: Lead anaesthetist (required, key: `leadAnaesthetist`)
+                    - `fbMSISelector`: Additional anaesthetists (key: `additionalAnaesthetists`)
+                    - `fbAddButton`: Add anaesthetist
+                    - `fbMSISelector`: Supervising anaesthetist present (key: `supervisingAnaesthetist`)
+                    - `fbMSISelector`: Senior responsible clinician (required, key: `anaesthetistSRC`)
+    - `fbSection`: Prophylaxis and other specific preop or intraop medication
+        - `fbQuestionRow`
+            - `fbQuestionRowCell span={1}`
+                - `fbTextArea`: Antibiotic prophylaxis (key: `antibioticProphylaxis`)
+            - `fbQuestionRowCell span={1}`
+                - `fbTextArea`: Venous thromboembolism prophylaxis (key: `vteProphylaxis`)
+            - `fbQuestionRowCell span={1}`
+                - `fbTextArea`: Other (key: `otherMedication`)
+    - `fbSection`: Procedure(s)
+        - `fbTable`: Planned procedures drag-to-reorder list
+            - `fbTableCell` (left-most position): Drag handle column (displays icon `swap_vertical_circle`)
+            - `fbTableCell`: Surgical side selection column
+                - `fbDropdown`: Side (key: `side`)
+                    - `left`: Left
+                    - `right`: Right
+                    - `bilateral`: Bilateral
+                    - `na`: Not applicable
+            - `fbTableCell`: Core procedure name column (`fbSCTProcedure` autocomplete search selector)
+            - `fbTableCell`: Supplementary notes column (standard textual input)
+            - `fbTableCell` (extreme right): Delete row column (displays icon `highlight_off` to trigger instant row deletion code)
+    - `fbSection`: Detail
+        - `fbTextArea`: Indication (key: `indication`)
+        - `fbTextArea`: Incision (key: `incision`)
+        - `fbTextArea`: Findings (key: `findings`)
+        - `fbGroup`: Operative diagnoses
+            - `fbTable`: Drag-to-reorder diagnoses list
+                - `fbTableCell` (left-most position): Drag handle column (displays icon `swap_vertical_circle`)
+                - `fbTableCell`: Core diagnosis name column (`fbSCTDiagnosis` autocomplete search selector)
+                - `fbTableCell` (extreme right): Delete row column (displays icon `highlight_off` to trigger instant row deletion code)
+            - `fbAddButton`: Add operative diagnosis
+        - `fbTextArea`: Procedure description (key: `procedureDescription`)
+        - `fbTextArea`: Extra procedures undertaken (key: `extraProcedures`)
+        - `fbNumberInput`: Estimated blood loss (key: `bloodLoss`, units: `'ml'`)
+        - `fbTextArea`: Specific surgical intraoperative problems encountered (key: `problems`)
+        - `fbTextArea`: Closure (key: `closure`)
+        - `fbTextArea`: Post-op instructions (key: `postOpInstructions`)
+        - `fbTextArea`: Follow-up (key: `followUp`)
+    - `fbSection`: Tissue removed and pathological specimens
+        - `fbTable`: Specimen lists and biopsies
+            - `fbTableCell` (left-most position): Drag handle column (displays icon `swap_vertical_circle`)
+            - `fbTableCell`: Specimen reference name block (standard text input)
+            - `fbTableCell`: Type / Description (standard textarea)
+            - `fbTableCell` (extreme right): Delete button (icon `highlight_off`)
+        - `fbAddButton`: Add specimen
+    - `fbSection`: Images
+        - Visual placeholder thumbnail blocks with a grid size repeat layout.
+    - `fbSection`: Implants - Scan for safety
+        - `fbTable`: Implants list
+            - `fbTableCell` (left-most position): Drag handle column (displays icon `swap_vertical_circle`)
+            - `fbTableCell`: Implant ID (standard input)
+            - `fbTableCell`: Description (standard textarea)
+            - `fbTableCell`: Does this implant require exchange or removal?
+                - `fbRadio`: Yes
+                    - `fbPartialDate`: Remove by (required, format: `dd-Mmm-yyyy`)
+                - `fbRadio`: No
+            - `fbTableCell` (extreme right): Delete row column (displays icon `highlight_off` to trigger instant row deletion code)
+        - `fbAddButton`: Add another implant
 
-### The application / navigation forms
+### Application and navigation forms and pages
 
 #### 1. Home page (`Home.tsx`)
 - High-contrast typography displays main title `"formBuilder2"` (`fontSize: "2rem"; margin: "1rem 0";` sentence case).
-- Renders big blue centered navigation buttons pointing to Patient registry and Patient search.
+- Renders big blue centered navigation buttons pointing to clinical forms, Patient registry, and Patient search. The clinical buttons include Waiting list card, Operation note, Outpatient outcome, and Treatment summary for Donald Duck by default.
 - The footer retains the standard `fbBottomControlsRow` rendering active user sessions.
 
 #### 2. Patient registry (`PatientRegistry.tsx`)
@@ -709,7 +743,7 @@ The documentation is organized into the following direct modules:
 
 #### 3. Patient search (`PatientSearch.tsx`)
 - Autofocuses the `fbSearchInput` widget wrapper centrally on page mount.
-- Displays a silver clearing cross (`✕`) on input values to clear lists and re-focus.
+- Displays a silver clearing cross (`x`) on input values to clear lists and re-focus.
 - Retains plain "No matches found" message if searches return empty strings.
 
 #### 4. Patient record (`PatientRecord.tsx`)
@@ -717,10 +751,129 @@ The documentation is organized into the following direct modules:
 - Arranges cards in a chronological event index timeline using standard `forms_index_current` tables.
 - Renders future hospital appointments in visual bright-green "Future appt" tags.
 - Open triggers mount form components in the DOM, hiding the parent records dashboard.
+- The "New form or document" popup creates Outpatient outcome, Waiting list card, Treatment summary, and Operation note documents for the current patient. Treatment summary documents use the normal inline EV/RoV pattern and are indexed as `forms_index.form_type = "treatment_summary"`.
+
+#### 4a. Treatment summary (`TreatmentSummary.tsx`)
+- Treatment summary is a first-class clinical document generated from the Controller JSON form whose public id is `c2d1a786`.
+- The source JSON specification is kept in `src/treatmentSummarySpec.ts`; `src/GeneratedFormRenderer.tsx` renders that spec as normal EV controls and RoV fields.
+- Saved values are keyed by Controller component id in `form_data`, with coded-selector companion values saved as `{componentId}_coded`.
+- Rows, row cells, `colSpan`, required fields, dropdown/radio option labels, text inputs, text areas, MSI selectors, and SNOMED CT diagnosis selectors are rendered from the imported spec.
+- The first two Details questions default to "Unknown or not recorded".
+- Treatment summary saves versions to the `treatment_summaries` clinical table and appends a `forms_index` row with `form_type = "treatment_summary"`, so duplicate display names do not identify records.
+
+#### 5. Controller (`Controller.tsx`)
+- Controller is a special form-building page for authenticated form controllers to create patient forms from selected components without AI assistance.
+- User-created forms are stored as JSON specifications and rendered dynamically in the browser; editing a designed form mutates the JSON spec and re-renders the left-panel preview.
+- Controller does not use browser local storage for design data. It saves/loads only through the REST API backed by `"designAuth"` and `"designData"`. Session tokens and preferences may be stored locally for session resume.
+- Controller authentication prefers `/formBuilder2/api/controller-auth/register-start`, `/formBuilder2/api/controller-auth/register-resend`, `/formBuilder2/api/controller-auth/register-verify`, and `/formBuilder2/api/controller-auth/login`; the client still falls back to the older `/designer-auth/...` paths for compatibility. Passwords are salted and hashed in the Java API after email verification before storage. Re-registering the same email address is allowed and preserves existing Controller data by keeping the same `user_uuid` while replacing the password hash and verification timestamp.
+- Each designed form has a private design UUID and a public random hexadecimal identifier. Review URLs use `/formBuilder2/userForm.html#{randomHex}` without a cachebusting query string.
+- Public forms load with `/formBuilder2/api/designs/public/{randomHex}` and do not display the Controller right panel.
+- `wlc.json` in the project root is a Controller-readable test specification for a Waiting List Card-style form.
+- The page uses a two-panel layout:
+    - Left panel: 75% of the window width, containing the live form preview.
+    - Right panel: 25% of the window width, containing authentication, design lists, property sheets, breadcrumbs, JSON tools, save/delete/logout, and public URL controls.
+- When no user is logged in, the left panel is blank and the right panel shows a Login/Register radio toggle, defaulting to Login.
+- Login uses email address and one password field.
+- Registration requires email address, password, repeat password, and a six-digit email verification code. Email addresses must end with `@wales.nhs.uk`. Passwords must be at least 12 characters. Password inputs have a vertically centred inline show-password icon.
+- Registration must show the red italic warning between email and password: "Passwords must be 12 characters or longer. Do NOT use your NADEX password. Do NOT re-use another password. There is no automatic password recovery or reset."
+- Pressing Enter in a Controller login or registration password field submits that auth form for validation. Switching between Login and Register disables plain-text password display.
+- Registration sends a six-digit verification code by email. The code entry panel tells users to check inbox and junk folders, supports Resend code and Cancel, and logs the user in only after the correct unexpired code is entered. Codes expire after ten minutes; expired and incorrect codes show the specified Retry panel.
+- After login, the right panel shows the user's prior designs as blue underlined links, followed by a "New form" button. Controller stores the session token in a same-path browser cookie and local storage so ordinary reloads, hot updates, and local server rebuilds can resume without asking for credentials.
+- After successful login or registration, and after explicit Logout, Controller clears the visible login and registration email/password inputs. Logout also clears in-memory user email, password, and session-token state, deletes local session storage, and clears the session cookie.
+- New forms have title "My first form", are for Donald Duck by default, and start with an empty form body.
+- Left-panel selection:
+    - Clicking, focusing, or selecting a component from the right panel marks it selected.
+    - Selected components have `border: 0.1rem solid purple;` with square corners. `fbQuestionRow`, `fbQuestionRowCell`, and selected/all-purple form body drop targets use `0.4rem` internal selection padding.
+    - A `1rem` square solid purple drag handle is flush with the upper-left corner of selected draggable component borders.
+    - The form body itself can be selected; it has a purple border around the central form body and no drag handle. When empty, the selected form body is at least `2rem` high.
+    - `fbQuestionRow` and `fbQuestionRowCell` are directly selectable and draw the purple border and drag handle when selected.
+    - Dragging from the purple handle onto another component moves the dragged component's JSON before the drop target's JSON. Dropping a question onto a question inside an `fbQuestionRowCell` inserts a new `fbQuestionRowCell` into the parent `fbQuestionRow` and places the dropped question inside that new cell.
+    - Drag/drop placement is handled by Controller separators only. Blank-space or component-body drops are rejected with the drag/drop problem modal rather than being interpreted as append or move-before operations.
+    - The form title, component labels/text, and radio/check option labels are editable in place. In-place label edits update JSON on blur so the page is not re-rendered on every keystroke.
+- Add controls:
+    - Purple `+` controls are no longer shown in the left Designer preview panel. Adding is driven from the contextual right-panel Add controls.
+    - Right-panel fixed-type Add actions add immediately. General component actions expand nested lists of component types; all add actions are top-level right-panel items rather than nested below an Add item. All task items except Delete are blue and underlined, and every item/task has a right-pointing or downward-pointing triangle.
+    - The text of an action is underlined, but the triangle marker to its left is not underlined.
+    - Components are inserted according to the selected context: for example, after/below the selected section or row, to the right of the selected row cell, below the selected question, or inside the selected group where appropriate.
+    - For an `fbQuestionRow`, adding creates an `fbQuestionRowCell`, then adds the selected question component into that cell.
+    - If an invalid component type is dropped onto a component, show a purple-bordered explanatory popup with an OK button and do not change JSON.
+- Allowed add menus:
+    - Form body: `fbSection`, `fbQuestionRow`, any question type, and tables.
+    - `fbSection`: `fbQuestionRow`, any question type, and tables.
+    - `fbQuestionRow`: any question type, added inside a new selectable `fbQuestionRowCell`.
+    - `fbQuestionRowCell`: any question type, added inside the selected cell.
+    - `fbGroup`: `fbRadio` or `fbCheck`.
+    - Any question type: `fbTextInput`, `fbTextArea`, `fbDropdown`, `fbNumberInput`, `fbFieldWithUnits`, `fbCheck`, `fbRadio`, `fbGroup`, `fbPartialDate`, `fbExactDate`, `fbMSISelector`, `fbSCTDiagnosis`, `fbSCTProcedure`.
+    - Table components may only be added to the top-level form body or to an `fbSection`.
+- Special add cases:
+    - When an `fbRadio` or `fbCheck` is selected, add controls add subquestions. Adding a subcomponent forces the parent check/radio into its checked preview state so the newly visible subcomponent outcome can be seen immediately. For radios inside an `fbGroup`, this sets the group preview value to the selected radio id.
+    - `fbQuestionRowCell` is intended to contain a vertical column of single components, possibly with subcomponents, and must not contain nested `fbQuestionRow` layouts. When a component is selected and that component is a direct child of an `fbQuestionRowCell`, the right panel does not show "Add component to right"; it only allows adding below inside the same cell. Green tall-for-single separators are not rendered to the left or right of direct children inside a row cell.
+    - When the selected component is the only child of an `fbQuestionRowCell`, and that cell is the only child of its `fbQuestionRow`, the right panel shows "Remove enclosing row and cell components" after the add actions and before Delete. The action removes the row and cell wrapper and replaces the row in the JSON tree with the selected component.
+    - Right-panel contextual Add controls are top-level accordion/list items. Fixed-type actions such as section, row, radiobutton, and check box add directly. General component actions expand nested lists of component types. For the form body they are "Add section to form", "Add component row to form", and "Add single component to form". For a section they are "Add component row to section", "Add component to section", and "Add another section". For a component row they are "Add component at end of row", "Add a single component below this row", and "Add another row of components below this row". For a row cell they are "Add component to the right" and "Add component below". For a group they are "Add radiobutton to group", "Add check box to group", "Add a component below", and "Add a row of components below". For a radio or check they are "Add a subcomponent" and "Add another radiobutton below" or "Add another check box below".
+    - Right-panel design:
+    - Minimalist black-on-white UI, visually distinct from patient forms.
+    - Header contains clickable blue underlined breadcrumbs for the current form/component context, including `fbQuestionRowCell` nodes. When a question row is selected, its child cells are displayed as selectable cell links beneath the breadcrumb path.
+    - Right-panel buttons highlight on hover and keyboard focus with a grey/silver background.
+    - Below the breadcrumbs is a checked-by-default "Show selected purple boxes (component boundaries)" checkbox. Unchecking it hides the selected purple border and drag handle until it is checked again or a breadcrumb that points to a selectable purple box is clicked. Beneath it is "Show all purple boxes"; checking it outlines every control in the left panel and unchecks "Show selected purple boxes (component boundaries)". Unchecking it returns to selected-only behaviour. Checking "Show selected purple boxes (component boundaries)" or clicking a breadcrumb unchecks "Show all purple boxes". Purple drag handles display only when "Show green bars (enables drag and drop)" is checked.
+    - Above the purple-box controls is an unchecked-by-default "Show rows and cells in breadcrumbs" checkbox. When unchecked, `fbQuestionRow` and `fbQuestionRowCell` are omitted from breadcrumbs; when checked, they are included.
+    - Beneath the purple-box controls is "Show green bars (enables drag and drop)". Green bars are transient Controller-only drop targets and are not saved to database JSON. Separators use `fbFaintGreen` (`#C5E1A5`) with `1.0rem` thickness. Wide separators appear between vertically stacked children, including radio/check children inside groups. Tall separators appear between row cells. Tall-for-single separators appear to the left and right of single questions in form/section contexts; adding or dropping a component on either side converts the single question to a two-cell `fbQuestionRow`. Selecting a green separator shows right-panel add actions for that insertion point and hides Delete.
+    - Controller green separators do not have browser tooltip text.
+    - The `fbSeparator` element is the drop zone and carries `data-designer-drop-zone-id`; surrounding layout wrappers may still provide padding, grids, selection borders, or section/cell structure, but they are not the green drop target.
+    - If a form body, section body, question row, or question row cell has no child content while green bars are visible, its single separator fills the available width and uses the standard `1rem` separator height.
+    - Drag/drop is only accepted by the light-green separators. `fbQuestionRow` components can only be dropped on separators whose parent is the form body or an `fbSection`. `fbQuestionRowCell` components can only be dropped on separators whose parent is an `fbQuestionRow`. Invalid drops show a 600ms modal titled "Drag and drop problem" explaining the allowed targets.
+    - When the selected `fbSeparator` is the only child placeholder for an empty `fbSection`, `fbQuestionRow`, or `fbQuestionRowCell`, the right panel shows a red "Delete section", "Delete component row", or "Delete component row cell" action after the add action. Clicking it deletes the empty parent container.
+    - Footer contains the public URL line above the action buttons, then Show JSON, Save, and Logout. Form deletion is handled by the red underlined Delete accordion item. The public URL block has one silver horizontal rule above it and one matching silver horizontal rule below it.
+    - Public URL is rendered inline as black "Public URL: " text followed by a blue underlined URL and a borderless Material Icons copy icon. Controller public URLs do not include a cachebusting query string.
+    - Show JSON opens a large popup with indented editable JSON. The textarea has horizontal and vertical scroll bars. OK validates and applies JSON to the live design, saves through the normal design persistence path, resets selection to the form body, and keeps the parsed/replacement design active even if the pasted JSON contains a different design `id`.
+    - Save writes JSON to the database with an incremented version or updated saved timestamp. Auto-save should run when changing design, leaving the page, or logging out when feasible.
+    - The red underlined Delete task exposes "Confirm delete component" for selected components and "Confirm delete form" for the whole form. Confirm delete form requires a browser confirmation popup and calls the REST delete endpoint so database reloads do not restore the deleted form. Controller task items use compact vertical spacing; all task accordion items show one disclosure triangle, and open accordions collapse after a subitem action is clicked.
+- Controller preview footer:
+    - Controller uses its own simple footer with a single RoV/EV toggle button. It does not render the full clinical save/auth/final footer inside Controller preview mode.
+    - Controller RoV preview renders the live values entered in EV preview, including option labels for radio/check/dropdown controls.
+- Property sheet:
+    - When a component is selected, the right panel shows editable properties in an HTML table with `border=1`; the delete control appears below the table, not inside it.
+    - Editable common properties: type dropdown, label or legend, id, required toggle, tooltip, bold override toggle, plain override toggle, show in RoV if empty/not selected, placeholder where applicable, and database column name. Bold/plain overrides apply consistently to component display text, including standalone checks/radios, group options, groups, sections, ordinary question labels, and RoV values.
+    - Value-bearing components show a "Default value" property between "Id" and "Required". For most components this is a borderless auto-expanding textarea; for `fbCheck` and `fbRadio` it is a checkbox. Default values are applied to the rendered control when a saved form specification is first loaded, and are not reapplied after the user edits live values in that session.
+    - `fbDropdown` also has an editable list of options.
+    - `fbQuestionRowCell` has a numeric `colSpan` property from 1 to 12, defaulting to 1. In Controller preview, `fbQuestionRow` uses a flex row rather than a Tailwind/grid span layout. Controller manually calculates each selectable row-cell wrapper's flex basis from the cell's `colSpan`, the total row span, the fixed `1rem` widths of any green row separators, and the `1rem` gaps between row items. This manual calculation is used because the selectable purple-border wrapper is the actual row child, and earlier attempts to put grid span classes or `grid-column` on the inner `fbQuestionRowCell` were visually ineffective. When an immediate child of an `fbQuestionRowCell` is selected, the property sheet displays and edits the containing cell's `colSpan`.
+    - `fbTextArea` has a "Full width" checkbox property. When unchecked, the textarea keeps the standard `37rem` max-width; when checked, the textarea occupies the full width of its container.
+    - `fbMSISelector`, `fbSCTProcedure`, and `fbSCTDiagnosis` have an "Accept uncoded values" toggle, reserved for future implementation.
+    - Tables can be added to forms and sections. Table properties include toggles for use full width, include drag handles, and include row delete buttons, plus editable column labels and row count.
+    - Property-grid inputs and textareas in the value column must not show borders when focused. Label and Tooltip properties use one-line-minimum auto-expanding textareas rather than inputs. Property-grid textareas auto-expand to fit content, do not show scroll bars, and have no resize handle. Options and longer free-text textareas start at four lines high; Options textareas commit option changes on blur so Enter can insert line breaks normally while editing.
+    - Standalone `fbRadio` and `fbCheck` components render as one normal radio/checkbox control with an editable label and optional subquestions. They must not render as an `fbGroup` or as a group-like wrapper containing one option when added to a section, question row, or question row cell.
+    - `fbRadio` and `fbCheck` children inside an `fbGroup` render as individual radio/checkbox options using the normal group styling and compact vertical spacing, not as standalone question blocks. Controller group labels are bold and editable in place. Selecting a radio/check option displays its own purple selection border and editable in-place label. This individual selectability must remain true when green drop-target separators are visible.
+    - Designer required indicators appear once: after the displayed label when a label exists, or to the right of the control when no label exists. `fbGroup` required indicators are displayed after the group label.
+    - In-place label editing must strip the rendered required asterisk from the saved label text, so saving a required component label never accumulates multiple `*` characters.
+    - Designer tooltip property values are rendered by Controller's custom tooltip hook on selectable controls and displayed label/heading; green separators have no tooltip.
+    - New standalone `fbCheck` components default to labels such as "Check 1"; new standalone `fbRadio` components default to labels such as "Radio 1".
+    - When selected, ordinary controls such as text inputs, text areas, groups, dropdowns, MSI selectors, and SNOMED CT selectors expose right-panel "Add component to right" and "Add component below" actions. Adding to the right of a standalone component converts it into a two-cell `fbQuestionRow`; adding below inserts the new component after the selected one.
+    - New IDs are allocated automatically as `section1`, `section2`, `field1`, `field2`, etc. Users may edit IDs. IDs may be used as React keys.
+    - Controller forms and components store persistent free-text `notes` values. The property grid shows a "Notes" row with a borderless textarea that accepts line breaks.
+    - Controller components also store a persistent `key` value. Missing or duplicate keys and missing or duplicate component IDs are repaired when designs are loaded from the database or edited through the JSON popup. New component IDs are allocated by scanning existing IDs for the first unused prefix number, not by using component count, so deleted or reordered components do not cause ID reuse. React rendering uses the stored key with the component id as fallback.
+- Controller JSON form specification schema:
+    - A saved Controller form is a JSON object with `id`, `publicId`, `title`, `patientUuid`, `components`, optional `savedAt`, and optional `notes`.
+    - `id` is the private design UUID. `publicId` is the random public URL key stored in `"designData".random_hex`. `title` is the editable form title. `patientUuid` is the default patient UUID used when previewing public forms.
+    - `components` is an ordered tree of component objects. Every component has `id`, `type`, `label`, optional persistent `key`, optional `children`, and optional design metadata such as `notes`.
+    - Component `type` is one of `fbSection`, `fbQuestionRow`, `fbQuestionRowCell`, `fbTable`, `fbGroup`, `fbTextInput`, `fbTextArea`, `fbDropdown`, `fbNumberInput`, `fbFieldWithUnits`, `fbCheck`, `fbRadio`, `fbPartialDate`, `fbExactDate`, `fbMSISelector`, `fbSCTDiagnosis`, or `fbSCTProcedure`.
+    - Structural components own ordered `children`: forms contain sections, rows, tables, and single questions; sections contain rows, tables, and single questions; rows contain `fbQuestionRowCell`; row cells contain a vertical stack of single components; groups contain `fbRadio` and `fbCheck` options; checks/radios may contain conditional subcomponents.
+    - Common optional component fields are `required`, `tooltip`, `databaseColumn`, `placeholder`, `defaultValue`, `boldOverride`, `plainOverride`, `showInRoVIfEmpty`, and `acceptUncodedValues`. `defaultValue` is a string; for `fbRadio` and `fbCheck`, the string `"checked"` means checked/selected by default.
+    - `fbQuestionRowCell.colSpan` is a number from 1 to 12 and controls its desktop grid span. Missing or invalid `colSpan` values are treated as 1.
+    - If a saved JSON spec contains duplicate component IDs, Controller repairs later duplicates on load before rendering so selection, property edits, and deletion target one component rather than every component sharing the same ID.
+    - `fbTextArea.fullWidth` is a boolean that overrides the default 37rem textarea max-width. Tables keep their existing `useFullWidth`, `includeDragHandles`, `includeRowDeleteButtons`, `tableColumns`, and `tableRows` fields.
+    - `fbDropdown.options` is an ordered array of `{ "value": string, "label": string }` option objects. Controller-generated option values may be regenerated from labels when the Options property is edited.
+- Controller approaches tried that did not work:
+    - "Show green bars when dragging" was tried as a second right-panel checkbox that displayed separators only after native drag start. It was removed because React had to insert or rewrap separator DOM during the browser's fragile native `dragstart` window. Inserting wrappers around the source could cancel the first drag; skipping source wrappers preserved dragging but meant separators were not reliably visible when the drag began. The stable behaviour is to show green bars before starting drag/drop work.
+    - Full-size empty-container separators were first tried with percentage `height`/`min-height`/`min-width` values such as `100%`. This did not work reliably because the parent containers often only had `min-height`, not a definite computed height, so the separator could be present in the DOM but visually collapse.
+    - Transform-scaling empty-container separators with `scaleY()` and then absolutely positioning a taller separator inside a fixed-height wrapper were both tried. They produced uneven-looking whitespace or otherwise looked worse, so the Controller returned to the standard `1rem` full-width empty separator.
+- Designer persistence tables:
+    - `"designAuth"`: user UUID, lower-case user email, salt, password hash, email verified date/time, date/time registered, date/time password changed, date/time last save operation, and JSONB `prefs`.
+    - `"designData"`: user UUID, designed form UUID, random hexadecimal public identifier, date/time saved, and JSON spec of the form.
+    - `"emailVerificationsInProgress"`: user email, six-digit verification code, and date/time the code was sent.
+    - `"designSessions"`: session token, user UUID, expiry time, remember flag, created time, and last-seen time. Non-remembered sessions use a rolling 10-minute expiry. Remembered sessions use a long-lived expiry and still end on explicit Logout.
 
 ---
 
-## The algorithms and javascript fragments used to provide features common to all forms
+## Algorithms (including Javascript fragments)
 
 ### State snapshotting & dirty check equation (`formChanged`)
 Used inside `formStateUtils.ts` to compare modified fields against initialized records:
@@ -771,43 +924,48 @@ export const handleAutoExpand = (textarea: HTMLTextAreaElement) => {
 
 ---
 
-## Detailed description of the complex custom controls
+## Complex custom controls
 
-### DateControl
-- **Day-precision, month-precision, and year-precision parsers**:
-  - Implements regular expressions processing `dd-Mmm-yyyy` down to single `yyyy`.
+### `fbPartialDate` and `fbExactDate`
+- **Day-precision, month-precision, and year-precision parsers in `fbPartialDate`**:
+    - Implements regular expressions processing `dd-Mmm-yyyy` down to single `yyyy`.
 - **Layout and styling**:
-  - Main input constrained to `width: 100%; maxWidth: 11rem;`.
-  - Today's date displayed inside calendar grids using `border: 0.2rem solid " + fbGreen;`.
-  - Double steppers (`-` / `+`) alter calendar grids cleanly.
-  - Active index highlights inside `backgroundColor: fbGreen;` with bold white text.
+    - Main input constrained to `width: 100%; maxWidth: 11rem;`.
+    - Today's date displayed inside calendar grids using `border: 0.2rem solid " + fbGreen;`.
+    - Double steppers (`-` / `+`) alter calendar grids cleanly.
+    - Active index highlights inside `backgroundColor: fbGreen;` with bold white text.
+- **Exact-date mode**:
+    - `fbExactDate` wraps the same visual picker and keyboard handling but sets exact-only validation.
+    - Month-only and year-only typed values are rejected with "Complete date required".
+    - The Select exact date, Select month, and Select year buttons are not displayed.
+    - WLC `dateListed` and operation note `date` use `fbExactDate`; their event dates are converted to ISO date values for database `event_datetime`/index persistence.
 
-### MSISelector
+### 'fbMSISelector'
 - **Clinician search query endpoint**:
-  - `https://www.shadesofpale.net/MSISearch?st={query}` (auth: `dhcw:dhcw`).
+    - `https://www.shadesofpale.net/MSISearch?st={query}` (auth: `dhcw:dhcw`).
 - **Data validation**:
-  - Persistent state keys `seniorClinician_coded` or `listedBy_coded` track clinician selection validation.
-  - If empty, no indicator displays.
-  - If verified selection exists, displays `check_circle` (`fbGreen`, tooltip `"Coded"`).
-  - If typed text is unconfirmed, displays `warning` (`fbOrange`, tooltip `"Not coded"`).
-  - User edits invalidate confirmed selections immediately.
+    - Persistent state keys `seniorClinician_coded` or `listedBy_coded` track clinician selection validation.
+    - If empty, no indicator displays.
+    - If verified selection exists, displays `check_circle` (`fbGreen`, tooltip `"Coded"`).
+    - If typed text is unconfirmed, displays `warning` (`fbOrange`, tooltip `"Not coded"`).
+    - User edits invalidate confirmed selections immediately.
 
-### fbSCTProcedure, fbSCTDiagnosis, and fbSCTSelector
+### 'fbSCTProcedure', 'fbSCTDiagnosis', and 'fbSCTSelector'
 - **Component structure**:
-  - `fbSCTProcedure` and `fbSCTDiagnosis` remain separate public/specification components.
-  - Both wrappers delegate their shared popup, parsing, selection, search-history, and coded-indicator mechanics to `/src/components/fbSCTSelector.tsx`.
-  - `fbSCTProcedure` passes `searchCommand="findProcedure"`, `mode="procedure"`, and the procedure input CSS hook.
-  - `fbSCTDiagnosis` passes `searchCommand="findDisorder"` and `mode="diagnosis"`.
+    - `fbSCTProcedure` and `fbSCTDiagnosis` remain separate public/specification components.
+    - Both wrappers delegate their shared popup, parsing, selection, search-history, and coded-indicator mechanics to `/src/components/fbSCTSelector.tsx`.
+    - `fbSCTProcedure` passes `searchCommand="findProcedure"`, `mode="procedure"`, and the procedure input CSS hook.
+    - `fbSCTDiagnosis` passes `searchCommand="findDisorder"` and `mode="diagnosis"`.
 - **Search endpoints**:
-  - Procedure: `https://www.shadesofpale.net/SCTSearch?cmd=findProcedure&st={query}&count=30`
-  - Diagnosis: `https://www.shadesofpale.net/SCTSearch?cmd=findDisorder&st={query}&count=30`
+    - Procedure: `https://www.shadesofpale.net/SCTSearch?cmd=findProcedure&st={query}&count=30`
+    - Diagnosis: `https://www.shadesofpale.net/SCTSearch?cmd=findDisorder&st={query}&count=30`
 - **Double-pane coordinate popup**:
-  - Absolute wrapper dimensions locked to `width: 45rem;`.
-  - Left matches block occupies one-third width; right details container occupies two-thirds width.
+    - Absolute wrapper dimensions locked to `width: 45rem;`.
+    - Left matches block occupies one-third width; right details container occupies two-thirds width.
 - **Custom response parser**:
-  - Handled by `/src/utils/shadesOfPaleParser.ts`.
-  - Uses `skipMetadata()` to scrub raw non-standard database prefixes (`!` and `~`).
-  - Standardizes unquoted boolean literals to javascript constants (`!n` $\rightarrow$ `null`, `!f` $\rightarrow$ `false`).
+    - Handled by `/src/utils/shadesOfPaleParser.ts`.
+    - Uses `skipMetadata()` to scrub raw non-standard database prefixes (`!` and `~`).
+    - Standardizes unquoted boolean literals to javascript constants (`!n` $\rightarrow$ `null`, `!f` $\rightarrow$ `false`).
 
 ### Row-list state helpers
 - Dynamic clinical tables that use numeric `id` fields share pure helpers in `/src/utils/rowState.ts`.
@@ -904,26 +1062,28 @@ html,
 
 ---
 
-## Brief technical overview of the whole app
+## Technical overview of the application
 
 - Built as an offline-capable Electronic Health Record (EHR) clinicial-forms editor.
 - Implemented as a full-stack, single-page React 19 application using Vite and TypeScript.
 - Styles driven using Tailwind CSS v4 paired with local overrides.
-- Supabase-style client calls are routed through `/src/mockSupabase.ts`, which maps the subset of query/RPC/update/insert calls used by the forms to the Node/Express REST API in `/server.ts`.
+- Database client calls are routed through `/src/restClient.ts`, which maps the subset of query/RPC/update/insert calls used by the forms to the Node/Express REST API in `/server.ts`.
 - By default the REST shim uses same-origin relative `/api/...` paths for local and bundled deployments.
+- The Node/Express server supports an opt-in mock database mode for restricted development machines. Set `FORMBUILDER2_MOCK_DB=true` to store prototype data in a local JSON file instead of PostgreSQL while preserving the same REST paths.
 - Static-host deployments can point the browser bundle at a separate API origin by building with `VITE_API_BASE_URL` set to the API base URL, for example `https://api.example.org`.
 - Cross-origin static/API deployments require the API server to allow the static site origin via the comma-separated `CORS_ORIGINS` environment variable.
 - A browser page served from HTTPS is a secure context, but it cannot call an HTTP API endpoint because that is active mixed content. The API origin also needs a valid HTTPS certificate for its hostname; an IP-address HTTPS endpoint with a mismatched/self-signed certificate will fail browser fetches.
+- Saved form history is served through `/api/forms-index/:uuid/history`. Exact historical form reads use `/api/forms/:formType/:uuid/versions/:version`. The browser compatibility layer maps `forms_index` history queries and `eq('version', n)` form queries to these endpoints. Clinical form types currently include `waiting_list_card`, `operation_note`, `outpatient_outcome`, and `treatment_summary`.
+- Development machines may be unable to reach the PostgreSQL database directly even when Node.js can run. On SGS-TGALappy, verified on 2026-06-03, the alternate Codex Node binary works but both localhost SWAS `/formBuilder2/api/health/db` and a direct Node/`pg` probe timed out connecting to the configured database.
 
 ---
 
-## List of compile and runtime dependencies
+## Compile and runtime dependencies
 
 - `react` (`^19.0.1`)
 - `react-dom` (`^19.0.1`)
 - `react-router` (`^7.15.1`)
 - `express` (`^4.21.2`)
-- `@supabase/supabase-js` (`^2.106.1`)
 - `lucide-react` (`^0.546.0`)
 - `motion` (`^12.23.24`)
 - `pg` (`^8.21.0`)
@@ -933,32 +1093,39 @@ html,
 
 ---
 
-## Brief description of compile and deploy steps
+## Compile and deploy steps
 
 - **Locally Run Dev Environment**:
-  - Serves direct, interactive local host preview:
+    - Serves direct, interactive local host preview:
   ```bash
   npm run dev
   ```
 - **Compile Application Bundle**:
-  - Executes Vite and TSC scripts to compile files under `/dist/`:
+    - Executes Vite and TSC scripts to compile files under `/dist/`:
   ```bash
   npm run build
   ```
+- **Experimental preserved-module static build**:
+    - Uses Vite library mode with `preserveModules` and writes a fresh timestamped directory under `/compiled/`.
+    - This strategy preserves individual ES module files and sets `minify: false` in `vite.library.config.ts`; it is the preferred current localhost SWAS static deployment style when avoiding a single large minified bundle.
+    - `compiled/latest-library-build.txt` contains the latest generated directory path.
+  ```bash
+  npm run build:library
+  ```
 - **Static Host Bundle With Separate API Origin**:
-  - Build with `VITE_API_BASE_URL=https://api.example.org npm run build`.
-  - Upload `dist/index.html` and the complete `dist/assets/` directory to the HTTPS static host.
-  - Do not upload `dist/server.js` or `dist/server.js.map` to the static host; those belong only on the Node API server.
-  - Configure the API server with `CORS_ORIGINS=https://mysite.example.org` so browser requests from the static site are accepted.
+    - Build with `VITE_API_BASE_URL=https://api.example.org npm run build`.
+    - Upload `dist/index.html` and the complete `dist/assets/` directory to the HTTPS static host.
+    - Do not upload `dist/server.js` or `dist/server.js.map` to the static host; those belong only on the Node API server.
+    - Configure the API server with `CORS_ORIGINS=https://mysite.example.org` so browser requests from the static site are accepted.
 - **Pruning build logs**:
-  - Removes build directories and temporary configurations:
+    - Removes build directories and temporary configurations:
   ```bash
   npm run clean
   ```
 
 ---
 
-## The database tables, described using SQL DDL
+## Database schema
 
 ```sql
 CREATE TABLE patients (
@@ -1035,11 +1202,57 @@ CREATE TABLE outpatient_outcomes (
   appointment_uuid UUID,
   PRIMARY KEY (uuid, version)
 );
+
+CREATE TABLE treatment_summaries (
+  uuid UUID NOT NULL,
+  version INT NOT NULL,
+  patient_uuid UUID REFERENCES patients(uuid) ON DELETE CASCADE,
+  event_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+  form_status VARCHAR(20) NOT NULL,
+  form_data JSONB NOT NULL,
+  PRIMARY KEY (uuid, version)
+);
+
+CREATE TABLE "designAuth" (
+  user_uuid UUID PRIMARY KEY,
+  user_email VARCHAR(320) NOT NULL UNIQUE,
+  salt TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  email_verified TIMESTAMP WITH TIME ZONE,
+  datetime_registered TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now()),
+  datetime_password_changed TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now()),
+  datetime_last_save_operation TIMESTAMP WITH TIME ZONE,
+  prefs JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE TABLE "designData" (
+  user_uuid UUID NOT NULL REFERENCES "designAuth"(user_uuid) ON DELETE CASCADE,
+  designed_form_uuid UUID NOT NULL,
+  random_hex VARCHAR(64) NOT NULL UNIQUE,
+  datetime_saved TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now()),
+  json_spec JSONB NOT NULL,
+  PRIMARY KEY (user_uuid, designed_form_uuid, datetime_saved)
+);
+
+CREATE TABLE "emailVerificationsInProgress" (
+  user_email VARCHAR(320) PRIMARY KEY,
+  verification_code VARCHAR(6) NOT NULL,
+  datetime_code_sent TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE "designSessions" (
+  session_token UUID PRIMARY KEY,
+  user_uuid UUID NOT NULL REFERENCES "designAuth"(user_uuid) ON DELETE CASCADE,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  remember BOOLEAN NOT NULL DEFAULT false,
+  datetime_created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now()),
+  datetime_last_seen TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now())
+);
 ```
 
 ---
 
-## Templates for the SQL Queries used by the app
+## SQL Queries used by the app
 
 ### 1. Fetch Demographics
 ```sql
@@ -1064,305 +1277,3 @@ INSERT INTO forms_index (
 ```
 
 ---
-
-## Anything I've forgotten
-
-### Seeding configuration
-- System is pre-seeded with Donald Duck as patient and pre-populated clinicians in registry.
-- Checks if entries are lower than 50 patient entries inside localStorage buffers to automatically expand cases up to more than 200 realistic fictional patient records.
-- NHS number formats are normalized at seed runtime to spacing layout notation `### ### ####`.
-
-### Verified Non-Working Strategies
-- **TableRow Focus Highlights**: Initially hover states were applied directly on rows. It caused full tables to change color when clinicians focused individual inputs. Corrected by restricting backgrounds to `TD` cells.
-- **`fbAddButton` Highlight Locks**: Clicking buttons previously locked yellow focus highlights. Solved by replacing focus state hooks with the native CSS `focus-visible` pseudo-class.
-- **Empty list rows warnings**: Initially queried entries via `procedures.every()` checks which failed on initial uninitialized arrays. Corrected using safe arrays length validations: `(procedures.length === 0 || procedures.every(p => !p.procedure || String(p.procedure).trim() === ''))`.
-
----
-
-## Additional Technical Specifications and Refactorings
-
-The following technical paradigms, specifications, page behaviors, and custom mechanics have been carried over directly to represent the absolute state of the formBuilder2 EHR layout:
-
-### 1. Isolated Table Cell Interaction-Highlighting (`fbTableCell`)
-To prevent the entire table row from flashing or highlighting with a yellow background (`#ffffcc`) when a nested control (such as a dropdown, checkbox, or input field) is hovered or focused:
-- **Component-Scoped Interactivity (`fbTableCell`):** Cell containers for structured user-interactive clinical tabular lists (e.g., procedures lists, specimens, and implants) utilize the `<FbTableCell>` component (`/src/components/fbTableCell.tsx`). It inherits all React standard `<td>` properties while cleanly applying hover and `focus-within` transitions.
-- **Visual Segregation & Class Precedence Fix:** Highlighting is confined completely to the active element's cell. Because standard inline styles override CSS class declarations, the component's base state is styled using the Tailwind `bg-white` class instead of an inline `backgroundColor: 'white'` style. This enables the CSS-defined cell hover state (`hover:bg-[#ffffcc]`) and active form input focus-within state (`focus-within:bg-[#ffffcc]`) to cleanly override the default color, keeping hover and input focus highlights active in both clinical tabular editors under full desktop or mobile rendering.
-- **Encapsulated Typography and Margins:** Enforces robust default spacing (`padding: '0.4rem'`), a clean grey divider (`border-bottom: 1px solid silver`), and a crisp white background.
-
-### 2. Custom Global Tooltips Interface (`fbToolTip`)
-To present clinical rules, definitions, and contextual tooltips with absolute consistency and precise close buttons across different editors (such as `OutpatientOutcome` and `OperationNote`):
-- **Encapsulated Overlay Control (`fbToolTip`):** Renders floating context boxes securely above targeted label elements using absolute screen coordinates (`x`, `y` coordinates dynamically calculated relative to targeted label's bounds).
-- **Close Action Solid Outline:** The manual tooltip close buttons utilize the standardized `<FbToolTip>` component (`/src/components/fbToolTip.tsx`). Its close action button specifically enforces a high-contrast boundary styled with:
-  ```css
-  border: 0.1rem solid black;
-  border-radius: 0.2rem;
-  background-color: transparent;
-  ```
-  This guarantees accessibility and crisp button definition against the soft light blue background (`#8cd2e7`) of the tooltip shell.
-- **Shared tooltip controller:** Forms that need manual clinical tooltips use `/src/utils/useFbTooltips.tsx` to manage active tooltip state, refs, position measurement, delayed mouse-leave hiding, immediate closing, and tooltip rendering. The visual tooltip element remains `/src/components/fbToolTip.tsx`.
-
-### 3. Material Icons Font Family Protection
-To resolve the issue where standard Google Material Icons displayed as raw text ligature tags (e.g., `check_circle_outline`, `swap_vertical_circle`) instead of visual icons:
-- **Exclusion of `.material-icons` from Global Directives:** Inside `src/index.css`, the global layout rule enforcing the Google Roboto font-family (`font-family: 'Roboto', sans-serif !important;`) previously styled standard text tags such as `span` or `i` without distinguishing terminology symbols. We refactored the global span selector to explicitly exclude vector elements: `span:not(.material-icons):not(.material-icons-outlined)`.
-- **Enforced Icon Font Priority:** Added a specific higher-specificity class pairing declaration globally:
-  ```css
-  .material-icons, .material-icons-outlined {
-    font-family: 'Material Icons' !important;
-  }
-  ```
-- **Outcome:** This ensures the font engine preserves "Material Icons" for clinical badges and glyphs across all interactive panels and summaries immediately.
-
-### 4. Robust Empty Procedures Table Warning Row
-To ensure the "Enter at least one procedure" notice displays correctly when procedures are absent inside both clinical tabular editors:
-- **Comprehensive Empty State Equation:** Both the Waiting List Card (`src/WaitingListCard.tsx`) and the Operation Note (`src/OperationNote.tsx`) previously used a brittle validation check (`procedures.every(p => !p.procedure)`) which failed to consistently gauge uninitialized fields or draft loading anomalies. This was replaced with an all-inclusive validation rule:
-  ```typescript
-  (procedures.length === 0 || procedures.every(p => !p.procedure || String(p.procedure).trim() === ''))
-  ```
-- **Unified Placeholder Insertion:** 
-  - **Operation Note (`OperationNote.tsx`):** Spans across 5 table columns (`colSpan={5}`).
-  - **Waiting List Card (`WaitingListCard.tsx`):** Spans across 4 table columns (`colSpan={4}`) inside the Planned Procedure(s) card list.
-- **Visual Separation and Read-Only Filtering:** In edit view, these conditional rows print the required bold italic instruction in Deep Red (`#d50000`). In read-only views, empty structures are cleanly omitted from rendering by pre-filtering elements (`procedures.filter(p => p.procedure)`), avoiding any visual clutter.
-
-### 5. Non-Sticky Focus Highlight Behavior (`fbAddButton`)
-To fix the bug where interactive skeletal buttons (such as the "Upload image" `fbAddButton` in the Operation Note) retained a sticky yellow background after being pressed:
-- **Root Cause of Focus Lock:** Standard browser interactions maintain state focus on a clicked button until another element is focused. Inside `src/components/fbAddButton.tsx`, Javascript `onFocus` and `onBlur` events were coupled directly to the `hovered` state, forcing the button to lock into a yellow focus backdrop state even when the cursor had already departed.
-- **Decoupled Focus Control:** 
-  1. We completely removed `onFocus` and `onBlur` listeners from state binders in `fbAddButton.tsx`, confining the React state entirely to cursor physical interactions (`onMouseEnter` and `onMouseLeave`).
-  2. The custom styles inside the form stylesheets (`OperationNote.tsx` and `WaitingListCard.tsx`) were refactored to replace standard focus overrides (`.add-procedure-btn:focus`) with keyboard-only interaction rules:
-     ```css
-     .add-procedure-btn:hover,
-     .add-procedure-btn:focus-visible {
-       background-color: #fee715 !important;
-       color: black !important;
-       border-color: #fee715 !important;
-     }
-     ```
-- **Outcome:** Buttons change beautifully to a highlight yellow on cursor hover or keyboard tab focus-visible, and instantly return to pristine default white once unhovered, regardless of how many times they are clicked or tapped.
-
-### 6. Tooltip Close Button Compact Styling
-To improve target density and visual cohesion inside the custom blue tooltips (`fbToolTip.tsx`):
-- **Compact Padding Sizing:** Decreased the top and bottom padding of the manual Close button by `0.1rem` (changing from `padding: '0.1rem 0.3rem'` to `padding: '0rem 0.3rem'`).
-- **Outcome:** This ensures a slimmer, more elegant button fit that preserves the tooltip's negative space and layout symmetry perfectly, without encroaching on nearby text.
-
-### 7. Highlight Support for Inner Form Table-Cell Radios
-To resolve the issue where the Yes/No radio options in the Implants grid/table would not visually pop or dynamically highlight with the darker yellow styling:
-- **Nesting Level Compensation for Cells (`TD`):** The nesting level highlight logic (located in `src/components/fbLayout.tsx`) calculates the hierarchical nesting level of each form element to alternate between `#ffffcc` (light yellow) and `#fee715` (darker yellow) on hover or focus-within. Since the table cells (`FbTableCell`) are inherently styled/hovered with `#ffffcc`, standard radios inside it (nesting level 0) turned the exact same color, rendering their individual hover boundaries invisible.
-- **Table-Cell Detection Integration:** We explicitly expanded `getNestingLevel` to detect HTML table-cell parents:
-  ```typescript
-  if (
-    current.classList.contains("fb-question-container") ||
-    current.classList.contains("fb-radio-checkbox-item") ||
-    current.classList.contains("fb-subquestion") ||
-    current.tagName === "TD"
-  ) {
-    level++;
-  }
-  ```
-- **Outcome:** By counting `TD` towards the nesting boundary, nested radio containers inside tables dynamically evaluate with an odd nesting depth (level 1). They correctly transition to the rich darker yellow highlight color (`#fee715`) on hover or focus, contrasting beautifully against the lighter yellow background of the active table cell and ensuring robust visual feedback.
-
-### 8. Automated PostgreSQL Database Setup Script (`setup-db.ts`)
-To support direct setup of external PostgreSQL databases that lack web consoles:
-- **Comprehensive DDL Compilation:** A TypeScript script (`setup-db.ts`) was added to the project root containing the full medical schema layouts and auto-versioning triggers/views:
-  - Table: `patients` (primary details and demographics)
-  - Table: `forms_index` (audit-journal tracking metadata)
-  - Table: `waiting_list_cards`, `operation_notes`, `outpatient_outcomes` (clinical document JSONB records)
-  - View: `forms_index_current` (live version tracking lookup using `DISTINCT ON` query parsing)
-- **Automatic SSL Resolution:** Automatically activates secure SSL handlers when connecting to common hosted databases (such as Supabase, Azure, AWS, ElephantSQL) to prevent connection-handshake warnings or rejections.
-- **Execution Workflow:** Accessible via local command execution:
-  ```bash
-  DATABASE_URL="postgresql://username:password@hostname:port/database?sslmode=require" npx tsx setup-db.ts
-  ```
-
-### 9. Interactive Large-Scale Patient Seeding Script (`seed-patients.ts`)
-To populate the registry with realistic test cases for performance, pagination, and listing evaluation:
-- **Diverse Fictional Roster:** A script (`seed-patients.ts`) was engineered to seed the `patients` table with **274 highly recognizable household fictional characters** (covering universes such as *Harry Potter*, *Star Wars*, *DC Comics/Batman*, *Marvel Comics*, *Lord of the Rings*, *Sherlock Holmes*, *James Bond*, *Disney Classics*, *The Simpsons*, *Family Guy*, *SpongeBob*, *Shrek*, *Toy Story*, *Game of Thrones*, *Breaking Bad*, and historical legends).
-- **Medical String Formats & Logic:**
-  - **Welsh Demographics:** Full custom-styled addresses (Line 1/2/3/4) and valid postcode prefix combinations (e.g. `CF`, `SA`, `NP`, `LL`, `LD`, `SY`) sounding explicitly Welsh.
-  - **Calculated DoBs:** Calculates realistic dates of birth mapping back deterministically to ages between 0 and 100 relative to 2026.
-  - **Correct NHS Number Notation:** Pre-calculated with 3-3-4 digit grouping spaces (e.g. `XXX XXX XXXX`).
-  - **Systematic CRN Format:** Composes hospital numbers consisting of a custom letter (excluding 'O') followed by 7 random digits (e.g. `A5023912`).
-
-### 10. Revised Patient Registry Page Design
-To improve usability, simplicity, and consistency with custom header/footer standards, the Patient Registry page layout was revised with the following design specifications:
-- **Header Section Override (No Addressograph, Standard Typography):** The top header area displays the page title "Patient registry" in the standard Google Roboto font used throughout the rest of the application. The header background is styled as pure white with a royal blue 0.2rem bottom border. The standard patient `Addressograph` is omitted as there is no active patient selection in the general registry view.
-- **Table-Based Patient Rows (No Search Panel or Headings):** All search query panels, filters, and auxiliary headings (such as "Patients") have been removed to deliver a minimalist, focused presentation. The central area consists of a clean HTML `<table>` that populates a single row (`tr`) for each patient retrieved from the database:
-  - **Dynamic Patient Table:** Every table row encloses a single custom `fbAddressograph` card showing complete demographic and metadata fields, alongside a white-on-blue **"Open record"** primary action button positioned neatly on the right extreme of each row.
-  - **Deterministic Clinical Ordering:** To align with standard registrar lookups, the retrieval process queries the `patients_current` view using a multi-layered deterministic order: ordered alphabetically by **Surname**, then alphabetically by **First Names (forenames)**, and finally by **Date of Birth** in ascending order.
-  - **Single Page DOM Toggling (Null-Routing Navigation):** Clicking either an Addressograph card or its sibling **"Open record"** button avoids slow separate routing parameters. It sets `.style.display="none"` (utilizing the React conditional display state `display: activePatientUuid ? 'none' : 'flex'`) directly on the outer Registry container, mounting the patient record view as a lightweight child component and passing the active clinician `userName` and `patientUuid`.
-  - **Standard escape Close Button:** Once opened inline, the Patient Record features a standard white-on-blue **"Close"** Action button in its bottom-right footer controller bar. Clicking this removes the active patient record from the DOM and instantly un-hides the high-speed parent Patient Registry list.
-  - **Automatic High-Density Data Sync & NHS Code Alignment:** To ensure the system evaluates with a clinically representative layout, the local database connector automatically resets and populates all 200+ high-density fictional patients if a legacy browser session contains less than 50 patient slots. Furthermore, all existing and newly generated patient registers are actively validated and auto-reformed on load to strictly follow the standard, space-separated NHS layout (`### ### ####`).
-- **Defensive Line-Height & Native Hover Tooltips:**
-  - **Line-Height Reset:** A global class rule `line-height: normal !important;` is explicitly bound under `.fb-addressograph-card` and its child selectors inside `index.css`. This prevents table cell or grid parent properties from distorting text line spacing within registry cards.
-  - **Sub-field Tooltips:** Standard HTML `title` attributes have been integrated across all specific demographic sections of the standard `fbAddressograph` card template. When a clinician hovers their cursor over any part of the addressograph card, the native browser tooltip dynamically reveals the field's explicit medical category (e.g. "Surname", "First name(s)", "Title", "Address", "CRN", "Date of birth", "Age", "Sex").
-- **Footer Section Custom Controls (Right-Aligned Username & Dual Navigation):**
-  - **Username Field:** Located to the immediate left of the Back button in the Registry bottom control bar, permitting instant visualization and `localStorage`-backed updates to the clinician's active session signature. Highlighted with a soft yellow focus styling (`#ffffcc`).
-  - **Registry Return Navigation:** Styled as a white-on-blue primary Action control via the standard `fbButton` component, positioned at the extreme right to return clinicians to the App Home Page (`/`).
-  - **Patient Record Home Escape:** When the Patient Record sheet is loaded in standalone mode (direct navigation from the Home dashboard rather than the inline Registry overlay), its footer provides a primary white-on-blue **"Back"** button that seamlessly returns the clinician back to the App Home Page (`/`).
-
-### 11. Patient Search Page Design
-To support rapid, multi-entry clinical inquiries, a dedicated **Patient search** page was established, featuring:
-- **Consistent Clinical Design**: Utilizes robust, table-based patient rows, full sub-field demographic hover tooltips, and inline patient record sheet opening capabilities.
-- **Custom `fbSearchInput` Component**: Factored the search control into a highly reusable, custom `fbSearchInput` widget wrapper that provides styling parity with `fbQuestion` and encapsulates all focus/clearing states.
-- **Keyboard Auto-focus**: Forces the keyboard cursor to focus the `fbSearchInput` element immediately whenever the Patient Search view mounts.
-- **Silver Clearing Cross**: Positions a silver dismiss-cross icon (`✕`) on the right margin of the input box when characters are present. Clicking this instantly clears both input searchQuery state and active results list before re-focusing the cursor input.
-- **Empty Query Prevention**: When first opened or while the search control remains empty, the redundant guidance sentence is removed, and the list of addressographs is completely blank. Database queries are withheld to keep processes highly lightweight.
-- **Dynamic Change Response & Race Condition Protection**: Typing or updates immediately clear existing content and cancel/ignore any previous, stale background queries using incremental identifier locks (`queryRef`).
-- **Postgres pg_trgm Fuzzy Similarity**: Utilizes PostgreSQL trigram similarity matching (`similarity`) via the `search_patients_fuzzy` database RPC function, matching against a concatenated, comma-separated representation of all demographics in the addressograph card, ordering the output from the most similar record downwards.
-- **Pristine Error / Zero State Typography**: When no matching patient is returned, a clean slate "No matches found" message is displayed, utilizing pure Roboto body styling (`fontFamily: 'Roboto', fontSize: '1rem', fontWeight: 300, fontStyle: 'italic'`) without any trailing period.
-- **Home Integration**: Accessible via a white-on-blue link element directly on the application's central Home Dashboard.
-
-### 12. Outpatient Appointments & Clinical Events Architecture
-To support structured outpatient workflows and tracking of outpatient appointment status, a complete outpatient appointment system has been integrated:
-- **Database Schema (`outpatient_appointments` table)**:
-  - `uuid` (UUID, Primary Key)
-  - `version` (INT, Version identifier)
-  - `patient_uuid` (UUID, Foreign Key referencing `patients`)
-  - `updated_at` (TIMESTAMPTZ, Timestamp)
-  - `updated_by` (TEXT, Editing clinician ID)
-  - Columns mapped to the appointment metadata section: `organisation`, `speciality`, `site`, `senior_clinician`, `clinic_name`, `date`, `time`.
-- **Forms Index Category Separation (`event_or_document`)**:
-  - The `forms_index` (and `forms_index_current` view) includes an `event_or_document` discriminator column.
-  - Scheduled Appointments are saved as `event_or_document = 'Event'`. `event_datetime` stores the appointment time, and `document_datetime` is set to null.
-  - Medical Documents (Waiting List Cards, Operation Notes, Outpatient Outcomes) are saved as `event_or_document = 'Document'`. Both `event_datetime` and `document_datetime` are fully populated.
-- **Patient Record Event Display**:
-  - Events of type `Event` are highlighted in the patient forms list with a custom-styled, clinical-blue **Scheduled Event** tag (replacing standard Draft/Final labels).
-  - List items for scheduled events suppress superfluous metadata (such as version or write time) and focus on presenting the appointment date/time and clinic details.
-  - Hovering and clicking on an appointment event item launches a pre-linked Outpatient Outcome drafting screen directly.
-- **Outpatient Outcome Linking Workflow**:
-  - The `outpatient_outcomes` table has been enhanced with an `appointment_uuid` column.
-  - When opening an Outpatient Outcome sheet, the system queries for any existing scheduled outpatient appointments for the active patient.
-  - If a new outcome document is created, an elegant blue notification panel displays an optional **Link Scheduled Outpatient Appointment** dropdown. Choosing an appointment auto-links it, filling the appointment fields block seamlessly and hiding the picker.
-  - When opening pre-linked documents, the outcome sheet fetches appointment fields in real-time. Since this data is read-only, it displays the clinic and clinician metadata natively in read-only form sections.
-- **Single-Query Database Architecture for Patient Records**:
-  - Instead of running redundant queries to load the entire collection of forms and appointments upfront in separate parallel streams, the patient record page leverages `forms_index_current` as a single master index.
-  - Standard list generation queries `forms_index_current` only once to retrieve both clinical documents and scheduled appointments/events in chronological order.
-  - To hydrate optional outcomes badges and clinician data, the client inspects the returned dataset. If and only if outpatient appointment entries are present in the list, a highly targeted secondary query is executed against `outpatient_appointments` specifically for those matching UUIDs (using the SQL `IN` operator) to retrieve only the required subset of live appointment metadata (like `outcome_form_uuid`).
-  - This preserves performance, reduces overall payload size, and allows future filtering capabilities (e.g., date ranges) to scale seamlessly on `forms_index`.
-
-### 13. Modern Patient Record Grid and Active Inline Toggling
-The **Patient Record Page** has been completely modernized into a high-density, unified clinical portal:
-- **Streamlined Single-Column Workspace**:
-  - Removed the redundant left-side grey navigation panel to present a full-screen, focused portal.
-  - Removed the redundant "Forms index" label for clean negative space.
-- **Three-Column Clinical Index Grid**:
-  - Grid items are arranged in a strict CSS grid: `gridTemplateColumns: '170px 1fr auto'`.
-  - **Column 1 (Status Indicators)**:
-    - Green **Future appt** badge: For scheduled appointments occurring in the future.
-    - Red **Not outcomed** badge: For non-future appointments that lack a linked `final` outcome form.
-    - Red **fbDraftBadge**: Standard status badge for non-final clinical documents.
-  - **Column 2 (Custom Demographic Tiles)**:
-    - Custom components `fbOutpatientAppointmentTile` and `fbFormTile` render events and documents respectively using Arial/Roboto `1.0rem` black `fontWeight 300` styling.
-    - To eliminate dead vertical space, an explicit compact `line-height: 1.15` is applied to eliminate gaps between text rows within each tile, making the listing snug and highly precise.
-    - Raw database value keys for clinical specialities (e.g. `'plastic'`, `'general-surgery'`) are mapped dynamically on the patient record using a `getSpecialityDisplay` helper to yield human-friendly, properly formatted labels (such as `"Plastic Surgery"`, `"General Surgery"`) from the shared specialities database.
-    - Field name labels are fully omitted in the visual tree, but hovered elements generate dynamic native HTML tooltips on cursor hover.
-  - **Column 3 (Action Controls)**:
-    - Outpatient appointments render a white button with blue text `"Outcome form"` (`border: 0.1rem solid #1b6ec2`, `color: #1b6ec2`) to create or open outcome forms.
-    - Clinical documents render a white button with blue text `"Open"` (`border: 0.1rem solid #1b6ec2`, `color: #1b6ec2`) to open the forms in Read-Only View (RoV).
-- **Smooth Inline View Toggling (display: none)**:
-  - Clicking "Outcome form" or "Open" hides the parent Patient Record page container (`style.display = "none"`) and mounts the active forms inline.
-  - When a document is saved or cancelled, the active form is unmounted, and the parent container is shown again. This completely preserves the window scroll position and prevents slow, redundant database re-queries.
-- **Precision Footer Control Bar**:
-  - Positioned the standard username update field `fb_username` to the immediate left of the Close action button.
-  - Positioned the blue outline `"New form / document"` add-form trigger in the extreme bottom left-hand corner using the custom `fbAddButton` control, which opens a dynamic popup menu matching design standards.
-
-### 14. Standardized Interactive Styling and Specialized Form Components
-To establish pristine aesthetic uniformity and modular UX interactions across all patient listings and medical questionnaires, we introduced and customized several bespoke UI controls:
-- **`fbAddButton` Refinement**:
-  - Refined the standard blue-framed action trigger to use a compact `borderWidth: '0.1rem'` and a modern, high-density light font pairing of `fontWeight: 300`.
-  - Configured custom transitional hover properties to change from a white background with a blue border to a rich black-on-yellow (`#fee715`) color pairing with a solid `0.1rem` black border.
-- **`fbButton` Uniformity Support**:
-  - Upgraded the central clickable `fbButton` component with native React state variables for mouse hover and focus-within detection (`isHovered`, `isFocused`).
-  - Standardized the hover/focus style across all variants to transition cleanly to a black-on-yellow (`#fee715`) display with an explicit solid `0.1rem` black border. This guarantees hover highlighting activates reliably everywhere—including on the custom navigation, open, and close controls listed inside the Patient Record portal.
-- **`fbPassword` Component**:
-  - Created a robust custom questionnaire component (`fbPassword`) modeled directly after the responsive layouts of `fbTextInput` but natively hardcoded with `type="password"`.
-  - Inherits complete forward compatibility for standard input attributes (including React mouse, focus, autoFocus, and keydown listeners) using the Javascript `...props` rest parameter pattern.
-- **`fbPasswordPopup` Refactoring**:
-  - Replaced the embedded native HTML password elements inside the authentication re-entry frame with the single centralized `fbPassword` child module labeled cleanly with `"Password"`.
-  - Retained the standardized right-aligned actions using two high-contrast `fbButton` controls: a green `success` variant for `"Save"` and a red `danger` variant for `"Return to form"`.
-- **`fbUserName` Component**:
-  - Extracted the plain username text control into a dedicated reusable `fbUserName` React class element.
-  - Built direct state triggers (`onMouseEnter`, `onMouseLeave`, `onFocus`, `onBlur`) directly into the component's render tree to turn the text input's background yellow (`#fee715`) whenever focused or hovered, creating a highly coherent signature identifier across all clinical search lists, registries, and patient forms index overlays.
-
-### 15. Modernized fbTable, fbAddButtonForPage, and Template-Driven Homepage Refactoring
-To further unify the EHR aesthetic feel and meet structural clinical requirements, we rolled out a major upgrade across multiple central components:
-- **`fbTable` Component Architecture**:
-  - Created a dedicated `/src/components/fbTable.tsx` codebase encapsulating all layout, responsive grid container styles, font properties, and borders.
-  - Exports a unified set of subcontrols: `FbTable`, `FbTableHeader`, `FbTableBody`, `FbTableRow`, `FbTableHeaderCell`, and `FbTableCell`.
-  - Replaced native system table markup (`<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>`) across active clinical documents:
-    - **Waiting List Card**: The "Planned procedure(s)" table uses modernized borders, typography margins, and dragging controls.
-    - **Operation Note**: The "Procedure(s)" table, "Operative diagnoses" table, "Tissue removed" specimen drag-to-reorder list, and "Implants" scanning lists are refactored.
-    - **Waiting List Card RoV / Operation Note RoV**: Read Only Views use the exact same template layout components, providing visual parity.
-- **`fbAddButtonForPage` Component**:
-  - Developed a robust dynamic action button similar to `fbAddButton` but optimized for primary page actions with custom styling: a bold `borderWidth: '0.2rem'` and thick `fontWeight: 500` typographic style.
-  - Substituted the `fbAddButton` at the bottom of the patient records screen with the new `fbAddButtonForPage` component to emphasize primary actions.
-- **`fbPasswordPopup` Validation Language**:
-  - Simplified and refined the confirmation prompt instructions label inside the modal from *"You must re-enter your password to complete this action."* to *"You must re-enter your password to save the form."*.
-- **RoV Navigation and EV Quick Switching**:
-  - Introduced the `reachedByRoVButton` navigation property across Read Only Views.
-  - When an RoV is reached by clicking an RoV button in the patient record, it hides traditional "Edit" and "Back" buttons in the bottom right corner, displaying instead a high-contrast white-on-blue "EV" button in the bottom left-hand corner to return directly to the patient's record portal cleanly.
-- **Template-Driven App Home Page (`Home.tsx`)**:
-  - Completely recreated the app landing page using the pristine layout of the `PatientRegistry` component as a template.
-  - Configured a clean white background, the header title `"formBuilder2"`, Google Roboto font scales, and centered big blue link blocks matching standard styling cues.
-  - Integrated the right-aligned `fbUserName` input control in the footer area and made sure the selected user credentials persist in `localStorage` as `"demoUser"` on startup, passing the updated username cleanly across all medical screens.
-
-### 16. Layout Polishing, Clinical Table Parity, and Custom Grid Question Cell Refactoring
-To round out the EHR layout and meet strict validation constraints, we completed the following refactoring work:
-- **Homepage Title Styling**:
-  - Promoted the landing page's main title `"formBuilder2"` to a proud `fontSize: '2rem'`.
-  - Added exactly `1rem` of breathing space (white vertical margins) both above and below the title to set a balanced aesthetic layout.
-- **Button Label Clarity**:
-  - Simplified the `fbAddButtonForPage` action prompt label in the patient records board bottom left to `"New form or document"`, ensuring readable, approachable clinical language.
-- **Outpatient Outcome EV Cancellation Routing**:
-  - Configured custom canceling routing logic. When an outpatient outcome form is created or opened inline via the patient records view, clicking "Cancel" disables silent/accidental saving and directly returns the physician to the patient records portal cleanly.
-- **Read-Only Table Parity in Operation Note RoV**:
-  - Replaced native map divs on second, third, and fourth clinical lists in `OperationNoteRoV` (Operative Diagnoses, Tissue Removed, and Implants) with standard `FbTable` layout wrappers. This ensures visual parity between editing and reading states.
-- **Reusable `fbQuestionRowCell` Component**:
-  - Built a structural `/src/components/fbQuestionRowCell.tsx` grid control wrapping inner question components.
-  - Replaced manual column layout spans (such as `className="md:col-span-2"` or `<div className="md:col-span-2">`) inside `WaitingListCard.tsx` and `WaitingListCardRoV.tsx` with unified `<FbQuestionRowCell span={2}>` blocks.
-
-### 17. Unified Cancellation Popup Workflow, Specialized Cancel Form Button, and Core Component Renaming
-To deliver a reliable, standardized form cancellation procedure and clean up internal naming semantics, we completed the following updates:
-- **`fbCancelPopup` Confirmation Alert**:
-  - Engineered `/src/components/fbCancelPopup.tsx` representing a standard warning prompt ("Confirm cancel").
-  - Framed with standard royal blue border lines, readable text alerting that *"Any changes you have made will be lost"*, and bottom-right button options.
-  - Uses standard `FbButton` components: white-on-red **Discard changes** (`variant="danger"`) and green-on-white custom **Return to form**.
-- **`fbCancelFormButton` & Unified Row Control Integration**:
-  - Created `/src/components/fbCancelFormButton.tsx` rendering a specialised red-backed button with standard text `"Cancel"`.
-  - Nested `fbCancelFormButton` into `/src/components/fbSaveCancelButtons.tsx` as the default Cancel block.
-  - Integrated `fbCancelPopup` across all edit screens (**WaitingListCard.tsx**, **OutpatientOutcome.tsx**, and **OperationNote.tsx**). Whenever a user attempts to dismiss a modified form, they are prompted with standard safety confirmation instead of quiet loss or accidental persistence.
-- **Codebase Class Renaming (`fbSCTProcedure`)**:
-  - Renamed component file `/src/components/fbSCTProcedureSelector.tsx` to `/src/components/fbSCTProcedure.tsx`.
-  - Updated all imports, class interfaces, typed props, and nesting tags within **WaitingListCard.tsx** and **OperationNote.tsx** to align perfectly.
-- **Verification of Bottom Row Controls and Custom `fbButton` Promotion**:
-  - Verified and confirmed that **WaitingListCard.tsx**, **OutpatientOutcome.tsx**, and **OperationNote.tsx** use `<BottomControlsRow />` for the entire persistence panel.
-  - Promoted the RoV switch button inside `<fbBottomControlsRow />` from a manual `<button>` tag to a standardized `<FbButton>` component to enforce uniform font family, padding scales, and yellow hover feedback.
-  - Replaced the final remaining raw HTML `<button>` inside `fbSaveCancelButtons.tsx` (the "Save" submit button) with a styled `<FbButton>` component, finishing the comprehensive refactoring of key action tags to the standardized design system.
-- **Specific CSS Class Renaming & Custom Prefix Standardizing**:
-  - Reviewed the codebase for app/component-specific CSS classes and renamed them to accurately reflect their parent component names under the uniform `fb-` design namespace.
-  - Changed `add-procedure-btn` to `fb-add-button`.
-  - Refactored `addressograph-card`, `addressograph-field`, `addressograph-container`, and `addressograph-wrapper` to `fb-addressograph-card`, `fb-addressograph-field`, `fb-addressograph-container`, and `fb-addressograph-wrapper` respectively.
-  - Aligned other component elements by renaming selector targets like `form-button`, `subfield-wrapper`, `subfield`, `form-layout-container`, `edit-view-form`, `nav-grid`, `nav-section-name`, `nav-counter-box`, `nav-indicator`, `form-nav-panel-container`, `form-nav-link`, `form-header-with-divider`, `question-container`, `form-section-block`, `bottom-control-bar`, `bottom-control-btn-rov`, `bottom-control-item`, `bottom-control-final`, `bottom-control-password`, `bottom-control-username`, `input-with-units`, `hideBorderInRoV`, `sct-popup-btn`, and `sct-popup-hoverable` to their standardized `fb-` namespace variants (e.g. `fb-subquestion-wrapper`, `fb-layout-container`, `fb-bottom-btn-save`, `fb-hide-border-in-rov`, etc.).
-  - Updated all style rules, DOM selection queries, and view classes to synchronize.
-- **Solid White-On-Green Return to Form Button in `fbCancelPopup`**:
-  - Styled the "Return to form" button on the dismiss confirmation box using the solid library `success` variant. This replaces the outlined style with a proud, high-contrast white-on-green background.
-- **Namespaced Shared Styling**:
-  - Shared layout and input components now emit the `fb-*` namespace directly for custom classes: `fb-layout-container`, `fb-layout-edit-view-form`, `fb-layout-nav-grid`, `fb-layout-nav-section-name`, `fb-layout-nav-counter-box`, `fb-layout-nav-indicator`, `fb-header-with-divider`, `fb-addressograph-container`, `fb-question-container`, `fb-section-block`, `fb-radio-checkbox-group-container`, `fb-radio-checkbox-item`, `fb-subquestion-wrapper`, `fb-subquestion`, `fb-msi-selector-input`, `fb-date-control-input`, `fb-sct-procedure-selector-input`, `fb-hide-border-in-rov`, and `fb-input-with-units`.
-  - Manual question wrappers in Operation Note, Outpatient Outcome, Waiting List Card, and their relevant RoV views have been aligned to `fb-question-container`, `fb-radio-checkbox-item`, and `fb-subquestion` so generated and handwritten form markup use the same selector language.
-  - Outpatient Outcome's Outcome question now uses the shared `fbCheck` wrapper for the treatment/referral/follow-up checkbox rows that own conditional subquestions, while preserving the existing checkbox enable/disable rules exactly through `isOutcomeCheckboxDisabled()`.
-  - All edit-view radio/check option labels use `0.2rem` left/right padding so yellow hover/focus highlights have breathing room around the control and text.
-  - Shared `fbRadio` and `fbCheck` leave native radio/checkbox dimensions in place rather than forcing `1rem` control sizing, keeping WLC and OO controls visually consistent.
-  - Shared components no longer emit legacy layout, addressograph, bottom-control, question, radio/check, section, navigation, date, MSI, SCT, or input-with-units custom classes; they emit the corresponding `fb-*` names.
-  - Successfully recovered 100% of the original scoped/custom styling and panel structures, eliminating parent overrides issues while preserving the standardised component namespaces.
-
-### Visual Left-Bar Refactoring in Read-Only Views (RoV)
-- To achieve a cleaner design in accord with clinical preferences, the left blue vertical border (`border-l-2 border-blue-200`) previously framing conditional subquestions inside the Read-Only Views (specifically in the anticoagulants overview breakdown of `WaitingListCardRoV.tsx`) has been completely removed.
-- Padding indents (`pl-4`) have been fully preserved to visually denote nesting heirarchies clearly and accurately, without visual heavy bars.
-
-### Safe Contextual UUID Fallback Engine
-- To support flawless performance during demonstrations where the browser's cryptographic API or secure random contexts are restricted (such as legacy or sandboxed demo iframe containers), the app utilizes a fallback identifier generator (`/src/utils/formUtils.ts`).
-- It attempts version 4 compliant `window.crypto.randomUUID()`. If that's unavailable, it tries creating compliant hexadecimal strings utilizing random bytes from `window.crypto.getRandomValues(buffer)`. If all secure cryptography modules are unavailable, it seamlessly falls back to a pseudo-random identifier generator using Math.random. This eliminates rendering or initialization crashes in non-secure frames while guaranteeing a flawless user experience.
-
-### Verified Non-Working Strategies
-- **TableRow Focus Highlights**: Initially hover states were applied directly on rows. It caused full tables to change color when clinicians focused individual inputs. Corrected by restricting backgrounds to `TD` cells.
-- **`fbAddButton` Highlight Locks**: Clicking buttons previously locked yellow focus highlights. Solved by replacing focus state hooks with the native CSS `focus-visible` pseudo-class.
-- **Empty list rows warnings**: Initially queried entries via `procedures.every()` checks which failed on initial uninitialized arrays. Corrected using safe arrays length validations: `(procedures.length === 0 || procedures.every(p => !p.procedure || String(p.procedure).trim() === ''))`.

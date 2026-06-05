@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface AddFormMenuProps {
-  onSelectFormType: (formType: 'outpatient_outcome' | 'waiting_list' | 'operation_note') => void;
+  onSelectFormType: (formType: 'outpatient_outcome' | 'waiting_list' | 'operation_note' | 'treatment_summary') => void;
   onCancel: () => void;
   buttonRef: React.RefObject<HTMLButtonElement>;
 }
@@ -98,6 +98,30 @@ export const fbAddFormMenu: React.FC<AddFormMenuProps> = ({ onSelectFormType, on
           }}
         >
           Waiting list card
+        </button>
+        <button
+          type="button"
+          onClick={() => onSelectFormType('treatment_summary')}
+          style={{
+            width: '100%',
+            textAlign: 'left',
+            padding: '0.5rem',
+            border: 'none',
+            backgroundColor: 'white',
+            cursor: 'pointer',
+            fontFamily: "'Roboto', sans-serif",
+            fontSize: '1rem',
+            fontWeight: 400,
+            transition: 'background-color 0.2s ease-out'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#e3f2fd';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'white';
+          }}
+        >
+          Treatment summary
         </button>
         <button
           type="button"

@@ -15,6 +15,7 @@ interface fbTextAreaProps {
   inputStyle?: React.CSSProperties;
   subfield?: boolean;
   rows?: number;
+  fullWidth?: boolean;
 }
 
 export const fbTextArea: React.FC<fbTextAreaProps> = ({
@@ -30,6 +31,7 @@ export const fbTextArea: React.FC<fbTextAreaProps> = ({
   inputStyle,
   subfield = false,
   rows = 2,
+  fullWidth = false,
 }) => {
   const renderTextarea = () => {
     return (
@@ -50,6 +52,7 @@ export const fbTextArea: React.FC<fbTextAreaProps> = ({
           padding: '0.3rem 0.5rem',
           fontSize: '1rem',
           minHeight: '2rem',
+          maxWidth: fullWidth ? undefined : '37rem',
           backgroundColor: 'white',
           ...inputStyle,
         }}

@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface fbGroupProps {
-  label?: string;
+  label?: React.ReactNode;
   direction?: 'row' | 'col';
   style?: React.CSSProperties;
   children?: React.ReactNode;

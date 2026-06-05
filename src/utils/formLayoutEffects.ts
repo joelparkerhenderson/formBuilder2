@@ -23,7 +23,9 @@ export const useEditFormLabelEqualization = (
         return;
       }
 
-      const rows = document.querySelectorAll(".fb-layout-edit-view-form .questions-row, .fb-layout-edit-view-form .grid");
+      const rows = document.querySelectorAll(
+        ".fb-layout-edit-view-form .questions-row, .fb-layout-edit-view-form .grid, .fb-layout-edit-view-form .fb-designer-question-row"
+      );
       rows.forEach((row) => {
         if (!row.querySelector(".fb-question-container")) return;
 

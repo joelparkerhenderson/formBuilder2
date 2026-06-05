@@ -4,14 +4,10 @@ import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbButton as FbButton } from './components/fbButton';
 import { fbUserName as FbUserName } from './components/fbUserName';
 import { fbSearchInput as FbSearchInput } from './components/fbSearchInput';
-import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { createClient } from './restClient';
 import PatientRecord from './PatientRecord';
 
-const supabase = createClient(
-  `https://${projectId}.supabase.co`,
-  publicAnonKey
-);
+const restClient = createClient();
 
 interface Patient {
   uuid: string;
@@ -37,11 +33,7 @@ export default function PatientSearch() {
   const [searchQuery, setSearchQuery] = React.useState<string>('');
 
   const queryRef = React.useRef<number>(0);
-
-  // Custom userName control state with localStorage persistence
-  const [username, setUsername] = React.useState<string>(() => {
-    return localStorage.getItem('fb_username') || 'demoUser';
-  });
+  const [username, setUsername] = React.useState<string>('demoUser');
 
   React.useEffect(() => {
     sessionStorage.setItem('fb_prev_main_page', '/patient-search');
@@ -49,7 +41,6 @@ export default function PatientSearch() {
 
   const handleUsernameChange = (val: string) => {
     setUsername(val);
-    localStorage.setItem('fb_username', val);
   };
 
   React.useEffect(() => {
@@ -70,7 +61,7 @@ export default function PatientSearch() {
 
     const performSearch = async () => {
       try {
-        const { data, error } = await supabase.rpc('search_patients_fuzzy', {
+        const { data, error } = await restClient.rpc('search_patients_fuzzy', {
           search_term: searchQuery
         });
 

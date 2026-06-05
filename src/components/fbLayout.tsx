@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 export interface SectionSpec {
   id: string;
@@ -55,6 +55,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
   setActiveSection,
   isReadOnlyView = false,
 }) => {
+  const programmaticScrollRef = React.useRef<{ sectionId: string; timeout: number | null } | null>(null);
   // Prevent Unwanted <Enter> Key Submissions
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -167,6 +168,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
 
     const scrollContainer = document.querySelector(".flex-1.overflow-y-auto");
     const handleScroll = () => {
+      if (programmaticScrollRef.current) return;
       for (const section of sections) {
         const element = document.getElementById(section.id);
         if (element && scrollContainer) {
@@ -196,6 +198,26 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
   }, [isReadOnlyView, sections, setActiveSection, formState]);
 
   const hasNavPanel = sections && sections.length > 0;
+  const scrollToSection = (sectionId: string) => {
+    const sectionElement = document.getElementById(sectionId);
+    const scrollContainer = sectionElement?.closest(".overflow-y-auto") as HTMLElement | null;
+    if (!sectionElement || !scrollContainer) return;
+    const sectionRect = sectionElement.getBoundingClientRect();
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const nextTop = scrollContainer.scrollTop + sectionRect.top - containerRect.top;
+    if (programmaticScrollRef.current?.timeout) {
+      window.clearTimeout(programmaticScrollRef.current.timeout);
+    }
+    programmaticScrollRef.current = {
+      sectionId,
+      timeout: window.setTimeout(() => {
+        setActiveSection?.(sectionId);
+        programmaticScrollRef.current = null;
+      }, 700),
+    };
+    scrollContainer.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
+    setActiveSection?.(sectionId);
+  };
 
   return (
     <div
@@ -204,6 +226,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
         height: '100vh',
         width: '100%',
         overflow: 'hidden',
+        backgroundColor: 'white',
         boxSizing: 'border-box',
         fontWeight: 300,
         lineHeight: 1.1,
@@ -215,7 +238,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
         onSubmit={onSubmit}
         onKeyDown={handleKeyDown}
         noValidate
-        style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+        style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}
       >
         {/* Fixed top Header Area (including title & Addressograph) */}
         <div style={{ flexShrink: 0 }}>
@@ -236,48 +259,76 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
                 height: '100%',
               }}
             >
-              <div className="fb-layout-nav-grid">
+              <div className="fb-layout-nav-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 1.8rem 2rem", columnGap: "0.3rem", rowGap: "0.1rem", alignItems: "stretch", backgroundColor: "white" }}>
                 {sections.map((section) => {
                   const status = getSectionStatus(section, formState);
                   const isActive = activeSection === section.id;
                   return (
                     <React.Fragment key={section.id}>
-                      <a
-                        href={`#${section.id}`}
+                      <button
+                        type="button"
                         className="fb-layout-nav-section-name"
                         id={`nav-${section.id}`}
+                        onClick={() => scrollToSection(section.id)}
                         style={{
+                          appearance: "none",
+                          border: "none",
+                          backgroundColor: "#1b6ec2",
+                          color: "white",
+                          cursor: "pointer",
+                          textAlign: "left",
                           fontWeight: 500,
                           fontSize: "1rem",
                           lineHeight: "1.1rem",
-                          padding: "0.2rem 0.2rem 0.2rem 0.4rem",
-                          height: "auto",
+                          padding: "0 0.2rem 0 0.4rem",
+                          height: "1.5rem",
+                          minHeight: "1.5rem",
+                          margin: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          width: "100%",
+                          minWidth: 0,
+                          boxSizing: "border-box",
                         }}
                       >
                         {section.name}
-                      </a>
-                      <span
+                      </button>
+                      <button
+                        type="button"
                         className="fb-layout-nav-counter-box"
+                        onClick={() => scrollToSection(section.id)}
                         style={{
+                          border: "none",
+                          appearance: "none",
                           backgroundColor: status.isComplete ? "#008000" : "#fd8a10",
+                          color: "white",
+                          cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          height: "auto",
+                          height: "1.5rem",
                           alignSelf: "stretch",
                           fontSize: "1rem",
                           fontWeight: 500,
                           lineHeight: "1.1rem",
-                          padding: "0.2rem 0.2rem 0.2rem 0.4rem",
+                          padding: 0,
+                          minHeight: "1.5rem",
+                          margin: 0,
+                          width: "1.8rem",
+                          minWidth: "1.8rem",
+                          maxWidth: "1.8rem",
+                          boxSizing: "border-box",
                         }}
                       >
-                        {status.incomplete === 0 ? "✓" : status.incomplete}
-                      </span>
+                        {status.incomplete === 0 ? (
+                          <span className="material-icons" aria-hidden="true" style={{ fontSize: '1rem', lineHeight: 1 }}>check</span>
+                        ) : status.incomplete}
+                      </button>
                       <span
                         className={`fb-layout-nav-indicator ${!isActive ? "hidden" : ""}`}
-                        style={{ display: "flex", alignItems: "center" }}
+                        style={{ display: "flex", alignItems: "center", fontWeight: 700 }}
                       >
-                        ◄►
+                        {'\u25c0\u25b6'}
                       </span>
                     </React.Fragment>
                   );
@@ -290,12 +341,13 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
           <div
             className="flex-1 overflow-y-auto bg-white"
             style={{
-              padding: '0.8rem 1.2rem 4rem 1.2rem', // generous bottom padding so elements don't hide behind fixed footer
+              padding: '0.8rem 0 4rem 0', // generous bottom padding so elements don't hide behind fixed footer
               height: '100%',
+              backgroundColor: 'white',
               boxSizing: 'border-box'
             }}
           >
-            <div className="max-w-7xl mx-auto w-full">
+            <div style={{ width: '100%' }}>
               {children}
             </div>
           </div>

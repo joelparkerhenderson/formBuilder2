@@ -11,15 +11,12 @@ import { fbAddButtonForPage as AddButtonForPage } from './components/fbAddButton
 import WaitingListCard from './WaitingListCard';
 import OperationNote from './OperationNote';
 import OutpatientOutcome from './OutpatientOutcome';
+import TreatmentSummary from './TreatmentSummary';
 import { specialities } from './data/specialities';
-import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { createClient } from './restClient';
 
-// Create Supabase client
-const supabase = createClient(
-  `https://${projectId}.supabase.co`,
-  publicAnonKey
-);
+// Create REST client
+const restClient = createClient();
 
 interface Patient {
   uuid: string;
@@ -72,15 +69,10 @@ export default function PatientRecord({
   const [forms, setForms] = React.useState<FormIndexItem[]>([]);
   const [appointments, setAppointments] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
-
-  // Search/Registry persistence for username
-  const [username, setUsername] = React.useState<string>(() => {
-    return localStorage.getItem('fb_username') || propUsername || 'demoUser';
-  });
+  const [username, setUsername] = React.useState<string>(propUsername || 'demoUser');
 
   const handleUsernameChange = (val: string) => {
     setUsername(val);
-    localStorage.setItem('fb_username', val);
   };
 
   // State & Ref for the AddFormMenu dropdown (bottom-left AddButton trigger)
@@ -89,7 +81,7 @@ export default function PatientRecord({
 
   // Local state to keep track of actively opened forms/documents inline
   const [inlineActiveForm, setInlineActiveForm] = React.useState<{
-    formType: 'waiting_list_card' | 'operation_note' | 'outpatient_outcome';
+    formType: 'waiting_list_card' | 'operation_note' | 'outpatient_outcome' | 'treatment_summary';
     formUuid?: string;
     appointmentUuid?: string;
     openInRoV?: boolean;
@@ -107,7 +99,7 @@ export default function PatientRecord({
       }
 
       // Fetch latest version of patient
-      const { data: patientData, error: patientError } = await supabase
+      const { data: patientData, error: patientError } = await restClient
         .from('patients')
         .select('*')
         .eq('uuid', patientUuid)
@@ -122,7 +114,7 @@ export default function PatientRecord({
       }
 
       // Fetch forms for patient_uuid via forms_index
-      const { data: formIndexData, error: formIndexError } = await supabase
+      const { data: formIndexData, error: formIndexError } = await restClient
         .from('forms_index_current')
         .select('*')
         .eq('patient_uuid', patientUuid)
@@ -139,7 +131,7 @@ export default function PatientRecord({
           .map(f => f.form_uuid);
 
         if (apptUuids.length > 0) {
-          const { data: apptsData, error: apptsError } = await supabase
+          const { data: apptsData, error: apptsError } = await restClient
             .from('outpatient_appointments')
             .select('*')
             .in('uuid', apptUuids);
@@ -179,6 +171,7 @@ export default function PatientRecord({
     if (type === 'waiting_list_card') return 'Waiting list card';
     if (type === 'operation_note') return 'Operation note';
     if (type === 'outpatient_outcome') return 'Outpatient outcome';
+    if (type === 'treatment_summary') return 'Treatment summary';
     if (type === 'outpatient_appointment') return 'Outpatient appointment';
     return type;
   };
@@ -220,6 +213,7 @@ export default function PatientRecord({
     if (formType === 'waiting-list') resolvedType = 'waiting_list_card';
     if (formType === 'operation-note') resolvedType = 'operation_note';
     if (formType === 'outpatient-outcome') resolvedType = 'outpatient_outcome';
+    if (formType === 'treatment-summary') resolvedType = 'treatment_summary';
 
     setInlineActiveForm({
       formType: resolvedType,
@@ -533,6 +527,19 @@ export default function PatientRecord({
                 patientUuid: patient?.uuid,
                 formUuid: inlineActiveForm.formUuid,
                 appointmentUuid: inlineActiveForm.appointmentUuid,
+                openInRoV: inlineActiveForm.openInRoV,
+                onClose: () => {
+                  setInlineActiveForm(null);
+                  fetchPatientAndForms({ showLoading: false });
+                }
+              }}
+            />
+          )}
+          {inlineActiveForm.formType === 'treatment_summary' && (
+            <TreatmentSummary
+              inlineProps={{
+                patientUuid: patient?.uuid,
+                formUuid: inlineActiveForm.formUuid,
                 openInRoV: inlineActiveForm.openInRoV,
                 onClose: () => {
                   setInlineActiveForm(null);

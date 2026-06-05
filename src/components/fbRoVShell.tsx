@@ -2,6 +2,7 @@ import * as React from 'react';
 import { fbAddressograph as Addressograph } from './fbAddressograph';
 import { fbButton as FbButton } from './fbButton';
 import { fbDraftBadge as DraftBadge } from './fbDraftBadge';
+import { fbSupersededBadge as SupersededBadge } from './fbSupersededBadge';
 
 interface fbRoVPatient {
   nhs_number: string;
@@ -21,6 +22,7 @@ interface fbRoVHeaderProps {
   title: string;
   patient: fbRoVPatient | null;
   formStatus: string;
+  superseded?: boolean;
 }
 
 interface fbRoVFooterProps {
@@ -28,21 +30,24 @@ interface fbRoVFooterProps {
   reachedByRoVButton?: boolean;
   onSwitchToEV: () => void;
   onBack: () => void;
+  superseded?: boolean;
+  onHistory?: (anchorRect: DOMRect) => void;
 }
 
 export const fbRoVHeader: React.FC<fbRoVHeaderProps> = ({
   title,
   patient,
   formStatus,
+  superseded,
 }) => (
   <div className="fb-rov-header">
     <div className="flex justify-between items-center">
       <div>
-        {formStatus === 'draft' && (
-          <>
-            <DraftBadge />
-            <br />
-          </>
+        {(superseded || formStatus === 'draft') && (
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginBottom: '0.2rem' }}>
+            {superseded && <SupersededBadge />}
+            {formStatus === 'draft' && <DraftBadge />}
+          </div>
         )}
         <h1 className="fb-rov-title">{title}</h1>
       </div>
@@ -72,9 +77,14 @@ export const fbRoVFooter: React.FC<fbRoVFooterProps> = ({
   reachedByRoVButton,
   onSwitchToEV,
   onBack,
-}) => (
+  superseded,
+  onHistory,
+}) => {
+  const historyButtonRef = React.useRef<HTMLSpanElement>(null);
+
+  return (
   <div className="fb-rov-footer">
-    <div className="fb-rov-footer-row">
+    <div className="fb-rov-footer-row" style={{ paddingLeft: '0.2rem' }}>
       {reachedByRoVButton && (
         <FbButton
           variant="primary"
@@ -84,11 +94,33 @@ export const fbRoVFooter: React.FC<fbRoVFooterProps> = ({
           EV
         </FbButton>
       )}
+      {onHistory && !superseded && (
+        <span ref={historyButtonRef} style={{ display: 'inline-block', marginLeft: reachedByRoVButton ? '0.2rem' : 0 }}>
+          <FbButton
+            variant="primary"
+            onClick={() => {
+              if (historyButtonRef.current) {
+                onHistory(historyButtonRef.current.getBoundingClientRect());
+              }
+            }}
+          >
+            History
+          </FbButton>
+        </span>
+      )}
       <div className="flex-1"></div>
       <div className="fb-rov-footer-username">
         {username}
       </div>
-      {!reachedByRoVButton && (
+      {superseded ? (
+        <FbButton
+          variant="primary"
+          onClick={onBack}
+          style={{ marginLeft: '0.4rem' }}
+        >
+          Back
+        </FbButton>
+      ) : !reachedByRoVButton && (
         <>
           <FbButton
             variant="primary"
@@ -108,4 +140,5 @@ export const fbRoVFooter: React.FC<fbRoVFooterProps> = ({
       )}
     </div>
   </div>
-);
+  );
+};

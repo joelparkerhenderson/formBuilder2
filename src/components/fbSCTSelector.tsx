@@ -292,9 +292,11 @@ export const fbSCTSelector: React.FC<fbSCTSelectorProps> = ({
     }
   };
 
-  const isCoded = mode === 'procedure'
-    ? (coded !== undefined ? coded : searchTerm === lastSelectedValue)
-    : hasSelected;
+  const isCoded = coded !== undefined
+    ? coded
+    : mode === 'procedure'
+      ? searchTerm === lastSelectedValue
+      : hasSelected;
 
   return (
     <div style={{display: 'flex', alignItems: 'center', width: '100%', gap: '0.3rem'}}>
