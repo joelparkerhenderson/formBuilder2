@@ -1,10 +1,12 @@
 # formBuilder2
-- A re-implementation of the original shadesOfPale formBuilder WCP form design and form engine using tech that may be more approachable and easily reproducible than the original.
+- A re-implementation of the original shadesOfPale formBuilder WCP form design and forms engine using tech that may be more approachable and more easily reproducible than the original.
 - Aim: consistency of design and user experience across all WCP forms.
 ## Demo
 There is a working demo at https://www.shadesOfPale.net/formBuilder2/index.html. Use the usual userName and password.
+## Roll your own
+Try the WYSIWYG app at https://www.shadesOfPale.net/formBuilder2/controller.html.
 ## Intended audience
-Any technically literate persons (clinicians, PMs, BAs, devs) interested in experimenting or working with WCP form design.
+Any persons (clinicians, PMs, BAs, devs) interested in experimenting or working with WCP form design.
 ## Suggested usage
 Engage with SGS about your form(s). You'll get:
 - A clinical sense check
@@ -16,8 +18,8 @@ Engage with SGS about your form(s). You'll get:
 ...usually all within 48 hours.
 ## Alternative usage
 - Fork the repo (that means copy all the files) to your workspace (or your LLM's workspace).
-- Prepare a typewritten description of your form, including the title and a list of the sections, rows of questions, questions, radios/checkboxes, subquestions and tables. There are some examples in the file
-  *design.md*. You can use any comprehensible layout or format for the specification, including:
+- Use the controller app _or_ prepare a typewritten description of your form, including the title and a list of the sections, rows of questions, questions, radios/checkboxes, subquestions and tables. There are some examples in the file *design.md*.
+You can use any comprehensible layout or format for the specification, including:
   - Prose
   - Markdown
   - formBuilder .comp.sjs form specification files
@@ -28,4 +30,4 @@ Engage with SGS about your form(s). You'll get:
 - If necessary, ask your LLM to make iterative changes to your form. This can be done using natural language.
   - Each time you make a change, it is a good idea to explicitly ask the LLM to:
     > Update myFormDesign.md with any changes as they are made.
-- Engage with SGS about any problems, missing components, updates to the components, etc.
+- Engage with SGS about any problems, missing components or functionality, updates, etc.
