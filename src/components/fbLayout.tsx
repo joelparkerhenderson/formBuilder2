@@ -1,5 +1,7 @@
 ﻿import React from 'react';
 
+import { fbLayoutNav as FbLayoutNav } from './fbLayoutNav';
+
 export interface SectionSpec {
   id: string;
   name: string;
@@ -251,6 +253,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
           {hasNavPanel && (
             <nav
               className="w-64 overflow-y-auto hidden md:block"
+              aria-label="Form sections"
               style={{
                 backgroundColor: "white",
                 padding: "0.4rem",
@@ -259,81 +262,19 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
                 height: '100%',
               }}
             >
-              <div className="fb-layout-nav-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 1.8rem 2rem", columnGap: "0.3rem", rowGap: "0.1rem", alignItems: "stretch", backgroundColor: "white" }}>
-                {sections.map((section) => {
+              <FbLayoutNav
+                items={sections.map((section) => {
                   const status = getSectionStatus(section, formState);
-                  const isActive = activeSection === section.id;
-                  return (
-                    <React.Fragment key={section.id}>
-                      <button
-                        type="button"
-                        className="fb-layout-nav-section-name"
-                        id={`nav-${section.id}`}
-                        onClick={() => scrollToSection(section.id)}
-                        style={{
-                          appearance: "none",
-                          border: "none",
-                          backgroundColor: "#1b6ec2",
-                          color: "white",
-                          cursor: "pointer",
-                          textAlign: "left",
-                          fontWeight: 500,
-                          fontSize: "1rem",
-                          lineHeight: "1.1rem",
-                          padding: "0 0.2rem 0 0.4rem",
-                          height: "1.5rem",
-                          minHeight: "1.5rem",
-                          margin: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          width: "100%",
-                          minWidth: 0,
-                          boxSizing: "border-box",
-                        }}
-                      >
-                        {section.name}
-                      </button>
-                      <button
-                        type="button"
-                        className="fb-layout-nav-counter-box"
-                        onClick={() => scrollToSection(section.id)}
-                        style={{
-                          border: "none",
-                          appearance: "none",
-                          backgroundColor: status.isComplete ? "#008000" : "#fd8a10",
-                          color: "white",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          height: "1.5rem",
-                          alignSelf: "stretch",
-                          fontSize: "1rem",
-                          fontWeight: 500,
-                          lineHeight: "1.1rem",
-                          padding: 0,
-                          minHeight: "1.5rem",
-                          margin: 0,
-                          width: "1.8rem",
-                          minWidth: "1.8rem",
-                          maxWidth: "1.8rem",
-                          boxSizing: "border-box",
-                        }}
-                      >
-                        {status.incomplete === 0 ? (
-                          <span className="material-icons" aria-hidden="true" style={{ fontSize: '1rem', lineHeight: 1 }}>check</span>
-                        ) : status.incomplete}
-                      </button>
-                      <span
-                        className={`fb-layout-nav-indicator ${!isActive ? "hidden" : ""}`}
-                        style={{ display: "flex", alignItems: "center", fontWeight: 700 }}
-                      >
-                        {'\u25c0\u25b6'}
-                      </span>
-                    </React.Fragment>
-                  );
+                  return {
+                    id: section.id,
+                    label: section.name,
+                    isActive: activeSection === section.id,
+                    isComplete: status.isComplete,
+                    incomplete: status.incomplete,
+                    onClick: () => scrollToSection(section.id),
+                  };
                 })}
-              </div>
+              />
             </nav>
           )}
 

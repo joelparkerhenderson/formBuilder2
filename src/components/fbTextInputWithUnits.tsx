@@ -8,6 +8,7 @@ interface fbTextInputWithUnitsProps {
   placeholder?: string;
   style?: React.CSSProperties;
   inputStyle?: React.CSSProperties;
+  unitLabelProps?: React.HTMLAttributes<HTMLSpanElement>;
   min?: number;
   max?: number;
 }
@@ -20,6 +21,7 @@ export const fbTextInputWithUnits: React.FC<fbTextInputWithUnitsProps> = ({
   placeholder = '',
   style,
   inputStyle,
+  unitLabelProps,
   min,
   max,
 }) => {
@@ -62,6 +64,7 @@ export const fbTextInputWithUnits: React.FC<fbTextInputWithUnitsProps> = ({
         }}
       />
       <span
+        {...unitLabelProps}
         style={{
           padding: '0 0.6rem',
           fontFamily: "'JetBrains Mono', monospace",
@@ -73,7 +76,8 @@ export const fbTextInputWithUnits: React.FC<fbTextInputWithUnitsProps> = ({
           display: 'flex',
           alignItems: 'center',
           backgroundColor: '#f5f5f5',
-          userSelect: 'none'
+          userSelect: 'none',
+          ...unitLabelProps?.style
         }}
       >
         {units}

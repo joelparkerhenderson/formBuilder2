@@ -28,6 +28,8 @@ export const fbRoVCodedIcon: React.FC<{ coded: boolean }> = ({ coded }) => (
   <span
     className="material-icons fb-rov-coded-icon"
     title={coded ? 'Coded' : 'Not coded'}
+    aria-label={coded ? 'Coded' : 'Not coded'}
+    style={{ alignSelf: 'flex-start', display: 'inline-flex' }}
   >
     {coded ? 'check_circle_outline' : 'warning'}
   </span>

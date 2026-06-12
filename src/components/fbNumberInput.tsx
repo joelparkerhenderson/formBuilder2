@@ -16,6 +16,7 @@ interface fbNumberInputProps {
   className?: string;
   style?: React.CSSProperties;
   inputStyle?: React.CSSProperties;
+  unitLabelProps?: React.HTMLAttributes<HTMLSpanElement>;
   subfield?: boolean;
 }
 
@@ -33,6 +34,7 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
   className = '',
   style,
   inputStyle,
+  unitLabelProps,
   subfield = false,
 }) => {
   const renderInput = () => {
@@ -47,6 +49,8 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
           min={min}
           max={max}
           inputStyle={inputStyle}
+          unitLabelProps={unitLabelProps}
+          style={{ maxWidth: 'calc(10ch + 5rem)' }}
         />
       );
     }
@@ -71,6 +75,7 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
           borderRadius: '0.4rem',
           boxSizing: 'border-box',
           height: '2rem',
+          maxWidth: '10ch',
           padding: '0.2rem 0.4rem',
           backgroundColor: 'white',
           ...inputStyle,
