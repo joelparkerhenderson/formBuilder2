@@ -1,5 +1,5 @@
 import React from 'react';
-import { fbRoVField as FbRoVField, fbRoVTableCell as FbRoVTableCell } from './components/fbRoVField';
+import { fbRoVCodedIcon as FbRoVCodedIcon, fbRoVField as FbRoVField, fbRoVTableCell as FbRoVTableCell } from './components/fbRoVField';
 import { fbRoVFooter as FbRoVFooter, fbRoVHeader as FbRoVHeader } from './components/fbRoVShell';
 import {
   fbTable as FbTable,
@@ -8,8 +8,8 @@ import {
   fbTableRow as FbTableRow,
   fbTableHeaderCell as FbTableHeaderCell
 } from "./components/fbTable";
-import { fbQuestionRow as FbQuestionRow } from "./components/fbQuestionRow";
-import { fbQuestionRowCell as FbQuestionRowCell } from "./components/fbQuestionRowCell";
+import { fbGridRow as FbGridRow } from "./components/fbGridRow";
+import { fbGridCell as FbGridCell } from "./components/fbGridCell";
 import { hospitalLabels, organisationLabels, sideLabels, specialityLabels, yesNoUnknownLabels } from './data/formLabels';
 
 interface Patient {
@@ -238,13 +238,13 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                 <div style={{ marginTop: '0.4rem' }}>
                   
                   {/* Row 1 */}
-                  <FbQuestionRow cols={4}>
+                  <FbGridRow cols={4}>
                     {renderField('Date listed', formState.dateListed)}
-                    <FbQuestionRowCell span={2}>
+                    <FbGridCell span={2}>
                       {renderField('Listed by', formState.listedBy, undefined, undefined, formState.listedBy_coded)}
-                    </FbQuestionRowCell>
+                    </FbGridCell>
                     <div></div>
-                  </FbQuestionRow>
+                  </FbGridRow>
 
                   {/* Row 2 - Urgency, Operating surgeon, Patient available, Royal College of Surgeons priority */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -328,19 +328,9 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                             {sideLabels[proc.side] || proc.side || '—'}
                           </FbRoVTableCell>
                           <FbRoVTableCell>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <div className="fb-rov-field-value-inline">
                               <span>{proc.procedure}</span>
-                              {proc.procedure_coded !== undefined && (
-                                proc.procedure_coded ? (
-                                  <span className="material-icons" style={{ color: '#008000', fontSize: '1.2rem', verticalAlign: 'middle' }} title="Coded">
-                                    check_circle_outline
-                                  </span>
-                                ) : (
-                                  <span className="material-icons" style={{ color: '#fd8a10', fontSize: '1.2rem', verticalAlign: 'middle' }} title="Not coded">
-                                    warning
-                                  </span>
-                                )
-                              )}
+                              {proc.procedure_coded !== undefined && <FbRoVCodedIcon coded={proc.procedure_coded} />}
                             </div>
                             {proc.additionalInfo && (
                               <div style={{
@@ -575,7 +565,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                   paddingLeft: '0.4rem',
                   margin: 0
                 }}>Anaesthesia</h3>
-                <FbQuestionRow cols={3} style={{ marginTop: '0.4rem' }}>
+                <FbGridRow cols={3} style={{ marginTop: '0.4rem' }}>
                   <div>
                     {formState.anaestheticType && formState.anaestheticType !== 'unknown' && (
                       <div className="space-y-2 fb-question-container">
@@ -586,10 +576,10 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                       </div>
                     )}
                   </div>
-                  <FbQuestionRowCell span={2}>
+                  <FbGridCell span={2}>
                     {renderField('Anaesthesia special requirements or issues', formState.anaesthesiaRequirements)}
-                  </FbQuestionRowCell>
-                </FbQuestionRow>
+                  </FbGridCell>
+                </FbGridRow>
               </div>
             )}
 
@@ -630,7 +620,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                   paddingLeft: '0.4rem',
                   margin: 0
                 }}>Other</h3>
-                <FbQuestionRow cols={3} style={{ marginTop: '0.4rem' }}>
+                <FbGridRow cols={3} style={{ marginTop: '0.4rem' }}>
                   <div>
                     {formState.outsourcing && formState.outsourcing !== 'unknown' && (
                       <div className="space-y-2 fb-question-container">
@@ -641,10 +631,10 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
                       </div>
                     )}
                   </div>
-                  <FbQuestionRowCell span={2}>
+                  <FbGridCell span={2}>
                     {renderField('Any other information', formState.otherInfo)}
-                  </FbQuestionRowCell>
-                </FbQuestionRow>
+                  </FbGridCell>
+                </FbGridRow>
               </div>
             )}
 

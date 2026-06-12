@@ -133,6 +133,20 @@ styleSheet.textContent = `
     font-weight: 300 !important;
   }
 
+  .fb-rov-field-value-inline {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 0.4rem;
+  }
+
+  .fb-rov-coded-icon {
+    align-self: flex-start !important;
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    line-height: 1 !important;
+    vertical-align: top !important;
+  }
+
   textarea {
     resize: none;
     overflow: hidden;
@@ -163,7 +177,10 @@ styleSheet.textContent = `
     transition: background-color 0.5s ease-out;
     background-color: rgb(27, 110, 194);
     color: white;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1rem;
     font-weight: 500;
+    line-height: 1.2rem;
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -180,7 +197,7 @@ styleSheet.textContent = `
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgb(27, 110, 194);
+    background-color: #fd8a10;
     color: white;
     font-weight: 500;
     border: 0.2rem solid transparent;
@@ -191,6 +208,14 @@ styleSheet.textContent = `
     transition: background-color 0.5s ease-out;
     height: 1.8rem;
     min-width: 1.8rem;
+  }
+
+  .fb-layout-nav-counter-box.complete {
+    background-color: #008000;
+  }
+
+  .fb-layout-nav-counter-box.incomplete {
+    background-color: #fd8a10;
   }
 
   .fb-layout-nav-counter-box:hover,
@@ -256,6 +281,18 @@ styleSheet.textContent = `
     font-weight: 300;
     font-size: 1rem;
     border-right: 0.1rem solid silver;
+  }
+
+  .fb-date-control-input,
+  .fb-date-control-input:focus,
+  .fb-layout-edit-view-form .fb-date-control-input,
+  .fb-layout-edit-view-form .fb-date-control-input:focus,
+  .fb-layout-edit-view-form input.fb-date-control-input,
+  .fb-layout-edit-view-form input.fb-date-control-input:focus {
+    border: 0.1rem solid silver !important;
+    border-radius: 0.4rem !important;
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   /* Prevent Chrome from adding spinner arrows to number inputs */

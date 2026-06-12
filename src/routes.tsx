@@ -8,7 +8,7 @@ import TreatmentSummary from './TreatmentSummary';
 import PatientRecord from './PatientRecord';
 import PatientRegistry from './PatientRegistry';
 import PatientSearch from './PatientSearch';
-import Controller from './Controller';
+import Composer from './Composer';
 
 const routes = [
   {
@@ -48,40 +48,48 @@ const routes = [
     element: <PatientSearch />,
   },
   {
+    path: '/composer.html',
+    element: <Composer />,
+  },
+  {
+    path: '/formBuilder2/composer.html',
+    element: <Composer />,
+  },
+  {
     path: '/controller.html',
-    element: <Controller />,
+    element: <Navigate to="/composer.html" replace />,
   },
   {
     path: '/formBuilder2/controller.html',
-    element: <Controller />,
+    element: <Navigate to="/formBuilder2/composer.html" replace />,
   },
   {
     path: '/designer.html',
-    element: <Navigate to="/controller.html" replace />,
+    element: <Navigate to="/composer.html" replace />,
   },
   {
     path: '/formBuilder2/designer.html',
-    element: <Navigate to="/formBuilder2/controller.html" replace />,
+    element: <Navigate to="/formBuilder2/composer.html" replace />,
   },
   {
     path: '/userForm.html',
-    element: <Controller />,
+    element: <Composer />,
   },
   {
     path: '/formBuilder2/userForm.html',
-    element: <Controller />,
+    element: <Composer />,
   },
   {
     path: '/userForms/:publicId',
-    element: <Controller />,
+    element: <Composer />,
   },
   {
     path: '/userForm/:publicId',
-    element: <Controller />,
+    element: <Composer />,
   },
   {
     path: '/formBuilder2/userForm/:publicId',
-    element: <Controller />,
+    element: <Composer />,
   },
   {
     path: '*',

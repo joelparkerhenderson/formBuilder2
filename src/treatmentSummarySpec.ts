@@ -39,13 +39,13 @@ export const treatmentSummarySpec: DesignerFormSpec = {
       children: [
         {
           id: "row11",
-          type: "fbQuestionRow",
-          label: "Question row 1",
+          type: "fbGridRow",
+          label: "Grid row 1",
           children: [
             {
               id: "cell9",
-              type: "fbQuestionRowCell",
-              label: "Question cell 1",
+              type: "fbGridCell",
+              label: "Grid cell 1",
               colSpan: 1,
               children: [{
                 id: "group5",
@@ -62,8 +62,8 @@ export const treatmentSummarySpec: DesignerFormSpec = {
             },
             {
               id: "cell10",
-              type: "fbQuestionRowCell",
-              label: "Question cell 2",
+              type: "fbGridCell",
+              label: "Grid cell 2",
               colSpan: 1,
               children: [{
                 id: "field9",
@@ -78,27 +78,27 @@ export const treatmentSummarySpec: DesignerFormSpec = {
                 ],
               }],
             },
-            { id: "cell16", type: "fbQuestionRowCell", label: "Question cell 3", colSpan: 1, children: [] },
+            { id: "cell16", type: "fbGridCell", label: "Grid cell 3", colSpan: 1, children: [] },
           ],
         },
         {
           id: "row18",
-          type: "fbQuestionRow",
-          label: "Question row 2",
+          type: "fbGridRow",
+          label: "Grid row 2",
           children: [
-            { id: "cell19", type: "fbQuestionRowCell", label: "Question cell 5", colSpan: 1, children: [{ id: "field19", type: "fbDropdown", label: "Speciality", required: true, options: [{ value: "option1", label: "Option 1" }] }] },
-            { id: "cell21", type: "fbQuestionRowCell", label: "Question cell 6", colSpan: 1, children: [{ id: "field21", type: "fbMSISelector", label: "Senior responsible clinician", required: true }] },
-            { id: "cell23", type: "fbQuestionRowCell", label: "Question cell 7", colSpan: 1, children: [{ id: "field23", type: "fbMSISelector", label: "Clinical nurse specialist", required: true }] },
+            { id: "cell19", type: "fbGridCell", label: "Grid cell 5", colSpan: 1, children: [{ id: "field19", type: "fbDropdown", label: "Speciality", required: true, options: [{ value: "option1", label: "Option 1" }] }] },
+            { id: "cell21", type: "fbGridCell", label: "Grid cell 6", colSpan: 1, children: [{ id: "field21", type: "fbMSISelector", label: "Senior responsible clinician", required: true }] },
+            { id: "cell23", type: "fbGridCell", label: "Grid cell 7", colSpan: 1, children: [{ id: "field23", type: "fbMSISelector", label: "Clinical nurse specialist", required: true }] },
           ],
         },
         {
           id: "row24",
-          type: "fbQuestionRow",
-          label: "Question row 3",
+          type: "fbGridRow",
+          label: "Grid row 3",
           children: [
-            { id: "cell25", type: "fbQuestionRowCell", label: "Question cell 7", colSpan: 1, children: [{ id: "field25", type: "fbTextInput", label: "Daytime 'phone number", required: true, placeholder: "" }] },
-            { id: "cell27", type: "fbQuestionRowCell", label: "Question cell 8", colSpan: 1, children: [{ id: "field27", type: "fbTextInput", label: "Out of hours 'phone number", required: true, placeholder: "" }] },
-            { id: "cell29", type: "fbQuestionRowCell", label: "Question cell 9", colSpan: 1, children: [{ id: "field30", type: "fbTextArea", label: "Carer or emergency contact", required: true, placeholder: "" }] },
+            { id: "cell25", type: "fbGridCell", label: "Grid cell 7", colSpan: 1, children: [{ id: "field25", type: "fbTextInput", label: "Daytime 'phone number", required: true, placeholder: "" }] },
+            { id: "cell27", type: "fbGridCell", label: "Grid cell 8", colSpan: 1, children: [{ id: "field27", type: "fbTextInput", label: "Out of hours 'phone number", required: true, placeholder: "" }] },
+            { id: "cell29", type: "fbGridCell", label: "Grid cell 9", colSpan: 1, children: [{ id: "field30", type: "fbTextArea", label: "Carer or emergency contact", required: true, placeholder: "" }] },
           ],
         },
       ],
@@ -110,11 +110,11 @@ export const treatmentSummarySpec: DesignerFormSpec = {
       children: [
         {
           id: "row31",
-          type: "fbQuestionRow",
-          label: "Question row 4",
+          type: "fbGridRow",
+          label: "Grid row 4",
           children: [
-            { id: "cell32", type: "fbQuestionRowCell", label: "Question cell 10", colSpan: 1, children: [{ id: "field32", type: "fbSCTDiagnosis", label: "Diagnosis", required: true }] },
-            { id: "cell34", type: "fbQuestionRowCell", label: "Question cell 11", colSpan: 1, children: [{ id: "field34", type: "fbTextInput", label: "Staging", required: false, placeholder: "" }] },
+            { id: "cell32", type: "fbGridCell", label: "Grid cell 10", colSpan: 1, children: [{ id: "field32", type: "fbSCTDiagnosis", label: "Diagnosis", required: true }] },
+            { id: "cell34", type: "fbGridCell", label: "Grid cell 11", colSpan: 1, children: [{ id: "field34", type: "fbTextInput", label: "Staging", required: false, placeholder: "" }] },
           ],
         },
         { id: "field36", type: "fbTextArea", label: "Diagnosis comments", required: false, placeholder: "" },
@@ -145,10 +145,10 @@ export const treatmentSummarySpec: DesignerFormSpec = {
       children: [
         {
           id: "row41",
-          type: "fbQuestionRow",
-          label: "Question row 5",
+          type: "fbGridRow",
+          label: "Grid row 5",
           children: [
-            { id: "cell42", type: "fbQuestionRowCell", label: "Question cell 12", colSpan: 2, children: [{ id: "field42", type: "fbDropdown", label: "Prognosis", required: true, options: [
+            { id: "cell42", type: "fbGridCell", label: "Grid cell 12", colSpan: 2, children: [{ id: "field42", type: "fbDropdown", label: "Prognosis", required: true, options: [
               { value: "option1", label: "Active monitoring" },
               { value: "option2", label: "Life not expected to be shortened by cancer" },
               { value: "option3", label: "Life not expected to be shortened, but long-term physical effects" },
@@ -158,7 +158,7 @@ export const treatmentSummarySpec: DesignerFormSpec = {
               { value: "option7", label: "Final days/weeks of life" },
               { value: "option8", label: "Cancer is not the life-limiting condition" },
             ] }] },
-            { id: "cell44", type: "fbQuestionRowCell", label: "Question cell 13", colSpan: 1, children: [{ id: "field44", type: "fbDropdown", label: "Prognosis certainty", required: true, options: [
+            { id: "cell44", type: "fbGridCell", label: "Grid cell 13", colSpan: 1, children: [{ id: "field44", type: "fbDropdown", label: "Prognosis certainty", required: true, options: [
               { value: "option1", label: "Not at all certain" },
               { value: "option2", label: "Reasonably certain" },
               { value: "option3", label: "Beyond reasonable doubt" },
@@ -183,10 +183,10 @@ export const treatmentSummarySpec: DesignerFormSpec = {
       label: "Follow-up",
       children: [{
         id: "row51",
-        type: "fbQuestionRow",
-        label: "Question row 6",
+        type: "fbGridRow",
+        label: "Grid row 6",
         children: [
-          { id: "cell52", type: "fbQuestionRowCell", label: "Question cell 14", colSpan: 1, children: [{ id: "field52", type: "fbDropdown", label: "Follow-up plan", required: false, options: [
+          { id: "cell52", type: "fbGridCell", label: "Grid cell 14", colSpan: 1, children: [{ id: "field52", type: "fbDropdown", label: "Follow-up plan", required: false, options: [
             { value: "option1", label: "Consultant led" },
             { value: "option2", label: "Nurse led" },
             { value: "option3", label: "PIFU: Patient-initiated follow-up" },
@@ -194,7 +194,7 @@ export const treatmentSummarySpec: DesignerFormSpec = {
             { value: "option5", label: "Palliative care" },
             { value: "option6", label: "Not yet determined" },
           ] }] },
-          { id: "cell54", type: "fbQuestionRowCell", label: "Question cell 15", colSpan: 2, children: [{ id: "field54", type: "fbTextArea", label: "Comments", required: false, placeholder: "" }] },
+          { id: "cell54", type: "fbGridCell", label: "Grid cell 15", colSpan: 2, children: [{ id: "field54", type: "fbTextArea", label: "Comments", required: false, placeholder: "" }] },
         ],
       }],
     },

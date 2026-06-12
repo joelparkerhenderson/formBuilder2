@@ -124,7 +124,7 @@ select:focus-visible {
 
 .fb-rov-field-value-inline {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.4rem;
 }
 
@@ -134,7 +134,10 @@ select:focus-visible {
 
 .fb-rov-coded-icon {
   font-size: 1.2rem;
-  vertical-align: middle;
+  flex: 0 0 auto;
+  line-height: 1;
+  margin-top: 0;
+  vertical-align: top;
 }
 
 .fb-rov-coded-icon[title="Coded"] {
@@ -153,6 +156,12 @@ select:focus-visible {
 .fb-rov-table-cell-standard {
   font-weight: 400;
   color: #333333;
+}
+
+.fb-layout-edit-view-form .fb-grid-row,
+.fb-layout-edit-view-form .grid {
+  column-gap: 1rem !important;
+  row-gap: 0.4rem !important;
 }
 
 .fb-rov-table-cell-muted {
@@ -262,6 +271,32 @@ select:focus-visible {
   box-shadow: none !important;
 }
 
+.fb-date-control-input,
+.fb-date-control-input:focus,
+.fb-layout-edit-view-form .fb-date-control-input,
+.fb-layout-edit-view-form .fb-date-control-input:focus,
+.fb-layout-edit-view-form input.fb-date-control-input,
+.fb-layout-edit-view-form input.fb-date-control-input:focus {
+  border: 0.1rem solid silver !important;
+  border-radius: 0.4rem !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.fb-layout-nav-section-name {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
+  line-height: 1.2rem;
+}
+
+.fb-layout-nav-counter-box.complete {
+  background-color: #008000;
+}
+
+.fb-layout-nav-counter-box.incomplete {
+  background-color: #fd8a10;
+}
+
 .fb-designer-add-menu-item:hover,
 .fb-designer-add-menu-item:focus,
 .fb-designer-add-menu-item:focus-visible {
@@ -275,6 +310,108 @@ select:focus-visible {
   background-color: #e6e6e6 !important;
   color: black !important;
   outline: none !important;
+}
+
+.fbc-panel {
+  border-left: 0.1rem solid black;
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fbc-panel-header {
+  border-bottom: 0.1rem solid black;
+  padding-bottom: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.fbc-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.5rem;
+  padding: 0.6rem 0;
+  overflow: hidden;
+}
+
+.fbc-panel-scroll {
+  min-height: 0;
+  overflow: auto;
+}
+
+.fbc-panel-actions {
+  border-top: 0.1rem solid silver;
+  padding-top: 0.5rem;
+}
+
+.fbc-panel-footer {
+  flex: 0 0 auto;
+  padding-top: 0.5rem;
+}
+
+.fbcp-name {
+  border: 0.1rem solid silver;
+  padding: 0.25rem;
+  vertical-align: middle;
+  width: 8rem;
+  font-style: italic;
+  font-weight: 300;
+}
+
+.fbcp-val {
+  border: 0.1rem solid silver;
+  padding: 0.25rem;
+  vertical-align: middle;
+}
+
+.fbcp-textarea {
+  width: 100%;
+}
+
+.fb-composer-table-selected {
+  position: relative;
+  outline: 0.1rem solid purple;
+  outline-offset: -0.1rem;
+}
+
+.fb-composer-table-row-selected {
+  outline: 0.1rem solid purple;
+  outline-offset: -0.1rem;
+}
+
+.fb-composer-table-separator-cell .fbSeparatorTall {
+  display: block;
+  width: 1rem;
+  min-height: 1.8rem;
+  background: #C5E1A5;
+  margin: 0 auto;
+}
+
+.fb-composer-table-separator-cell.fb-composer-table-selected .fbSeparatorTall {
+  outline: 0.1rem solid purple;
+  outline-offset: -0.1rem;
+}
+
+.fb-composer-table-column-header-content {
+  display: flex;
+  align-items: center;
+}
+
+.fb-composer-table-column-drag-handle {
+  position: absolute;
+  top: -0.1rem;
+  left: -0.1rem;
+  width: 1rem;
+  height: 1rem;
+  background-color: purple;
+  cursor: grab;
+  z-index: 2;
+}
+
+.fb-composer-table-column-drag-handle:active {
+  cursor: grabbing;
 }
 
 .fb-designer-action-list {

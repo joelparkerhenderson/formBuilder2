@@ -38,6 +38,7 @@ import { appendRow, removeRowIfMultiple, updateRowById } from "./utils/rowState"
 import { useFbTooltips } from "./utils/useFbTooltips";
 import { useFormSaveFeedback } from "./utils/useFormSaveFeedback";
 import { loadFormHistory } from "./utils/formHistory";
+import { assertFormVersionIsLatest } from "./utils/formVersion";
 import { createClient } from './restClient';
 
 // Create REST client
@@ -141,6 +142,7 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
     onSave: saveOperationNote,
     onSaved: navigateBack,
     onError: () => setFormChanged(true),
+    onStaleSave: continueAfterStaleSave,
   });
   const { showTooltip, showTooltipForControl, hideTooltip, closeTooltip, renderTooltips } = useFbTooltips();
   const [initialSnapshot, setInitialSnapshot] = React.useState<{
@@ -424,23 +426,21 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
     requestSave('final');
   };
 
+  function continueAfterStaleSave() {
+    setSelectedFormVersion(undefined);
+    setIsReadOnlyView(true);
+    setClickedRoVButton(false);
+  }
+
   async function saveOperationNote(formStatus: SaveStatus, passwordToSave: string) {
       let formUuid = formState.uuid;
       let version = 0;
 
       // If editing existing form, get current max version
       if (formUuid) {
-        const { data: existingVersions, error: versionError } = await restClient
-          .from('operation_notes')
-          .select('version')
-          .eq('uuid', formUuid)
-          .order('version', { ascending: false })
-          .limit(1);
-
-        if (versionError) throw versionError;
-
-        if (existingVersions && existingVersions.length > 0) {
-          version = existingVersions[0].version + 1;
+        const latestVersion = await assertFormVersionIsLatest(restClient, 'operation_notes', formUuid, currentFormVersion);
+        if (latestVersion !== null) {
+          version = latestVersion + 1;
         }
       } else {
         // New form - generate UUID
@@ -866,20 +866,6 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
               padding: 0.2rem 0.2rem 0.2rem 0.4rem !important;
               margin: 0 !important;
               background-color: rgb(27, 110, 194) !important;
-            }
-            .fb-layout-nav-section-name {
-              font-weight: 500 !important;
-              font-size: 1rem !important;
-              line-height: 1.1rem !important;
-              padding: 0.2rem 0.2rem 0.2rem 0.4rem !important;
-              height: auto !important;
-            }
-            .fb-layout-nav-counter-box {
-              font-weight: 500 !important;
-              font-size: 1rem !important;
-              line-height: 1.1rem !important;
-              padding: 0.2rem 0.2rem 0.2rem 0.4rem !important;
-              height: auto !important;
             }
           `}</style>
         <FbLayout

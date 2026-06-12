@@ -17,6 +17,7 @@ import { createClient } from './restClient';
 
 // Create REST client
 const restClient = createClient();
+const DONALD_DUCK_PATIENT_UUID = 'fd55880a-7ada-47a8-adbb-65850af6f7e2';
 
 interface Patient {
   uuid: string;
@@ -89,7 +90,7 @@ export default function PatientRecord({
 
   // Parse location state to see if patientUuid was passed
   const state = location.state as { patientUuid?: string; from?: string } | null;
-  const patientUuid = inline ? propPatientUuid : (state?.patientUuid || '12345678-1234-1234-1234-123456789012');
+  const patientUuid = inline ? propPatientUuid : (state?.patientUuid || DONALD_DUCK_PATIENT_UUID);
 
   const fetchPatientAndForms = async (options: { showLoading?: boolean } = {}) => {
     const showLoading = options.showLoading !== false;

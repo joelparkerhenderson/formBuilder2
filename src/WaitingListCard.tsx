@@ -20,8 +20,8 @@ import { fbTextInput as FbTextInput } from "./components/fbTextInput";
 import { fbTextArea as FbTextArea } from "./components/fbTextArea";
 import { fbNumberInput as FbNumberInput } from "./components/fbNumberInput";
 import { fbSection as FbSection } from "./components/fbSection";
-import { fbQuestionRow as FbQuestionRow } from "./components/fbQuestionRow";
-import { fbQuestionRowCell as FbQuestionRowCell } from "./components/fbQuestionRowCell";
+import { fbGridRow as FbGridRow } from "./components/fbGridRow";
+import { fbGridCell as FbGridCell } from "./components/fbGridCell";
 import { fbQuestion as FbQuestion } from "./components/fbQuestion";
 import { fbRadio as FbRadio } from "./components/fbRadio";
 import { fbCheck as FbCheck } from "./components/fbCheck";
@@ -44,6 +44,7 @@ import { useEditFormAutoExpandTextareas, useEditFormLabelEqualization } from "./
 import { appendRow, removeRowIfMultiple, updateRowById } from "./utils/rowState";
 import { useFormSaveFeedback } from "./utils/useFormSaveFeedback";
 import { loadFormHistory } from "./utils/formHistory";
+import { assertFormVersionIsLatest } from "./utils/formVersion";
 
 // Create REST client
 const restClient = createClient();
@@ -259,6 +260,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
     onSave: saveWaitingListCard,
     onSaved: navigateBack,
     onError: () => setFormChanged(true),
+    onStaleSave: continueAfterStaleSave,
   });
 
   const handleFieldChange = (fieldName: string, value: any, coded?: boolean) => {
@@ -546,22 +548,20 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
     requestSave("final");
   };
 
+  function continueAfterStaleSave() {
+    setSelectedFormVersion(undefined);
+    setIsReadOnlyView(true);
+    setClickedRoVButton(false);
+  }
+
   async function saveWaitingListCard(formStatus: SaveStatus, passwordToSave: string) {
       let formUuid = formState.uuid;
       let version = 0;
 
       if (formUuid) {
-        const { data: existingVersions, error: versionError } = await restClient
-          .from("waiting_list_cards")
-          .select("version")
-          .eq("uuid", formUuid)
-          .order("version", { ascending: false })
-          .limit(1);
-
-        if (versionError) throw versionError;
-
-        if (existingVersions && existingVersions.length > 0) {
-          version = existingVersions[0].version + 1;
+        const latestVersion = await assertFormVersionIsLatest(restClient, "waiting_list_cards", formUuid, currentFormVersion);
+        if (latestVersion !== null) {
+          version = latestVersion + 1;
         }
       } else {
         formUuid = generateUUID();
@@ -802,20 +802,6 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
           margin: 0 !important;
           background-color: rgb(27, 110, 194) !important;
         }
-        .fb-layout-nav-section-name {
-          font-weight: 500 !important;
-          font-size: 1rem !important;
-          line-height: 1.1rem !important;
-          padding: 0.2rem 0.2rem 0.2rem 0.4rem !important;
-          height: auto !important;
-        }
-        .fb-layout-nav-counter-box {
-          font-weight: 500 !important;
-          font-size: 1rem !important;
-          line-height: 1.1rem !important;
-          padding: 0.2rem 0.2rem 0.2rem 0.4rem !important;
-          height: auto !important;
-        }
         .fb-layout-edit-view-form .fb-subquestion-wrapper,
         .fb-layout-edit-view-form .fb-radio-checkbox-item,
           margin-top: 0 !important;
@@ -975,7 +961,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
           <div className="space-y-4" onChange={() => setFormChanged(true)}>
                   {/* Section 1: From */}
                   <FbSection id="section-from" title="From">
-                    <FbQuestionRow cols={4}>
+                    <FbGridRow cols={4}>
                       <FbDropdown
                         id="organisation"
                         name="organisation"
@@ -1024,13 +1010,13 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                           required
                         />
                       </FbQuestion>
-                    </FbQuestionRow>
+                    </FbGridRow>
                   </FbSection>
 
                   {/* Section 2: Listing and priority */}
                   <FbSection id="section-listing" title="Listing and priority">
                     {/* Row 1 */}
-                    <FbQuestionRow cols={3}>
+                    <FbGridRow cols={3}>
                       <FbQuestion label="Date listed" required={true}>
                         <ExactDate
                           key={`dateListed-${viewChangeCounter.current}`}
@@ -1043,7 +1029,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                         />
                       </FbQuestion>
 
-                      <FbQuestionRowCell span={2}>
+                      <FbGridCell span={2}>
                         <FbQuestion label="Listed by">
                           <MSISelector
                             key={`listedBy-${viewChangeCounter.current}`}
@@ -1055,11 +1041,11 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             }
                           />
                         </FbQuestion>
-                      </FbQuestionRowCell>
-                    </FbQuestionRow>
+                      </FbGridCell>
+                    </FbGridRow>
 
                     {/* Row 2 - 4-column row containing Urgency, Operating surgeon, Patient available at short notice, and Royal College of Surgeons priority */}
-                    <FbQuestionRow cols={4}>
+                    <FbGridRow cols={4}>
                       <FbQuestion label="Urgency" required={true}>
                         <div className="flex flex-col">
                           {["routine", "urgent", "usc"].map((val) => (
@@ -1183,7 +1169,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                           ))}
                         </div>
                       </FbQuestion>
-                    </FbQuestionRow>
+                    </FbGridRow>
                   </FbSection>
 
                   {/* Section 3: Planned procedure(s) */}
@@ -1310,7 +1296,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
 
                   {/* Section 4: Specific operative risks */}
                   <FbSection id="section-risks" title="Specific operative risks">
-                    <FbQuestionRow cols={3}>
+                    <FbGridRow cols={3}>
                       {/* Column 1: Risks */}
                       <FbQuestion label="Risks">
                         <div className="flex flex-col">
@@ -1694,12 +1680,12 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                           }
                         />
                       </FbQuestion>
-                    </FbQuestionRow>
+                    </FbGridRow>
                   </FbSection>
 
                   {/* Section 5: Pre-operative */}
                   <FbSection id="section-preop" title="Pre-operative">
-                    <FbQuestionRow cols={4}>
+                    <FbGridRow cols={4}>
                       <FbQuestion label="Intended management" required={true}>
                         <div className="flex flex-col">
                           {[
@@ -1802,12 +1788,12 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                           />
                         </div>
                       </FbQuestion>
-                    </FbQuestionRow>
+                    </FbGridRow>
                   </FbSection>
 
                   {/* Section 6: Anaesthesia */}
                   <FbSection id="section-anaesthesia" title="Anaesthesia">
-                    <FbQuestionRow cols={3}>
+                    <FbGridRow cols={3}>
                       <FbQuestion label="Planned anaesthetic type">
                         <div className="flex flex-col">
                           {[
@@ -1834,7 +1820,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                           ))}
                         </div>
                       </FbQuestion>
-                      <FbQuestionRowCell span={2}>
+                      <FbGridCell span={2}>
                         <FbQuestion
                           label="Anaesthesia special requirements or issues"
                         >
@@ -1847,13 +1833,13 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             }
                           />
                         </FbQuestion>
-                      </FbQuestionRowCell>
-                    </FbQuestionRow>
+                      </FbGridCell>
+                    </FbGridRow>
                   </FbSection>
 
                   {/* Section 7: Post-op */}
                   <FbSection id="section-postop" title="Post-op">
-                    <FbQuestionRow cols={3}>
+                    <FbGridRow cols={3}>
                       <FbNumberInput
                         id="postopStay"
                         name="postopStay"
@@ -1899,12 +1885,12 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                           }
                         />
                       </FbQuestion>
-                    </FbQuestionRow>
+                    </FbGridRow>
                   </FbSection>
 
                   {/* Section 8: Other */}
                   <FbSection id="section-other" title="Other">
-                    <FbQuestionRow cols={3}>
+                    <FbGridRow cols={3}>
                       <FbQuestion label="Could this case be outsourced?">
                         <div className="flex flex-col">
                           {[
@@ -1929,7 +1915,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                           ))}
                         </div>
                       </FbQuestion>
-                      <FbQuestionRowCell span={2}>
+                      <FbGridCell span={2}>
                         <FbQuestion label="Any other information">
                           <FbTextArea
                             id="otherInfo"
@@ -1940,8 +1926,8 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             }
                           />
                         </FbQuestion>
-                      </FbQuestionRowCell>
-                    </FbQuestionRow>
+                      </FbGridCell>
+                    </FbGridRow>
                   </FbSection>
                 </div>
         </FbLayout>

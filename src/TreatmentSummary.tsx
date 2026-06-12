@@ -12,6 +12,7 @@ import { createClient } from './restClient';
 import { treatmentSummarySpec } from './treatmentSummarySpec';
 import { formatClinicalDate } from './utils/dateFormat';
 import { loadFormHistory } from './utils/formHistory';
+import { assertFormVersionIsLatest } from './utils/formVersion';
 import { generateUUID } from './utils/formUtils';
 import { useEditFormAutoExpandTextareas, useEditFormLabelEqualization } from './utils/formLayoutEffects';
 import { fbFormHistoryItem, fbFormHistoryMenu as FbFormHistoryMenu } from './components/fbFormHistoryMenu';
@@ -89,14 +90,8 @@ export default function TreatmentSummary({ inlineProps }: { inlineProps?: Inline
     let version = 0;
 
     if (formUuid) {
-      const { data: existingVersions, error: versionError } = await restClient
-        .from('treatment_summaries')
-        .select('version')
-        .eq('uuid', formUuid)
-        .order('version', { ascending: false })
-        .limit(1);
-      if (versionError) throw versionError;
-      if (existingVersions && existingVersions.length > 0) version = existingVersions[0].version + 1;
+      const latestVersion = await assertFormVersionIsLatest(restClient, 'treatment_summaries', formUuid, currentFormVersion);
+      if (latestVersion !== null) version = latestVersion + 1;
     } else {
       formUuid = generateUUID();
     }
@@ -145,7 +140,13 @@ export default function TreatmentSummary({ inlineProps }: { inlineProps?: Inline
     setFormState((prev) => ({ ...prev, uuid: formUuid }));
     setInitialSnapshot({ ...formDataToSave, uuid: formUuid });
     setFormChanged(false);
-  }, [formState, highlySensitive, inlineProps?.patientUuid, location.state, patient?.uuid, username]);
+  }, [currentFormVersion, formState, highlySensitive, inlineProps?.patientUuid, location.state, patient?.uuid, username]);
+
+  const continueAfterStaleSave = React.useCallback(() => {
+    setSelectedFormVersion(undefined);
+    setIsReadOnlyView(true);
+    setClickedRoVButton(false);
+  }, []);
 
   const {
     password,
@@ -161,6 +162,7 @@ export default function TreatmentSummary({ inlineProps }: { inlineProps?: Inline
     onSave: saveTreatmentSummary,
     onSaved: navigateBack,
     onError: () => setFormChanged(true),
+    onStaleSave: continueAfterStaleSave,
   });
 
   React.useEffect(() => {

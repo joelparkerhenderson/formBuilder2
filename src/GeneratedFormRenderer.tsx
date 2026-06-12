@@ -3,8 +3,8 @@ import { fbDropdown as FbDropdown } from './components/fbDropdown';
 import { fbGroup as FbGroup } from './components/fbGroup';
 import { fbMSISelector as MSISelector } from './components/fbMSISelector';
 import { fbQuestion as FbQuestion } from './components/fbQuestion';
-import { fbQuestionRow as FbQuestionRow } from './components/fbQuestionRow';
-import { fbQuestionRowCell as FbQuestionRowCell } from './components/fbQuestionRowCell';
+import { fbGridRow as FbGridRow } from './components/fbGridRow';
+import { fbGridCell as FbGridCell } from './components/fbGridCell';
 import { fbRadio as FbRadio } from './components/fbRadio';
 import { fbRoVField as FbRoVField, isFbRoVEmptyValue } from './components/fbRoVField';
 import { fbSCTDiagnosis as SCTDiagnosis } from './components/fbSCTDiagnosis';
@@ -20,6 +20,12 @@ const fieldTypes = new Set(['fbDropdown', 'fbMSISelector', 'fbSCTDiagnosis', 'fb
 export const cleanDesignerLabel = (label = '') => label.replace(/\*+$/g, '').trim();
 
 const asOptions = (options?: DesignerOption[]) => options && options.length > 0 ? options : [];
+
+const componentType = (component: DesignerComponentSpec) => {
+  if (component.type === 'fbQuestionRow') return 'fbGridRow';
+  if (component.type === 'fbQuestionRowCell') return 'fbGridCell';
+  return component.type;
+};
 
 const optionLookup = (component: DesignerComponentSpec) => {
   const lookup: Record<string, string> = {};
@@ -70,7 +76,9 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
   const renderComponent = (component: DesignerComponentSpec): React.ReactNode => {
     const label = cleanDesignerLabel(component.label);
 
-    if (component.type === 'fbSection') {
+    const type = componentType(component);
+
+    if (type === 'fbSection') {
       return (
         <FbSection key={component.id} id={component.id} title={label}>
           {component.children?.map(renderComponent)}
@@ -78,25 +86,25 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
       );
     }
 
-    if (component.type === 'fbQuestionRow') {
+    if (type === 'fbGridRow') {
       const children = component.children || [];
-      const cols = Math.max(1, Math.min(6, children.reduce((sum, child) => sum + Math.max(1, Number(child.colSpan || 1)), 0))) as 1 | 2 | 3 | 4 | 5 | 6;
+      const cols = Math.max(1, Math.min(12, children.reduce((sum, child) => sum + Math.max(1, Number(child.colSpan || 1)), 0))) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
       return (
-        <FbQuestionRow key={component.id} cols={cols}>
+        <FbGridRow key={component.id} cols={cols}>
           {children.map(renderComponent)}
-        </FbQuestionRow>
+        </FbGridRow>
       );
     }
 
-    if (component.type === 'fbQuestionRowCell') {
+    if (type === 'fbGridCell') {
       return (
-        <FbQuestionRowCell key={component.id} id={component.id} span={component.colSpan || 1}>
+        <FbGridCell key={component.id} id={component.id} span={component.colSpan || 1}>
           {component.children?.map(renderComponent)}
-        </FbQuestionRowCell>
+        </FbGridCell>
       );
     }
 
-    if (component.type === 'fbGroup') {
+    if (type === 'fbGroup') {
       return (
         <FbGroup key={component.id} label={groupLabel(component)}>
           {component.children?.map((child) => (
@@ -201,8 +209,9 @@ interface RoVProps {
 export const GeneratedReadOnlyForm: React.FC<RoVProps> = ({ spec, formState }) => {
   const renderComponent = (component: DesignerComponentSpec): React.ReactNode => {
     const label = cleanDesignerLabel(component.label);
+    const type = componentType(component);
 
-    if (component.type === 'fbSection') {
+    if (type === 'fbSection') {
       return (
         <div key={component.id} id={component.id} style={{ marginBottom: '0.8rem' }}>
           <h3 className="font-bold text-white" style={{
@@ -217,25 +226,25 @@ export const GeneratedReadOnlyForm: React.FC<RoVProps> = ({ spec, formState }) =
       );
     }
 
-    if (component.type === 'fbQuestionRow') {
+    if (type === 'fbGridRow') {
       const children = component.children || [];
       const cols = Math.max(1, Math.min(6, children.reduce((sum, child) => sum + Math.max(1, Number(child.colSpan || 1)), 0))) as 1 | 2 | 3 | 4 | 5 | 6;
       return (
-        <FbQuestionRow key={component.id} cols={cols}>
+        <FbGridRow key={component.id} cols={cols}>
           {children.map(renderComponent)}
-        </FbQuestionRow>
+        </FbGridRow>
       );
     }
 
-    if (component.type === 'fbQuestionRowCell') {
+    if (type === 'fbGridCell') {
       return (
-        <FbQuestionRowCell key={component.id} id={component.id} span={component.colSpan || 1}>
+        <FbGridCell key={component.id} id={component.id} span={component.colSpan || 1}>
           {component.children?.map(renderComponent)}
-        </FbQuestionRowCell>
+        </FbGridCell>
       );
     }
 
-    if (component.type === 'fbGroup') {
+    if (type === 'fbGroup') {
       const lookup = optionLookup(component);
       return <FbRoVField key={component.id} label={label} value={formState[component.id]} lookupTable={lookup} preserveGridSpace />;
     }
