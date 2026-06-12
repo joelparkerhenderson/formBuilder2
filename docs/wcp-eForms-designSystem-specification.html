@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WCP eForms design system specification</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; line-height: 1.45; margin: 2rem; max-width: 78rem; }
+    h1, h2, h3 { color: #1b6ec2; }
+    code, pre { font-family: Consolas, "Roboto Mono", monospace; }
+    pre { background: #f7f7f7; border: 1px solid #ccc; padding: 1rem; overflow: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #bbb; padding: 0.45rem; vertical-align: top; }
+    th { background: #eee; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>WCP eForms design system specification</h1>
+  <p>This document describes the design system common to the four patient forms: Waiting list card, Outpatient outcome, Operation note, and Treatment summary. It is derived from <code>design.md</code> and intentionally avoids form-specific field inventories.</p>
+
+  <h2>1. System overview</h2>
+  <p>The system provides high-contrast clinical electronic forms with editable views (EV), read-only views (RoV), version history, draft/final state, patient addressograph headers, and a consistent footer save/cancel/authentication workflow.</p>
+  <ul>
+    <li><strong>Purpose:</strong> capture structured clinical data using repeatable <code>fbXxx</code> components.</li>
+    <li><strong>Principles:</strong> clarity, compact clinical scanning, visible state, robust persistence, and controlled version history.</li>
+    <li><strong>Scope:</strong> web-based patient forms running inside formBuilder2 and SWAS static deployments.</li>
+    <li><strong>Accessibility target:</strong> WCAG 2.2 AA, with native controls preferred and ARIA added where custom widgets require it.</li>
+  </ul>
+
+  <h2>2. Design tokens</h2>
+  <table>
+    <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td><code>fbRed</code></td><td><code>#d50000</code></td><td>Danger buttons, required indicators, draft badges.</td></tr>
+      <tr><td><code>fbGreen</code></td><td><code>#008000</code></td><td>Success buttons, coded status, today outline in date pickers.</td></tr>
+      <tr><td><code>fbBlue</code></td><td><code>#1b6ec2</code></td><td>Headers, section bars, primary buttons, nav controls.</td></tr>
+      <tr><td><code>fbActiveLighterYellow</code></td><td><code>#ffffcc</code></td><td>Outer hover/focus highlighting.</td></tr>
+      <tr><td><code>fbActiveDarkerYellow</code></td><td><code>#fee715</code></td><td>Inner active controls and button hover/focus.</td></tr>
+      <tr><td><code>fbSilver</code></td><td><code>#c0c0c0</code></td><td>Standard borders and disabled controls.</td></tr>
+      <tr><td><code>fbWhite</code></td><td><code>#ffffff</code></td><td>Form shells, headers, footers, popups.</td></tr>
+      <tr><td><code>fbBlack</code></td><td><code>#000000</code></td><td>Default text and tooltip borders.</td></tr>
+      <tr><td><code>fbOrange</code></td><td><code>#fd8a10</code></td><td>Warning/not-coded state.</td></tr>
+      <tr><td><code>fbFaintGreen</code></td><td><code>#C5E1A5</code></td><td>Composer-only separators, not used as patient-form chrome.</td></tr>
+    </tbody>
+  </table>
+  <p>Typography uses Google Roboto across controls, labels, headings, buttons, and layout text. Material Icons are excluded from the Roboto override so ligature icons render correctly. Addressographs use Arial/Helvetica to match printed-card style.</p>
+  <p>Standard input borders use <code>0.1rem solid silver</code> and <code>0.4rem</code> radius. Form shell, header, footer, and main workspace backgrounds are white.</p>
+
+  <h2>3. Layout foundations</h2>
+  <ul>
+    <li>Every form sits inside <code>fbLayout</code>.</li>
+    <li>The top header contains <code>fbHeader</code>, form title, and <code>fbAddressograph</code>.</li>
+    <li>The footer uses <code>fbBottomControlsRow</code> and remains at the bottom of the viewport.</li>
+    <li>The left navigation panel is visible on desktop and hidden below 768px.</li>
+    <li>The central workspace uses full available panel width with padding <code>0.8rem 0 4rem 0</code>.</li>
+    <li>Rows are created with <code>fbGridRow</code>; cells are created with <code>fbGridCell</code>.</li>
+    <li>Desktop labels are equalised within rows. Mobile layouts collapse to a single column and reset label heights.</li>
+  </ul>
+
+  <h2>4. Sections, rows, questions and subquestions</h2>
+  <ul>
+    <li>Forms are partitioned into multiple high-level container components <code>fbSection</code>.</li>
+    <li>Each <code>fbSection</code> container includes a dedicated section header, implemented via the <code>fbSectionHeader</code> component displaying a high-contrast visual title bar, followed by a list of child controls.</li>
+    <li>Inside each <code>fbSection</code>, the child content is structured as a list of <code>fbGridRow</code> containers, or sometimes just individual questions that are not grouped inside a row.</li>
+    <li>Row elements use the <code>fbGridRow</code> layout blocks to arrange questions horizontally using CSS grid.</li>
+    <li>Where there are four questions in a row, the <code>fbGridRow</code> contains exactly four <code>fbGridCell</code> components, each of which wraps a single question. If there is a second or third set of questions, there is a second or third separate <code>fbGridCell</code> nested inside the row.</li>
+    <li>Grid spaces and relative horizontal weights are divided cleanly using <code>&lt;fbGridCell span={n}&gt;</code> layout blocks.</li>
+    <li>Individual fields are wrapped in <code>fbQuestion</code>, which provides visual labels and structured padding.</li>
+    <li>Hidden display-conditional subquestions render recursively nested inline beneath selected parent triggers inside matching sections.</li>
+  </ul>
+
+  <h2>5. Behaviour patterns</h2>
+  <h3>Required fields</h3>
+  <p>Required fields show a red asterisk. Save is disabled until required field completeness checks pass. Conditional subquestion values are reset when their parent value is cleared or changed.</p>
+  <h3>Highlighting</h3>
+  <p>Hover/focus highlighting alternates lighter and darker yellow across nested questions, groups, cells, and subquestions. The application-level layout owns the event wiring.</p>
+  <h3>Tooltips</h3>
+  <p>Custom tooltip bubbles appear near labels and controls, clamp within the viewport, and cascade from child controls to their containing question and section where helpful.</p>
+  <h3>Save workflow</h3>
+  <p>Forms save immutable versions. Draft saves require a draft confirmation popup; final saves require final state. Save feedback uses the shared popup family. A stale edit cannot create a new version if another user/window has already saved a newer version.</p>
+  <h3>Read-only view</h3>
+  <p>RoV omits empty details unless a grid placeholder is required, maps option values to labels, preserves multiline text, and renders coded/not-coded status indicators. Superseded versions show the Superseded badge and Back only.</p>
+  <h3>Form state and change detection</h3>
+  <p>Editable views keep user input in <code>formState</code>, with companion arrays for row lists where needed. The initial snapshot is compared with the current state to enable Save, prompt before RoV/Cancel transitions, and reject stale saves against newer persisted versions.</p>
+
+  <h2>6. Component vocabulary (for form specification)</h2>
+  <table>
+    <thead><tr><th>Component</th><th>Role</th><th>Implementation notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>fbSection</code></td><td>High-level section.</td><td>Blue title bar, white body, section id used by navigation.</td></tr>
+      <tr><td><code>fbGridRow</code></td><td>Responsive row.</td><td><code>cols</code> is 1 to 12; collapses on narrow screens.</td></tr>
+      <tr><td><code>fbGridCell</code></td><td>Column span holder.</td><td><code>span</code> maps to desktop column span.</td></tr>
+      <tr><td><code>fbQuestion</code></td><td>Label/control wrapper.</td><td>Displays required asterisk grouped with the last word.</td></tr>
+      <tr><td><code>fbTextInput</code></td><td>Single-line text.</td><td>Used for names, reasons, times, details, and simple values.</td></tr>
+      <tr><td><code>fbTextArea</code></td><td>Multi-line text.</td><td>Rows default to 2; auto-expands; RoV preserves line breaks.</td></tr>
+      <tr><td><code>fbTextInputWithUnits</code></td><td>Text input with unit suffix.</td><td>Uses the same bordered unit layout as numeric unit inputs.</td></tr>
+      <tr><td><code>fbDropdown</code></td><td>Native fixed-option select.</td><td>Use sentence-case option labels and stable stored values.</td></tr>
+      <tr><td><code>fbNumberInput</code></td><td>Number input.</td><td>Use for day counts, blood loss, and other measured values; width is constrained to 10 digits.</td></tr>
+      <tr><td><code>fbNumberInputWithUnits</code></td><td>Number input with units.</td><td>Use when a numeric value requires a displayed unit suffix; the numeric input is constrained to 10 digits.</td></tr>
+      <tr><td><code>fbRadio</code></td><td>Single option.</td><td>May own conditional subquestions.</td></tr>
+      <tr><td><code>fbCheck</code></td><td>Multi-select option.</td><td>May own conditional subquestions.</td></tr>
+      <tr><td><code>fbGroup</code></td><td>Radio/check group.</td><td>Provides visual group label and vertical option stack.</td></tr>
+      <tr><td><code>fbPartialDate</code></td><td>Partial date.</td><td>Accepts exact date, month/year, or year-only values.</td></tr>
+      <tr><td><code>fbExactDate</code></td><td>Complete date.</td><td>Requires a complete day/month/year date for database-facing dates.</td></tr>
+      <tr><td><code>fbMSISelector</code></td><td>Clinician autocomplete.</td><td>Stores companion coded state and invalidates it on manual edits.</td></tr>
+      <tr><td><code>fbSCTProcedure</code></td><td>SNOMED CT procedure autocomplete.</td><td>Uses the procedure search endpoint and coded state.</td></tr>
+      <tr><td><code>fbSCTDiagnosis</code></td><td>SNOMED CT diagnosis autocomplete.</td><td>Uses the disorder search endpoint and coded state.</td></tr>
+      <tr><td><code>fbTable</code> family</td><td>Clinical table/list.</td><td>Use native table elements with optional drag and delete columns.</td></tr>
+      <tr><td><code>fbAddButton</code></td><td>Dynamic row/list add action.</td><td>Use below tables or dynamic clinical lists.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. Component vocabulary (other)</h2>
+  <table>
+    <thead><tr><th>Component</th><th>Role</th><th>Implementation notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>fbButton</code></td><td>Standard action button.</td><td>Blue, green, red, and disabled variants with yellow hover/focus transitions.</td></tr>
+      <tr><td><code>fbAddressograph</code></td><td>Patient demographic card.</td><td>Arial/Helvetica card aligned to form headers.</td></tr>
+      <tr><td><code>fbHeader</code></td><td>Shared form header.</td><td>Contains title and addressograph; blue bottom border.</td></tr>
+      <tr><td><code>fbLayout</code></td><td>Shared edit-form shell.</td><td>Owns header, footer, navigation, scroll panel, highlighting, and required counts.</td></tr>
+      <tr><td><code>fbBottomControlsRow</code></td><td>Footer control row.</td><td>Hosts RoV, Save, Cancel, final, username, password, and sensitivity controls.</td></tr>
+      <tr><td><code>fbDraftBadge</code></td><td>Draft status badge.</td><td>White bold text on red square badge.</td></tr>
+      <tr><td><code>fbSupersededBadge</code></td><td>Superseded RoV badge.</td><td>Same visual treatment as draft badge with "Superseded" text.</td></tr>
+      <tr><td><code>fbPopup</code></td><td>Shared modal shell.</td><td>Dialog wrapper with <code>aria-modal</code> and labelled title semantics.</td></tr>
+      <tr><td><code>fbDraftPopup</code>, <code>fbPasswordPopup</code>, <code>fbSavingPopup</code>, <code>fbSavedPopup</code>, <code>fbSaveErrorPopup</code>, <code>fbStaleSavePopup</code>, <code>fbCancelPopup</code></td><td>Workflow modals.</td><td>Thin wrappers around <code>fbPopup</code>.</td></tr>
+      <tr><td><code>fbAuthControls</code>, <code>fbAuthAndSensitivity</code>, <code>fbFinalControl</code>, <code>fbPassword</code>, <code>fbSaveCancelButtons</code>, <code>fbCancelFormButton</code></td><td>Authentication, finalisation, and save/cancel controls.</td><td>Used in the shared footer and popup workflows.</td></tr>
+      <tr><td><code>fbUserName</code></td><td>Active username input.</td><td>Persists visible username in local storage and footer state.</td></tr>
+      <tr><td><code>fbAddButtonForPage</code>, <code>fbAddFormMenu</code></td><td>Patient-record new-form launcher.</td><td>Opens the form/document creation menu.</td></tr>
+      <tr><td><code>fbSmallAddButton</code>, <code>fbSmallerButton</code></td><td>Compact inline actions.</td><td>Used in dense subquestion and linked-form areas.</td></tr>
+      <tr><td><code>fbFormTile</code>, <code>fbOutpatientAppointmentTile</code></td><td>Patient-record timeline tiles.</td><td>Show chronological documents and appointments.</td></tr>
+      <tr><td><code>fbFormHistoryMenu</code>, <code>fbViewOldVersion</code></td><td>Version-history menu and action.</td><td>Lists saved versions with date/time, saved-by, and View action.</td></tr>
+      <tr><td><code>fbLayoutNav</code></td><td>Edit/Composer sidebar navigation.</td><td>Shared desktop section navigator used by real edit forms and Composer so section-name, counter, active-indicator, grid-cell spacing, state colours, and typography stay identical.</td></tr>
+      <tr><td><code>fbRoVHeader</code>, <code>fbRoVFooter</code></td><td>Shared read-only view chrome.</td><td>Header/footer for EV/RoV/history/back transitions.</td></tr>
+      <tr><td><code>fbRoVField</code>, <code>fbRoVTableCell</code></td><td>Read-only data renderers.</td><td>Preserve grid spacing, typography, coded indicators, and pre-line text.</td></tr>
+      <tr><td><code>fbSCTSelector</code></td><td>Internal SNOMED CT popup engine.</td><td>Shared implementation for procedure and diagnosis wrappers.</td></tr>
+      <tr><td><code>fbSearchInput</code></td><td>Patient search input.</td><td>Focused search box with clear action.</td></tr>
+      <tr><td><code>fbToolTip</code></td><td>Custom tooltip display.</td><td>Absolute-positioned hover/focus help bubble.</td></tr>
+      <tr><td><code>fbAutoExpandingTextarea</code></td><td>Textarea helper.</td><td>Lower-level auto-resize component used by text controls.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8. Basic implementation skeleton</h2>
+  <pre><code>const sections = [
+  { id: "basic", name: "Basic information", requiredFields: ["organisation", "speciality"] }
+];
+
+&lt;FbLayout
+  title="Example form"
+  patient={patient}
+  sections={sections}
+  requiredComplete={requiredComplete}
+  formChanged={formChanged}
+  isSaving={isSaving}
+  onSave={handleSave}
+  onCancel={handleCancel}
+&gt;
+  &lt;FbSection id="basic" title="Basic information"&gt;
+    &lt;FbGridRow cols={3}&gt;
+      &lt;FbGridCell span={1}&gt;
+        &lt;FbDropdown id="organisation" label="Organisation" required value={formState.organisation} onChange={setField} options={organisationOptions} /&gt;
+      &lt;/FbGridCell&gt;
+      &lt;FbGridCell span={1}&gt;
+        &lt;FbDropdown id="speciality" label="Speciality" required value={formState.speciality} onChange={setField} options={specialityOptions} /&gt;
+      &lt;/FbGridCell&gt;
+      &lt;FbGridCell span={1}&gt;
+        &lt;FbMSISelector name="seniorClinician" value={formState.seniorClinician} coded={formState.seniorClinician_coded} required onChange={setField} /&gt;
+      &lt;/FbGridCell&gt;
+    &lt;/FbGridRow&gt;
+  &lt;/FbSection&gt;
+&lt;/FbLayout&gt;</code></pre>
+
+  <h2>9. Behaviour patterns (detail)</h2>
+  <h3>Required fields</h3>
+  <p>Required fields show a red asterisk. Save is disabled until required field completeness checks pass. Conditional subquestion values are reset when their parent value is cleared or changed.</p>
+  <ul>
+    <li>Handled centrally by <code>fbQuestion</code>, <code>fbTextInput</code>, <code>fbTextArea</code>, and <code>fbMSISelector</code>.</li>
+    <li>If a label exists, the asterisk is grouped with the last word of the label in a nowrap wrapper so the asterisk does not wrap alone.</li>
+    <li>If there is no label, for example hidden nested subquestions, the asterisk is displayed immediately to the right of the control and top-aligned.</li>
+  </ul>
+  <pre><code>const RequiredMark = () =&gt; &lt;span style={{ color: fbRed }}&gt;*&lt;/span&gt;;
+
+function labelWithRequired(label, required) {
+  if (!required) return label;
+  const words = String(label).trim().split(/\s+/);
+  const last = words.pop() || "";
+  return &lt;&gt;{words.join(" ")}{" "}&lt;span style={{ whiteSpace: "nowrap" }}&gt;{last} &lt;RequiredMark /&gt;&lt;/span&gt;&lt;/&gt;;
+}</code></pre>
+
+  <h3>Highlighting</h3>
+  <p>Hover/focus highlighting alternates lighter and darker yellow across nested questions, groups, cells, and subquestions. The application-level layout owns the event wiring.</p>
+  <ul>
+    <li>Outer question containers use <code>fbActiveLighterYellow</code>.</li>
+    <li>Inner active inputs, radios, check items, and subquestions use <code>fbActiveDarkerYellow</code>.</li>
+    <li>Deeply nested active items alternate between the two yellows. Table cells count as a nesting level so table-contained choices highlight correctly.</li>
+  </ul>
+  <pre><code>function highlightElement(target) {
+  const activeNodes = target.closest(".fb-question-container, .fb-radio-checkbox-item, td");
+  let depth = 0;
+  for (let node = activeNodes; node; node = node.parentElement?.closest(".fb-question-container, .fb-radio-checkbox-item, td")) {
+    node.style.backgroundColor = depth % 2 === 0 ? fbActiveLighterYellow : fbActiveDarkerYellow;
+    depth += 1;
+  }
+}</code></pre>
+
+  <h3>Tooltips</h3>
+  <p>Custom tooltip bubbles appear near labels and controls, clamp within the viewport, and cascade from child controls to their containing question and section where helpful.</p>
+  <ul>
+    <li><code>fbToolTip</code> renders absolute-positioned hover/focus help bubbles and avoids layout shift.</li>
+    <li>Manual close buttons use a solid black border and compact padding.</li>
+    <li>Grouped radio/check tooltips appear below the option label, but move above when an open subquestion would otherwise be obscured.</li>
+    <li>Open subquestions are detected with <code>fb-subquestion-wrapper</code> and <code>fb-subquestion</code> hooks.</li>
+  </ul>
+  <pre><code>function clampTooltip(left, width) {
+  const margin = 8;
+  return Math.max(margin, Math.min(left, window.innerWidth - width - margin));
+}
+
+function hasOpenSubquestion(el) {
+  return Boolean(el.closest(".fb-radio-checkbox-item")?.querySelector(".fb-subquestion-wrapper, .fb-subquestion"));
+}</code></pre>
+
+  <h3>Save workflow</h3>
+  <p>Forms save immutable versions. Draft saves require a draft confirmation popup; final saves require final state. Save feedback uses the shared popup family. A stale edit cannot create a new version if another user/window has already saved a newer version.</p>
+  <ul>
+    <li>Completeness is evaluated by form-specific <code>areRequiredFieldsComplete()</code> functions.</li>
+    <li>Disabled buttons use a solid silver background with white text.</li>
+    <li>Changed forms enable the save button with a green variant; unchanged forms leave it disabled.</li>
+    <li><code>fbSavingPopup</code>, <code>fbSavedPopup</code>, <code>fbSaveErrorPopup</code>, <code>fbStaleSavePopup</code>, and <code>fbDraftPopup</code> communicate workflow state.</li>
+    <li>The footer password field clears two seconds after blur, but Save captures the current password immediately if clicked before that timeout expires.</li>
+  </ul>
+  <pre><code>async function handleSaveAndClose() {
+  if (!areRequiredFieldsComplete(formState)) return;
+  if (!finalChecked) {
+    setPopup("draft");
+    return;
+  }
+  if (formChanged && !password) {
+    setPopup("password");
+    return;
+  }
+  setPopup("saving");
+  await saveClinicalVersion({ formState, finalChecked, password });
+  setPopup("saved");
+}</code></pre>
+
+  <h3>Read-only view</h3>
+  <p>RoV omits empty details unless a grid placeholder is required, maps option values to labels, preserves multiline text, and renders coded/not-coded status indicators. Superseded versions show the Superseded badge and Back only.</p>
+  <ul>
+    <li>Checked radio or checkbox values render as plain text strings with <code>fontWeight: 500</code>; unselected values are omitted.</li>
+    <li>Select values are mapped to complete descriptive labels.</li>
+    <li>Spacing grids are preserved by retaining empty grid wrappers where a column must not collapse.</li>
+    <li>RoV coded indicators align to the top of the first line of wrapped data.</li>
+  </ul>
+  <pre><code>&lt;div&gt;
+  {formState.field &amp;&amp; (
+    &lt;div className="space-y-2 fb-question-container"&gt;
+      &lt;label style={{ fontWeight: 300, fontSize: "0.8rem" }}&gt;Field&lt;/label&gt;
+      &lt;div style={{ fontWeight: 500, whiteSpace: "pre-line" }}&gt;{formState.field}&lt;/div&gt;
+    &lt;/div&gt;
+  )}
+&lt;/div&gt;</code></pre>
+
+  <h3>Form state and change detection</h3>
+  <p>Editable views keep user input in <code>formState</code>, with companion arrays for row lists where needed. The initial snapshot is compared with the current state to enable Save, prompt before RoV/Cancel transitions, and reject stale saves against newer persisted versions.</p>
+  <pre><code>export const compareFormStatesObj = (snap, current) =&gt; {
+  if (!snap || !current) return false;
+
+  const allKeys = Array.from(new Set([
+    ...Object.keys(snap.formState || {}),
+    ...Object.keys(current.formState || {})
+  ]));
+
+  for (const key of allKeys) {
+    const v1 = snap.formState?.[key] == null ? "" : snap.formState[key];
+    const v2 = current.formState?.[key] == null ? "" : current.formState[key];
+    if (String(v1) !== String(v2)) return false;
+  }
+
+  if (snap.procedures &amp;&amp; current.procedures) {
+    if (snap.procedures.length !== current.procedures.length) return false;
+    for (let i = 0; i &lt; snap.procedures.length; i++) {
+      const p1 = snap.procedures[i];
+      const p2 = current.procedures[i];
+      if (p1.side !== p2.side || p1.procedure !== p2.procedure || p1.additionalInfo !== p2.additionalInfo) {
+        return false;
+      }
+    }
+  }
+
+  if (JSON.stringify(snap.anticoagChecked) !== JSON.stringify(current.anticoagChecked)) return false;
+  if (Boolean(snap.highlySensitive) !== Boolean(current.highlySensitive)) return false;
+  if (Boolean(snap.finalChecked) !== Boolean(current.finalChecked)) return false;
+  return true;
+};</code></pre>
+
+  <h2>10. Component specifications</h2>
+  <h3>fbSection</h3>
+  <pre><code>&lt;section id="section-id" class="fb-section"&gt;
+  &lt;div class="fb-section-header"&gt;Section title&lt;/div&gt;
+  &lt;div class="fb-section-body"&gt;...children...&lt;/div&gt;
+&lt;/section&gt;</code></pre>
+  <pre><code>.fb-section-header { background: #1b6ec2; color: #fff; font-weight: 500; padding: 0.4rem; }
+.fb-section-body { background: #fff; }</code></pre>
+
+  <h3>fbGridRow</h3>
+  <pre><code>&lt;div class="fb-grid-row" style="grid-template-columns: repeat(4, minmax(0, 1fr));"&gt;
+  &lt;div class="fb-grid-cell" style="grid-column: span 2;"&gt;...question...&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+  <pre><code>.fb-grid-row { display: grid; column-gap: 1rem; row-gap: 0.4rem; align-items: start; }
+.fb-grid-cell { min-width: 0; }
+@media (max-width: 768px) { .fb-grid-row { grid-template-columns: 1fr !important; } }</code></pre>
+
+  <h3>fbGridCell</h3>
+  <pre><code>&lt;div class="fb-grid-cell" style="grid-column: span 2;"&gt;...question...&lt;/div&gt;</code></pre>
+  <p><code>span</code> maps to desktop grid-column span and collapses to one column on narrow screens.</p>
+
+  <h3>fbQuestion</h3>
+  <pre><code>&lt;div class="fb-question-container"&gt;
+  &lt;label for="field-id"&gt;Question label &lt;span class="fb-required"&gt;*&lt;/span&gt;&lt;/label&gt;
+  &lt;input id="field-id" name="field-id"&gt;
+&lt;/div&gt;</code></pre>
+  <pre><code>.fb-question-container { padding: 0.2rem; }
+.fb-question-container label { font-weight: 300; font-size: 0.8rem; display: block; }
+.fb-required { color: #d50000; }</code></pre>
+
+  <h3>fbTextInput</h3>
+  <p>Single-line text input wrapped by <code>fbQuestion</code>.</p>
+  <pre><code>&lt;input id="field" name="field" value=""&gt;</code></pre>
+  <pre><code>.fb-layout-edit-view-form input:not([type="radio"]):not([type="checkbox"]),
+.fb-layout-edit-view-form select,
+.fb-layout-edit-view-form textarea {
+  border: 0.1rem solid silver !important;
+  border-radius: 0.4rem !important;
+  background-color: white !important;
+  padding: 0.2rem !important;
+}</code></pre>
+
+  <h3>fbTextArea</h3>
+  <p>Multi-line text input with auto-expansion and RoV line-break preservation.</p>
+  <pre><code>&lt;textarea id="details" name="details" rows="2"&gt;&lt;/textarea&gt;</code></pre>
+  <pre><code>function resizeTextareaToContent(textarea) {
+  textarea.style.height = "auto";
+  textarea.style.height = `${Math.max(44, textarea.scrollHeight)}px`;
+}</code></pre>
+
+  <h3>fbTextInputWithUnits</h3>
+  <p>Text input with a fixed unit suffix.</p>
+  <pre><code>&lt;div class="fb-input-with-units"&gt;&lt;input type="text"&gt;&lt;span&gt;units&lt;/span&gt;&lt;/div&gt;</code></pre>
+  <pre><code>.fb-input-with-units { display: flex; border: 0.1rem solid silver; border-radius: 0.4rem; }
+.fb-input-with-units input { border: none !important; flex: 1; }
+.fb-input-with-units span { border-left: 0.1rem solid silver; padding: 0.2rem 0.4rem; }</code></pre>
+
+  <h3>fbNumberInput</h3>
+  <p>Numeric input constrained to a width corresponding to 10 digits.</p>
+  <pre><code>&lt;input type="number" class="fb-number-input"&gt;</code></pre>
+  <pre><code>function normalizeNumberValue(value) {
+  return value === "" ? "" : Number(value);
+}</code></pre>
+
+  <h3>fbNumberInputWithUnits</h3>
+  <p>Numeric input with a persisted unit suffix. Composer stores the suffix in the component <code>units</code> field.</p>
+  <pre><code>&lt;div class="fb-input-with-units"&gt;&lt;input type="number"&gt;&lt;span&gt;ml&lt;/span&gt;&lt;/div&gt;</code></pre>
+
+  <h3>fbDropdown</h3>
+  <pre><code>&lt;select id="hospital" name="hospital"&gt;
+  &lt;option value="princess-wales"&gt;Princess of Wales Hospital, Bridgend&lt;/option&gt;
+&lt;/select&gt;</code></pre>
+  <p>Use native select elements, stable stored option values, and sentence-case visible labels.</p>
+
+  <h3>fbRadio</h3>
+  <p>Single radio option. Conditional subquestions are rendered as children when this option is selected.</p>
+  <pre><code>&lt;label class="fb-radio-checkbox-item"&gt;
+  &lt;input type="radio" name="group-name" value="routine"&gt; Routine
+&lt;/label&gt;</code></pre>
+
+  <h3>fbCheck</h3>
+  <p>Checkbox option. Conditional subquestions are rendered as children when this option is checked.</p>
+  <pre><code>&lt;label class="fb-radio-checkbox-item"&gt;
+  &lt;input type="checkbox" name="risk-diabetic"&gt; Diabetic
+&lt;/label&gt;</code></pre>
+
+  <h3>fbGroup</h3>
+  <p>Visual radio/check group with an optional label.</p>
+  <pre><code>&lt;div class="fb-group"&gt;
+  &lt;div class="fb-group-label"&gt;Urgency&lt;/div&gt;
+  &lt;label class="fb-radio-checkbox-item"&gt;&lt;input type="radio" name="urgency"&gt; Routine&lt;/label&gt;
+  &lt;label class="fb-radio-checkbox-item"&gt;&lt;input type="radio" name="urgency"&gt; Urgent&lt;/label&gt;
+&lt;/div&gt;</code></pre>
+  <pre><code>.fb-radio-checkbox-item { display: block; padding: 0.15rem 0.25rem; }
+.fb-subquestion-wrapper, .fb-subquestion { padding-left: 1.5rem; }</code></pre>
+  <pre><code>function clearSubquestionValues(nextParentValue, previousParentValue, setFormState) {
+  if (nextParentValue === previousParentValue) return;
+  setFormState((state) =&gt; ({ ...state, nestedField: "" }));
+}</code></pre>
+
+  <h3>fbPartialDate</h3>
+  <p>Date control accepting exact dates, month/year values, or year-only values.</p>
+  <pre><code>&lt;div class="fb-partial-date"&gt;
+  &lt;input inputmode="text" placeholder="dd-Mmm-yyyy"&gt;
+  &lt;div class="fb-date-popup"&gt;...calendar grid...&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+  <pre><code>.fb-partial-date input { width: 100%; max-width: 11rem; border: 0.1rem solid silver; border-radius: 0.4rem; }
+.fb-partial-date input:focus { border: 0.1rem solid silver; border-radius: 0.4rem; outline: none; }
+.fb-date-today { border: 0.2rem solid #008000; }
+.fb-date-active { background: #008000; color: #fff; font-weight: 700; }</code></pre>
+  <pre><code>const exactDatePattern = /^\d{1,2}-[A-Za-z]{3}-\d{4}$/;
+const monthPattern = /^[A-Za-z]{3}-\d{4}$/;
+const yearPattern = /^\d{4}$/;
+function validateExactDate(value) {
+  if (!exactDatePattern.test(value)) return "Complete date required";
+  return "";
+}</code></pre>
+
+  <h3>fbExactDate</h3>
+  <p>Exact-date wrapper around <code>fbPartialDate</code>. Month-only and year-only input is rejected, and month/year selection buttons are hidden.</p>
+  <pre><code>&lt;div class="fb-partial-date fb-exact-date"&gt;
+  &lt;input inputmode="text" placeholder="dd-Mmm-yyyy" aria-invalid="false"&gt;
+&lt;/div&gt;</code></pre>
+
+  <h3>fbMSISelector</h3>
+  <pre><code>&lt;div class="fb-msi-selector"&gt;
+  &lt;input autocomplete="off"&gt;
+  &lt;span class="material-icons" role="img" aria-label="Coded"&gt;check_circle_outline&lt;/span&gt;
+  &lt;div class="fb-autocomplete-popup"&gt;...matches and details...&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+  <pre><code>async function searchMsi(query) {
+  const url = `https://www.shadesofpale.net/MSISearch?st=${encodeURIComponent(query)}`;
+  const response = await fetch(url, { headers: { Authorization: "Basic ..." } });
+  return response.text();
+}
+
+function onMsiTextEdit(setFormState, key, value) {
+  setFormState((state) =&gt; ({ ...state, [key]: value, [`${key}_coded`]: false }));
+}</code></pre>
+
+  <h3>fbSCTProcedure</h3>
+  <p>Public procedure autocomplete wrapper around <code>fbSCTSelector</code>.</p>
+  <pre><code>&lt;FbSCTSelector searchCommand="findProcedure" mode="procedure" /&gt;</code></pre>
+
+  <h3>fbSCTDiagnosis</h3>
+  <p>Public diagnosis autocomplete wrapper around <code>fbSCTSelector</code>.</p>
+  <pre><code>&lt;FbSCTSelector searchCommand="findDisorder" mode="diagnosis" /&gt;</code></pre>
+
+  <h3>fbSCTSelector</h3>
+  <p>Internal shared SNOMED CT popup engine.</p>
+  <pre><code>&lt;div class="fb-sct-selector"&gt;
+  &lt;input autocomplete="off"&gt;
+  &lt;div class="fb-sct-popup"&gt;
+    &lt;div class="fb-sct-matches"&gt;...matches...&lt;/div&gt;
+    &lt;div class="fb-sct-details"&gt;...concept details...&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+  <pre><code>.fb-sct-popup { position: absolute; width: 45rem; display: grid; grid-template-columns: 1fr 2fr; }
+.fb-sct-matches, .fb-sct-details { max-height: 20rem; overflow: auto; }</code></pre>
+  <pre><code>function sctUrl(mode, query) {
+  const cmd = mode === "procedure" ? "findProcedure" : "findDisorder";
+  return `https://www.shadesofpale.net/SCTSearch?cmd=${cmd}&amp;st=${encodeURIComponent(query)}&amp;count=30`;
+}</code></pre>
+
+  <h3>fbTable</h3>
+  <p>Native table wrapper for clinical row lists.</p>
+  <pre><code>&lt;table class="fb-table"&gt;
+  &lt;thead&gt;&lt;tr&gt;&lt;th&gt;Side&lt;/th&gt;&lt;th&gt;Procedure&lt;/th&gt;&lt;th&gt;&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;&lt;td&gt;...&lt;/td&gt;&lt;td&gt;...&lt;/td&gt;&lt;td&gt;&lt;button aria-label="Delete row"&gt;highlight_off&lt;/button&gt;&lt;/td&gt;&lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;button class="fb-add-button"&gt;Add procedure&lt;/button&gt;</code></pre>
+  <pre><code>.fb-table { border-collapse: collapse; width: 100%; }
+.fb-table th, .fb-table td { border: 0.1rem solid silver; padding: 0.25rem; vertical-align: top; }
+.fb-add-button { color: #1b6ec2; background: #fff; border: 0.1rem solid #1b6ec2; }</code></pre>
+
+  <h3>fbTableHeader</h3>
+  <pre><code>&lt;thead&gt;&lt;tr&gt;...headers...&lt;/tr&gt;&lt;/thead&gt;</code></pre>
+
+  <h3>fbTableBody</h3>
+  <pre><code>&lt;tbody&gt;...rows...&lt;/tbody&gt;</code></pre>
+
+  <h3>fbTableRow</h3>
+  <pre><code>&lt;tr&gt;...cells...&lt;/tr&gt;</code></pre>
+
+  <h3>fbTableHeaderCell</h3>
+  <pre><code>&lt;th&gt;Procedure&lt;/th&gt;</code></pre>
+
+  <h3>fbTableCell</h3>
+  <p>Native table subcomponents. Cells inherit normal question highlighting and use top-aligned compact padding.</p>
+  <pre><code>&lt;td&gt;...cell component...&lt;/td&gt;</code></pre>
+
+  <h3>fbAddButton</h3>
+  <p>Inline add action below dynamic row lists.</p>
+  <pre><code>&lt;button type="button" class="fb-add-button"&gt;Add procedure&lt;/button&gt;</code></pre>
+  <pre><code>function appendRow(rows, createRow) {
+  const maxId = rows.reduce((max, row) =&gt; Math.max(max, Number(row.id) || 0), 0);
+  return [...rows, createRow(maxId + 1)];
+}
+function removeRowIfMultiple(rows, id) {
+  return rows.length &gt; 1 ? rows.filter((row) =&gt; row.id !== id) : rows;
+}</code></pre>
+
+  <h3>fbButton</h3>
+  <pre><code>&lt;button type="button" class="fb-button fb-button-blue"&gt;Action&lt;/button&gt;</code></pre>
+  <pre><code>.fb-button {
+  display: inline-block;
+  height: 2.0rem;
+  line-height: 1.8rem;
+  padding: 0 0.8rem;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  box-sizing: border-box;
+}
+.fb-button:disabled { cursor: not-allowed; opacity: 0.6; }
+.fb-button-blue, .fb-button-primary { background: #1b6ec2; color: #fff; border: 0.1rem solid #1b6ec2; }
+.fb-button-green, .fb-button-success { background: #008000; color: #fff; border: 0.1rem solid #008000; }
+.fb-button-red, .fb-button-danger { background: #d50000; color: #fff; border: 0.1rem solid #d50000; }
+.fb-button-secondary { background: #fff; color: #1b6ec2; border: 0.1rem solid #1b6ec2; }
+.fb-button-yellow,
+.fb-button:not(:disabled):hover,
+.fb-button:not(:disabled):focus { background: #fee715; color: #000; border: 0.1rem solid #fee715; }</code></pre>
+
+  <h3>fbAddressograph</h3>
+  <pre><code>&lt;aside class="fb-addressograph-card"&gt;...patient identifiers...&lt;/aside&gt;</code></pre>
+  <pre><code>.fb-addressograph-card,
+.fb-addressograph-card * {
+  font-family: Arial, Helvetica, sans-serif !important;
+  line-height: normal !important;
+}</code></pre>
+
+  <h3>fbHeader</h3>
+  <pre><code>&lt;header class="fb-header"&gt;...title and addressograph...&lt;/header&gt;</code></pre>
+  <pre><code>.fb-header-with-divider {
+  background-color: white;
+  border-bottom: 0.2rem solid #1b6ec2;
+  padding: 0.4rem 0.8rem;
+  box-sizing: border-box;
+}</code></pre>
+
+  <h3>fbLayout</h3>
+  <pre><code>&lt;div class="fb-layout"&gt;&lt;nav aria-label="Form sections"&gt;...&lt;/nav&gt;&lt;main&gt;...&lt;/main&gt;&lt;/div&gt;</code></pre>
+
+  <h3>fbBottomControlsRow</h3>
+  <pre><code>&lt;footer class="fb-bottom-controls-row"&gt;...save/cancel/final/auth controls...&lt;/footer&gt;</code></pre>
+  <pre><code>.fb-bottom-control-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0.4rem;
+  background-color: white;
+  border-top: 0.2rem solid #1b6ec2;
+  min-height: 2.8rem;
+  box-sizing: border-box;
+}</code></pre>
+
+  <h3>fbDraftBadge</h3>
+  <pre><code>&lt;span class="fb-draft-badge"&gt;Draft&lt;/span&gt;</code></pre>
+
+  <h3>fbSupersededBadge</h3>
+  <pre><code>&lt;span class="fb-superseded-badge"&gt;Superseded&lt;/span&gt;</code></pre>
+  <pre><code>.fb-draft-badge,
+.fb-superseded-badge {
+  background-color: #d50000;
+  color: white;
+  font-weight: 700;
+  padding: 0.2rem 0.4rem;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
+  display: inline-block;
+  line-height: 1.2;
+  border-radius: 0;
+}</code></pre>
+
+  <h3>fbPopup</h3>
+  <pre><code>&lt;div role="dialog" aria-modal="true" aria-labelledby="popup-title"&gt;...popup...&lt;/div&gt;</code></pre>
+  <pre><code>.fb-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.fb-popup-card {
+  background-color: white;
+  border: 0.2rem solid #1b6ec2;
+  border-radius: 0.4rem;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 500px;
+  font-family: 'Roboto', sans-serif;
+}
+.fb-popup-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin: 0 0 1rem 0;
+  color: #1b6ec2;
+}</code></pre>
+
+  <h3>fbDraftPopup</h3>
+  <p>Workflow-specific wrapper around <code>fbPopup</code> for draft-save confirmation.</p>
+  <pre><code>&lt;FbPopup title="Save as draft?"&gt;...draft confirmation...&lt;/FbPopup&gt;</code></pre>
+
+  <h3>fbPasswordPopup</h3>
+  <p>Workflow-specific wrapper around <code>fbPopup</code> for authentication re-entry before sensitive transitions.</p>
+  <pre><code>&lt;FbPopup title="Password required"&gt;...password field...&lt;/FbPopup&gt;</code></pre>
+
+  <h3>fbSavingPopup</h3>
+  <p>Workflow-specific wrapper around <code>fbPopup</code> while a save request is in progress.</p>
+  <pre><code>&lt;FbPopup title="Saving..."&gt;...saving message...&lt;/FbPopup&gt;</code></pre>
+
+  <h3>fbSavedPopup</h3>
+  <p>Workflow-specific wrapper around <code>fbPopup</code> after a successful save.</p>
+  <pre><code>&lt;FbPopup title="Data saved"&gt;...success message...&lt;/FbPopup&gt;</code></pre>
+
+  <h3>fbSaveErrorPopup</h3>
+  <p>Workflow-specific wrapper around <code>fbPopup</code> after a save error.</p>
+  <pre><code>&lt;FbPopup title="Error"&gt;Changes may not have been saved&lt;/FbPopup&gt;</code></pre>
+
+  <h3>fbStaleSavePopup</h3>
+  <p>Workflow-specific wrapper around <code>fbPopup</code> when a newer saved version prevents the stale edit from being saved.</p>
+  <pre><code>&lt;FbPopup title="Changes NOT saved"&gt;...open latest version action...&lt;/FbPopup&gt;</code></pre>
+
+  <h3>fbCancelPopup</h3>
+  <p>Workflow-specific wrapper around <code>fbPopup</code> for discarding unsaved changes.</p>
+  <pre><code>&lt;FbPopup title="Cancel form?"&gt;...discard changes confirmation...&lt;/FbPopup&gt;</code></pre>
+
+  <h3>fbAuthControls</h3>
+  <pre><code>&lt;div class="fb-auth-controls"&gt;
+  &lt;input type="password" autocomplete="current-password"&gt;
+  &lt;label&gt;&lt;input type="checkbox"&gt; Final&lt;/label&gt;
+  &lt;button&gt;Save&lt;/button&gt;&lt;button&gt;Cancel&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+
+  <h3>fbAuthAndSensitivity</h3>
+  <pre><code>&lt;div class="fb-auth-and-sensitivity"&gt;...authentication and high-sensitivity controls...&lt;/div&gt;</code></pre>
+
+  <h3>fbFinalControl</h3>
+  <pre><code>&lt;label&gt;&lt;input type="checkbox"&gt; Final&lt;/label&gt;</code></pre>
+
+  <h3>fbPassword</h3>
+  <pre><code>&lt;input type="password" autocomplete="current-password"&gt;</code></pre>
+
+  <h3>fbSaveCancelButtons</h3>
+  <pre><code>&lt;button&gt;Save&lt;/button&gt;&lt;button&gt;Cancel&lt;/button&gt;</code></pre>
+
+  <h3>fbCancelFormButton</h3>
+  <pre><code>&lt;button class="fb-button fb-button-red"&gt;Cancel&lt;/button&gt;</code></pre>
+
+  <h3>fbUserName</h3>
+  <pre><code>&lt;input name="username" autocomplete="name"&gt;</code></pre>
+
+  <h3>fbAddButtonForPage</h3>
+  <pre><code>&lt;button type="button"&gt;New form or document&lt;/button&gt;</code></pre>
+
+  <h3>fbAddFormMenu</h3>
+  <pre><code>&lt;div role="dialog"&gt;...new form menu...&lt;/div&gt;</code></pre>
+
+  <h3>fbSmallAddButton</h3>
+  <pre><code>&lt;button type="button" class="fb-small-add-button"&gt;Open waiting list card&lt;/button&gt;</code></pre>
+  <pre><code>.fb-small-add-button {
+  height: 1.5rem;
+  line-height: 1.3rem;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 0.8rem;
+}</code></pre>
+
+  <h3>fbSmallerButton</h3>
+  <pre><code>&lt;button type="button" class="fb-smaller-button"&gt;Open&lt;/button&gt;</code></pre>
+  <pre><code>.fb-smaller-button {
+  height: auto;
+  line-height: normal;
+  padding: 0.15rem 0.45rem;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 300;
+  border: 0.1rem solid #1b6ec2;
+  border-radius: 0.25rem;
+  background-color: #1b6ec2;
+  color: white;
+  cursor: pointer;
+}</code></pre>
+
+  <h3>fbFormTile</h3>
+  <pre><code>&lt;article class="fb-form-tile"&gt;...document or appointment summary...&lt;/article&gt;</code></pre>
+
+  <h3>fbOutpatientAppointmentTile</h3>
+  <pre><code>&lt;article class="fb-outpatient-appointment-tile"&gt;...appointment summary...&lt;/article&gt;</code></pre>
+
+  <h3>fbFormHistoryMenu</h3>
+  <pre><code>&lt;div role="dialog" aria-modal="true"&gt;
+  &lt;table&gt;&lt;tr&gt;&lt;td&gt;Date and time&lt;/td&gt;&lt;td&gt;&lt;button&gt;View&lt;/button&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;</code></pre>
+
+  <h3>fbViewOldVersion</h3>
+  <pre><code>&lt;button type="button"&gt;View&lt;/button&gt;</code></pre>
+
+  <h3>fbLayoutNav</h3>
+  <pre><code>&lt;nav aria-label="Form sections"&gt;
+  &lt;div class="fb-layout-nav-grid"&gt;
+    &lt;button class="fb-layout-nav-section-name"&gt;Basic information&lt;/button&gt;
+    &lt;button class="fb-layout-nav-counter-box incomplete"&gt;3&lt;/button&gt;
+    &lt;button class="fb-layout-nav-counter-box complete"&gt;check&lt;/button&gt;
+    &lt;span class="fb-layout-nav-indicator"&gt;&amp;#x25c0;&amp;#x25b6;&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/nav&gt;</code></pre>
+  <pre><code>.fb-layout-nav-grid { display: grid; grid-template-columns: 1fr auto auto; gap: 0.1rem; }
+.fb-layout-nav-section-name, .fb-layout-nav-counter-box { height: 1.8rem; }</code></pre>
+  <p>Counter boxes use <code>fbGreen</code> when classed <code>complete</code> and displaying a check mark, and <code>fbOrange</code> when classed <code>incomplete</code> and displaying a number.</p>
+
+  <h3>fbRoVHeader</h3>
+  <pre><code>&lt;header class="fb-rov-header"&gt;...RoV title and status...&lt;/header&gt;</code></pre>
+  <pre><code>.fb-rov-header {
+  border-bottom: 0.2rem solid #1b6ec2;
+  margin-bottom: 0.2rem;
+  padding: 0.4rem;
+}</code></pre>
+
+  <h3>fbRoVFooter</h3>
+  <pre><code>&lt;footer class="fb-rov-footer"&gt;...EV, History, Edit, Back...&lt;/footer&gt;</code></pre>
+  <pre><code>.fb-rov-footer {
+  border-top: 0.2rem solid #1b6ec2;
+  margin-top: 0.2rem;
+  padding: 0.2rem 0;
+}</code></pre>
+
+  <h3>fbRoVField</h3>
+  <pre><code>&lt;div class="fb-rov-field"&gt;&lt;span class="fb-rov-field-label"&gt;Label&lt;/span&gt;&lt;span class="fb-rov-field-value"&gt;Value&lt;/span&gt;&lt;/div&gt;</code></pre>
+  <pre><code>.fb-rov-field-label { font-weight: 300; font-size: 0.8rem; }
+.fb-rov-field-value { font-weight: 500; margin-left: 0.4rem; white-space: pre-line; }
+.fb-rov-field-value-inline { display: inline-flex; align-items: flex-start; gap: 0.25rem; }
+.fb-rov-coded-icon { flex: 0 0 auto; line-height: 1; align-self: flex-start; }</code></pre>
+
+  <h3>fbRoVTableCell</h3>
+  <pre><code>&lt;td class="fb-rov-table-cell"&gt;Value&lt;/td&gt;</code></pre>
+  <pre><code>.fb-rov-table-cell {
+  padding: 0.4rem;
+  font-size: 0.9rem;
+}</code></pre>
+
+  <h3>fbSearchInput</h3>
+  <pre><code>&lt;div class="fb-search-input"&gt;&lt;input type="search"&gt;&lt;button aria-label="Clear search"&gt;Clear&lt;/button&gt;&lt;/div&gt;</code></pre>
+
+  <h3>fbToolTip</h3>
+  <pre><code>&lt;div class="fb-tooltip" role="tooltip"&gt;Tooltip text&lt;/div&gt;</code></pre>
+
+  <h3>fbAutoExpandingTextarea</h3>
+  <pre><code>&lt;textarea rows="2" oninput="resizeTextareaToContent(this)"&gt;&lt;/textarea&gt;</code></pre>
+
+  <h2>11. Other Algorithms</h2>
+  <h3>Enter key suppression</h3>
+  <pre><code>function preventAccidentalEnterSubmit(event) {
+  const target = event.target;
+  if (event.key !== "Enter") return;
+  if (target instanceof HTMLTextAreaElement) return;
+  if (target instanceof HTMLButtonElement &amp;&amp; target.type === "submit") return;
+  event.preventDefault();
+}</code></pre>
+  <h3>Read-only value rendering</h3>
+  <pre><code>function displaySelectedOptions(options, selectedValues) {
+  return options
+    .filter((option) =&gt; selectedValues.includes(option.value))
+    .map((option) =&gt; option.label);
+}</code></pre>
+  <h3>SNOMED/Shades of Pale parser cleanup</h3>
+  <pre><code>function normalizeShadesOfPaleResponse(raw) {
+  return raw
+    .replace(/!n/g, "null")
+    .replace(/!f/g, "false")
+    .replace(/!t/g, "true");
+}</code></pre>
+  <h3>Clinical date display</h3>
+  <pre><code>function formatClinicalDate(date) {
+  if (!date) return "";
+  return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    .format(new Date(date))
+    .replace(/ /g, "-");
+}</code></pre>
+
+  <h2>12. Other CSS</h2>
+  <p>Component-specific CSS is documented next to the owning component in the component specifications above. This section is reserved for framework imports, global typography, icon-font setup, and other deliberately shared rules.</p>
+  <pre><code>@import "tailwindcss";
+
+body,
+input,
+textarea,
+select,
+button,
+label,
+div,
+span:not(.material-icons):not(.material-icons-outlined),
+p,
+a,
+option,
+header,
+footer,
+section,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+html,
+::placeholder,
+.placeholder {
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.material-icons, .material-icons-outlined {
+  font-family: 'Material Icons' !important;
+}</code></pre>
+
+  <h2>13. Accessibility requirements</h2>
+  <ul>
+    <li>Prefer native controls before ARIA replacements.</li>
+    <li>Every input must have a programmatic label and visible label unless a compact clinical table cell makes visible context unambiguous.</li>
+    <li>Custom popups must expose dialog semantics and focus behaviour before being considered WCAG-complete.</li>
+    <li>Autocomplete controls must follow combobox/listbox semantics.</li>
+    <li>Status icons must have text equivalents.</li>
+    <li>Keyboard focus must remain visible and logical across EV, RoV, history, date picker, tooltip, and modal interactions.</li>
+  </ul>
+</body>
+</html>

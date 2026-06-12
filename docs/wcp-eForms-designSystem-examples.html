@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WCP eForms design system examples</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; line-height: 1.45; margin: 2rem; max-width: 82rem; }
+    h1, h2, h3 { color: #1b6ec2; }
+    code, pre { font-family: Consolas, "Roboto Mono", monospace; }
+    pre { background: #f7f7f7; border: 1px solid #ccc; padding: 1rem; overflow: auto; }
+    .form { border-top: 0.2rem solid #1b6ec2; margin-top: 2rem; padding-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>WCP eForms design system examples</h1>
+  <p>This document references <a href="wcp-eForms-designSystem-specification.html">WCP eForms design system specification</a>. It describes the four patient forms in terms of the shared <code>fbXxx</code> component vocabulary. It is derived from <code>design.md</code> rather than source code.</p>
+
+  <section class="form">
+    <h2>Waiting list card</h2>
+    <p>Use <code>fbLayout</code> with the title "Waiting list card", the patient addressograph, section navigation, EV save/cancel/footer controls, draft/final state, RoV history, and stale-version protection.</p>
+    <pre><code>fbSection "From"
+  fbDropdown Organisation
+    attr: required
+    attr: default: cwm-taf
+  fbDropdown Speciality
+    attr: required
+  fbDropdown Hospital
+    attr: required
+    attr: default: princess-wales
+  fbMSISelector Senior responsible clinician
+    attr: required
+
+fbSection "Listing and priority"
+  fbGridRow
+    fbGridCell
+      attr: span: 2
+      fbExactDate Date listed
+        attr: required
+        attr: default: today
+    fbGridCell
+      attr: span: 2
+      fbMSISelector Listed by clinician
+  fbGridRow
+    fbGridCell
+      fbGroup Urgency
+        attr: required
+        fbRadio Routine
+        fbRadio Urgent
+        fbRadio USC - Urgent suspected cancer
+    fbGridCell
+      fbGroup Operating surgeon
+        fbRadio Any grade with supervision
+        fbRadio Discuss with consultant
+        fbRadio Consultant only
+        fbRadio Named clinician
+          fbMSISelector Clinician name
+            attr: required
+        fbRadio Unknown
+          attr: default
+    fbGridCell
+      fbGroup Patient available at short notice
+        fbRadio Yes
+        fbRadio No
+        fbRadio Unknown
+          attr: default
+    fbGridCell
+      fbGroup Royal College of Surgeons priority
+        fbRadio Yes
+        fbRadio No
+        fbRadio Unknown
+          attr: default
+
+fbSection "Planned procedure(s)"
+  fbTable Procedures
+    attr: includes drag handle column
+    attr: includes side dropdown column
+    attr: includes fbSCTProcedure column
+    attr: includes supplementary notes input column
+    attr: includes delete icon column
+  fbAddButton Add procedure
+
+fbSection "Specific operative risks"
+  fbGridRow
+    fbGridCell
+      fbGroup Risks
+        fbCheck Diabetic
+        fbCheck Latex allergy
+        fbCheck MRSA
+        fbCheck Pacemaker
+        fbCheck Blood transfusion refusal
+        fbCheck Previous anaesthetic reactions
+          fbTextArea Details
+            attr: required
+        fbCheck Other
+          fbTextArea Details
+            attr: required
+    fbGridCell
+      fbGroup Anticoagulants and antiplatelet agents
+        fbCheck DOAC
+          fbTextInput Drug name
+          fbGroup Indication
+        fbCheck Warfarin
+          fbGroup Indication
+        fbCheck Aspirin
+          fbGroup Indication
+          fbGroup Dose
+        fbCheck Clopidogrel
+        fbCheck Other anticoagulant or antiplatelet
+          fbTextInput Medication and dose
+          fbTextInput Indication
+    fbGridCell
+      attr: span: 2
+      fbTextArea Surgeon's specific anticoagulant instructions
+
+fbSection "Pre-operative"
+  fbGridRow
+    fbGridCell
+      fbGroup Intended management
+        attr: required
+    fbGridCell
+      fbNumberInput Admit before surgery
+        attr: units: days
+    fbGridCell
+      fbPartialDate Estimated date of admission
+    fbGridCell
+      fbGroup Pre-operative imaging required
+        fbRadio Yes
+          fbTextArea Details
+            attr: required
+
+fbSection "Anaesthesia"
+  fbGridRow
+    fbGridCell
+      fbGroup Planned anaesthetic type
+    fbGridCell
+      fbTextArea Anaesthesia requirements
+
+fbSection "Post-op"
+  fbGridRow
+    fbGridCell
+      fbNumberInput Planned length of post-op stay
+        attr: units: days
+    fbGridCell
+      fbGroup Bed requirement
+    fbGridCell
+      fbTextArea Post-operative requirements
+
+fbSection "Other"
+  fbGridRow
+    fbGridCell
+      fbGroup Could this case be outsourced?
+    fbGridCell
+      fbTextArea Any other information</code></pre>
+  </section>
+
+  <section class="form">
+    <h2>Outpatient outcome</h2>
+    <p>Use the common save/draft/final/RoV shell, but suppress the standard EV sidebar navigation. The form is organised as visual groups around appointment context, consultation outcome, and status/referrals.</p>
+    <pre><code>Group "Appointment"
+  Read-only labels: Organisation, Speciality, Site, Senior clinician, Clinic name, Date and time
+
+Group "Consultation outcome"
+  fbGroup Attendance
+    attr: required
+    fbRadio Attended
+      fbGroup Urgent suspected cancer
+        attr: required
+        fbRadio Yes
+        fbRadio No
+      fbSCTDiagnosis Working diagnosis
+    fbRadio Unable to attend
+      fbTextInput Reason
+      fbRadio Another appointment already made
+        fbPartialDate Date
+      fbRadio Send another appointment
+      fbRadio No further appointment
+        attr: GP/patient letter options
+    fbRadio Did not attend
+      fbCheck Was not brought
+      fbRadio Send another appointment
+      fbRadio No further appointment
+        attr: GP/patient letter options
+
+Group "Status / referrals"
+  Tier 1 mutually exclusive pathway checks: Discharge, See on symptom, Patient initiated follow-up
+  Tier 2 pathway checks: Remote monitoring, Tests requested, Add to waiting list, Outpatient treatment planned, Admitted from clinic, MDT review, Follow up appointment
+  Non-pathway checks remain enabled: Treatment given in clinic today, Referred to therapies, Referred to another consultant/speciality/hospital
+
+  fbCheck Tests requested
+    fbRadio Result required before deciding treatment
+    fbRadio Result required for monitoring or after treatment
+    fbTextArea Tests requested
+
+  fbCheck Add to waiting list for surgery or other treatment
+    attr: hidden linkedWaitingListCardUuid
+    fbSmallAddButton Create waiting list card
+      attr: shown when unlinked
+    fbSmallAddButton Open waiting list card
+      attr: shown when linked
+    fbGroup Waiting list
+      fbRadio Day case
+      fbRadio Inpatient
+    fbTextArea Treatment planned
+      attr: required
+
+  fbCheck Outpatient treatment planned
+    fbTextArea Treatment planned
+      attr: required
+    fbGroup Priority
+      fbRadio Routine
+      fbRadio Urgent
+      fbRadio Urgent suspected cancer
+
+  fbCheck Treatment given in clinic today
+    fbTextArea Treatment given
+      attr: required
+  fbCheck Referred to therapies
+    fbTextArea Therapy or department
+      attr: required
+  fbCheck Referred to another consultant, speciality or hospital
+    fbTextInput Consultant, speciality or hospital
+      attr: required
+
+  fbCheck Follow up appointment
+    fbCheck Patient to remain on cancer pathway
+    fbTextInput Interval
+      attr: required
+    fbCheck Must be seen in same clinic
+    fbCheck Must be seen by same senior responsible clinician
+    fbGroup Consultation type
+      fbRadio Face to face
+        fbTextInput Hospital
+          attr: if different
+      fbRadio Telephone consultation
+      fbRadio Video call
+      fbRadio Case review
+    fbGroup Priority
+      attr: appointment directive
+      fbRadio A* Overbook
+      fbRadio A Do not postpone
+      fbRadio B Do not postpone for more than four weeks
+      fbRadio D After test results
+      fbRadio T Add to outpatient treatment waiting list
+    fbTextInput Tests to be done on arrival</code></pre>
+  </section>
+
+  <section class="form">
+    <h2>Operation note</h2>
+    <p>Use <code>fbLayout</code> with full section navigation. Operation note uses several dynamic tables for clinicians, procedures, diagnoses, specimens, and implants.</p>
+    <pre><code>fbSection "Basic information"
+  fbDropdown Organisation
+    attr: required
+    attr: default: cwm-taf
+  fbDropdown Speciality
+    attr: required
+  fbDropdown Hospital
+    attr: required
+    attr: default: princess-wales
+  fbGridRow
+    fbGridCell
+      fbGroup Urgency
+        attr: required
+        fbRadio Elective
+          fbRadio Routine
+          fbRadio Urgent
+          fbRadio USC
+            attr: default
+        fbRadio Emergency
+    fbGridCell
+      fbExactDate Date of operation
+        attr: required
+        attr: default: today
+    fbGridCell
+      fbTextInput Start
+        attr: type: time
+    fbGridCell
+      fbTextInput End
+        attr: type: time
+
+fbSection "Surgeons and anaesthetists"
+  fbGridRow
+    fbGridCell
+      attr: span: 2
+      fbGroup Surgeons
+        fbMSISelector Lead operating surgeon
+          attr: required
+        fbMSISelector Additional surgeons
+          attr: list
+        fbAddButton Add surgeon
+        fbMSISelector Supervising surgeon present
+        fbMSISelector Senior responsible clinician
+          attr: required
+    fbGridCell
+      attr: span: 2
+      fbGroup Anaesthetists
+        fbMSISelector Lead anaesthetist
+          attr: required
+        fbMSISelector Additional anaesthetists
+          attr: list
+        fbAddButton Add anaesthetist
+        fbMSISelector Supervising anaesthetist present
+        fbMSISelector Senior responsible clinician
+          attr: required
+
+fbSection "Prophylaxis and other specific preop or intraop medication"
+  fbGridRow
+    fbGridCell
+      fbTextArea Antibiotic prophylaxis
+    fbGridCell
+      fbTextArea VTE prophylaxis
+    fbGridCell
+      fbTextArea Other
+
+fbSection "Procedure(s)"
+  fbTable Procedures
+    attr: includes drag handle column
+    attr: includes side dropdown column
+    attr: includes fbSCTProcedure column
+    attr: includes supplementary notes input column
+    attr: includes delete icon column
+  fbAddButton Add procedure
+
+fbSection "Detail"
+  fbTextArea Indication
+  fbTextArea Incision
+  fbTextArea Findings
+  fbGroup Operative diagnoses
+    fbTable Operative diagnoses
+      attr: includes drag handle column
+      attr: includes fbSCTDiagnosis column
+      attr: includes delete icon column
+    fbAddButton Add operative diagnosis
+  fbTextArea Procedure description
+  fbTextArea Extra procedures undertaken
+  fbNumberInput Estimated blood loss
+    attr: units: ml
+  fbTextArea Specific surgical intraoperative problems encountered
+  fbTextArea Closure
+  fbTextArea Post-op instructions
+  fbTextArea Follow-up
+
+fbSection "Tissue removed and pathological specimens"
+  fbTable Specimens
+    attr: includes drag handle column
+    attr: includes specimen reference input column
+    attr: includes type/description textarea column
+    attr: includes delete icon column
+  fbAddButton Add specimen
+
+fbSection "Images"
+  Placeholder thumbnail grid blocks
+
+fbSection "Implants - Scan for safety"
+  fbTable Implants
+    attr: includes drag handle column
+    attr: includes Implant ID input column
+    attr: includes Description textarea column
+    attr: includes delete icon column
+    fbTableCell Does this implant require exchange/removal?
+      fbRadio Yes
+        fbPartialDate Remove by
+          attr: required
+      fbRadio No
+  fbAddButton Add another implant</code></pre>
+  </section>
+
+  <section class="form">
+    <h2>Treatment summary</h2>
+    <p>Treatment summary is generated from a Composer JSON specification and rendered with the same design-system components. Saved values are keyed by component id in <code>form_data</code>, with coded-selector companion values saved as <code>{componentId}_coded</code>.</p>
+    <pre><code>fbSection "Details"
+  fbGridRow
+    fbGridCell
+      fbDropdown Organisation
+        attr: required
+    fbGridCell
+      fbDropdown Hospital
+        attr: required
+    fbGridCell
+      fbDropdown Speciality
+        attr: required
+    fbGridCell
+      fbMSISelector Senior responsible clinician
+        attr: required
+  fbGridRow
+    fbGridCell
+      fbMSISelector Clinical nurse specialist
+        attr: required
+    fbGridCell
+      fbTextInput Daytime 'phone number
+        attr: required
+    fbGridCell
+      fbTextInput Out of hours 'phone number
+        attr: required
+    fbGridCell
+      fbTextArea Carer or emergency contact
+        attr: required
+
+fbSection "Diagnosis"
+  fbGridRow
+    fbGridCell
+      fbSCTDiagnosis Diagnosis
+        attr: required
+    fbGridCell
+      fbTextInput Staging
+  fbTextArea Relevant clinical background
+  fbTextArea Other diagnoses and co-morbidities
+
+fbSection "Treatment"
+  fbTextArea Treatment received
+  fbTextArea Treatment complications
+  fbTextArea Ongoing treatment
+  fbGridRow
+    fbGridCell
+      attr: span: 2
+      fbDropdown Prognosis
+        attr: required
+    fbGridCell
+      fbDropdown Prognosis certainty
+        attr: required
+
+fbSection "Follow-up and advice"
+  fbGridRow
+    fbGridCell
+      fbDropdown Follow-up plan
+    fbGridCell
+      attr: span: 2
+      fbTextArea Comments
+  fbTextArea Information given to patient
+  fbTextArea Advice for GP and primary care
+  fbTextArea Red flags / urgent contact advice</code></pre>
+    <p>The Treatment summary implementation should preserve rows, cells, <code>colSpan</code>, required fields, dropdown/radio option labels, text inputs, text areas, MSI selectors, and SNOMED CT diagnosis selectors from the JSON specification.</p>
+  </section>
+</body>
+</html>
