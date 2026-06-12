@@ -18,7 +18,7 @@ Engage with SGS about your form(s). You'll get:
 ...usually all within 48 hours.
 ## Alternative usage
 - Fork the repo (that means copy all the files) to your workspace (or your LLM's workspace).
-- Use the controller app _or_ prepare a typewritten description of your form, including the title and a list of the sections, rows of questions, questions, radios/checkboxes, subquestions and tables. There are some examples in the file *design.md*.
+- Use the controller app _or_ prepare a typewritten description of your form, including the title and a list of the sections, rows of questions, questions, radios/checkboxes, subquestions and tables. There are some examples in the file *docs/wcp-eForms-designSystem-examples.html*.
 You can use any comprehensible layout or format for the specification, including:
   - Prose
   - Markdown
@@ -26,7 +26,7 @@ You can use any comprehensible layout or format for the specification, including
   - JSON
   - XML
 - Use your favourite LLM. Suggested prompt:
-  > Read design.md, src/WaitingListCard.tsx, and the referenced files and components. Read myFormSpecification.txt. Write a .tsx file similar to src/WaitingListCard.tsx for myFormSpecification, using the supplied components. Create an app to display myForm. Display myForm. Document the form design in myFormDesign.md.
+  > Read docs/wcp-eForms-designSystem-specification.html, src/WaitingListCard.tsx, and the referenced files and components. Read myFormSpecification.txt. Write a .tsx file similar to src/WaitingListCard.tsx for myFormSpecification, using the supplied components. Create an app to display myForm. Display myForm. Document the form design in myFormDesign.md.
 - If necessary, ask your LLM to make iterative changes to your form. This can be done using natural language.
   - Each time you make a change, it is a good idea to explicitly ask the LLM to:
     > Update myFormDesign.md with any changes as they are made.
