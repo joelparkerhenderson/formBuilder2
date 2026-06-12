@@ -4,7 +4,7 @@
 ## Demo
 There is a working demo at https://www.shadesOfPale.net/formBuilder2/index.html. Use the usual userName and password.
 ## Roll your own
-Try the WYSIWYG app at https://www.shadesOfPale.net/formBuilder2/controller.html.
+Try the WYSIWYG app at https://www.shadesOfPale.net/formBuilder2/composer.html.
 ## Intended audience
 Any persons (clinicians, PMs, BAs, devs) interested in experimenting or working with WCP form design.
 ## Suggested usage
