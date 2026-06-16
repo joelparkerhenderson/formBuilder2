@@ -2,9 +2,11 @@ import React from 'react';
 
 interface AddButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
+  editable?: boolean;
+  onLabelChange?: (label: string) => void;
 }
 
-export const fbAddButton: React.FC<AddButtonProps> = ({ label, style, className = '', ...props }) => {
+export const fbAddButton: React.FC<AddButtonProps> = ({ label, editable = false, onLabelChange, style, className = '', ...props }) => {
   const [hovered, setHovered] = React.useState(false);
 
   return (
@@ -30,7 +32,24 @@ export const fbAddButton: React.FC<AddButtonProps> = ({ label, style, className 
       }}
       {...props}
     >
-      {label}
+      {editable ? (
+        <span
+          contentEditable
+          suppressContentEditableWarning
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          onBlur={(event) => onLabelChange?.(event.currentTarget.textContent?.trim() || label)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' || event.key === 'Enter') {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
+          }}
+          style={{ outline: 'none' }}
+        >
+          {label}
+        </span>
+      ) : label}
     </button>
   );
 };

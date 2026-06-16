@@ -1,7 +1,10 @@
 import React from 'react';
 import { parseServerResponse } from '../utils/shadesOfPaleParser';
+import { fbQuestion as FbQuestion } from './fbQuestion';
+import { fbValueError as FbValueError } from './fbValueError';
 
 interface MSISelectorProps {
+  label?: string;
   name: string;
   value: string;
   onChange: (value: string, coded: boolean) => void;
@@ -11,9 +14,12 @@ interface MSISelectorProps {
   coded?: boolean;
   placeholder?: string;
   hasLabel?: boolean;
+  valueError?: string;
+  labelStyle?: React.CSSProperties;
 }
 
 export const fbMSISelector: React.FC<MSISelectorProps> = ({ 
+  label,
   name, 
   value, 
   onChange, 
@@ -22,7 +28,9 @@ export const fbMSISelector: React.FC<MSISelectorProps> = ({
   required, 
   coded,
   placeholder = "Type to search staff index",
-  hasLabel = true
+  hasLabel = true,
+  valueError,
+  labelStyle
 }) => {
   const [searchTerm, setSearchTerm] = React.useState<string>(value);
   const [results, setResults] = React.useState<Array<{score: number, ie: {line: string}}>>([]);
@@ -360,8 +368,26 @@ export const fbMSISelector: React.FC<MSISelectorProps> = ({
     );
   };
 
-  if (required && !hasLabel) {
+  const renderWithStandaloneValueError = (content: React.ReactNode) => {
+    if (!valueError) return content;
     return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', width: '100%' }}>
+        <FbValueError message={valueError} />
+        {content}
+      </div>
+    );
+  };
+
+  if (label) {
+    return (
+      <FbQuestion label={label} required={required} valueError={valueError} labelStyle={labelStyle}>
+        {renderContent()}
+      </FbQuestion>
+    );
+  }
+
+  if (required && !hasLabel) {
+    return renderWithStandaloneValueError(
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.2rem', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ flex: 1, width: '100%' }}>
           {renderContent()}
@@ -371,5 +397,5 @@ export const fbMSISelector: React.FC<MSISelectorProps> = ({
     );
   }
 
-  return renderContent();
+  return renderWithStandaloneValueError(renderContent());
 };

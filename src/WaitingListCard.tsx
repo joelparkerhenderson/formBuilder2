@@ -840,14 +840,14 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
           border: 0.1rem solid silver !important;
           box-shadow: none !important;
         }
-        .fb-layout-edit-view-form .fb-input-with-units,
+        .fb-layout-edit-view-form .fb-number-input-with-units,
           border: 0.1rem solid silver !important;
           border-radius: 0.4rem !important;
           height: 2.0rem !important;
           overflow: hidden;
         }
-        .fb-layout-edit-view-form .fb-input-with-units input,
-        .fb-layout-edit-view-form .fb-input-with-units input:not([type="radio"]):not([type="checkbox"]),
+        .fb-layout-edit-view-form .fb-number-input-with-units input,
+        .fb-layout-edit-view-form .fb-number-input-with-units input:not([type="radio"]):not([type="checkbox"]),
           border: none !important;
           border-width: 0px !important;
           outline: none !important;
@@ -870,7 +870,8 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
             setIsReadOnlyView(false);
           }}
           onBack={currentFormVersion !== null && latestFormVersion !== null && currentFormVersion < latestFormVersion ? () => setSelectedFormVersion(undefined) : navigateBack}
-          reachedByRoVButton={clickedRoVButton}
+          reachedByRoVButton={inlineProps?.hideRoVButton && inlineProps?.openInRoV ? false : clickedRoVButton}
+          backLabel={inlineProps?.hideRoVButton && inlineProps?.openInRoV ? 'Close' : 'Back'}
           superseded={currentFormVersion !== null && latestFormVersion !== null && currentFormVersion < latestFormVersion}
           onHistory={(anchorRect) => {
             setHistoryAnchorRect(anchorRect);

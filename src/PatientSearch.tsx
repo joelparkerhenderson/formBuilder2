@@ -6,6 +6,9 @@ import { fbUserName as FbUserName } from './components/fbUserName';
 import { fbSearchInput as FbSearchInput } from './components/fbSearchInput';
 import { createClient } from './restClient';
 import PatientRecord from './PatientRecord';
+import CaseNoteTracker from './caseNoteTracker/CaseNoteTracker';
+import { popCntNavigation, pushCntNavigation } from './caseNoteTracker/cntNavigation';
+import type { CntPatient } from './caseNoteTracker/cntStore';
 
 const restClient = createClient();
 
@@ -30,6 +33,7 @@ export default function PatientSearch() {
   const [patients, setPatients] = React.useState<Patient[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
   const [activePatientUuid, setActivePatientUuid] = React.useState<string | null>(null);
+  const [activeCaseNotesPatient, setActiveCaseNotesPatient] = React.useState<CntPatient | null>(null);
   const [searchQuery, setSearchQuery] = React.useState<string>('');
 
   const queryRef = React.useRef<number>(0);
@@ -89,6 +93,21 @@ export default function PatientSearch() {
     setActivePatientUuid(patientUuid);
   };
 
+  const handleOpenCaseNotes = (patient: Patient) => {
+    pushCntNavigation({ kind: 'inline-patient-search', label: 'Patient search' });
+    sessionStorage.setItem('fbcntUserUuid', 'bbbbbbbb-0005-4000-8000-000000000005');
+    setActiveCaseNotesPatient(toCntPatient(patient));
+  };
+
+  const handleBack = () => {
+    const entry = popCntNavigation();
+    if (entry?.kind === 'url' && entry.url) {
+      window.location.href = entry.url;
+      return;
+    }
+    navigate('/');
+  };
+
   return (
     <>
       {/* Search UI container - visibility is toggled by setting style.display */}
@@ -96,7 +115,7 @@ export default function PatientSearch() {
         id="patient-search-container"
         style={{
           height: '100vh',
-          display: activePatientUuid ? 'none' : 'flex',
+          display: activePatientUuid || activeCaseNotesPatient ? 'none' : 'flex',
           flexDirection: 'column',
           fontFamily: "'Roboto', sans-serif",
           backgroundColor: 'white'
@@ -221,13 +240,20 @@ export default function PatientSearch() {
                             sex={pat.sex}
                           />
                         </div>
-                        <div style={{ paddingRight: '1rem' }}>
+                        <div style={{ paddingRight: '1rem', display: 'flex', gap: '0.6rem' }}>
                           <FbButton
                             variant="primary"
                             onClick={() => handleOpenRecord(pat.uuid)}
                             id={`open-record-${pat.uuid}`}
                           >
                             Open record
+                          </FbButton>
+                          <FbButton
+                            variant="primary"
+                            onClick={() => handleOpenCaseNotes(pat)}
+                            id={`open-case-notes-${pat.uuid}`}
+                          >
+                            Case notes
                           </FbButton>
                         </div>
                       </div>
@@ -262,7 +288,7 @@ export default function PatientSearch() {
             />
           </div>
           <div>
-            <FbButton variant="primary" onClick={() => navigate('/')}>
+            <FbButton variant="primary" onClick={handleBack}>
               Back
             </FbButton>
           </div>
@@ -278,6 +304,32 @@ export default function PatientSearch() {
           onClose={() => setActivePatientUuid(null)}
         />
       )}
+      {activeCaseNotesPatient && (
+        <CaseNoteTracker
+          inline
+          initialPatient={activeCaseNotesPatient}
+          onBack={() => setActiveCaseNotesPatient(null)}
+        />
+      )}
     </>
   );
+}
+
+function toCntPatient(patient: Patient): CntPatient {
+  return {
+    uuid: patient.uuid,
+    nhsNumber: patient.nhs_number || '',
+    hospitalNumber: patient.crn || patient.uuid.slice(0, 8),
+    name: `${patient.forenames || ''} ${patient.surname || ''}`.trim(),
+    title: patient.title || '',
+    surname: patient.surname || '',
+    forenames: patient.forenames || '',
+    addressLine1: patient.address_line1 || '',
+    addressLine2: patient.address_line2 || '',
+    addressLine3: patient.address_line3 || '',
+    addressLine4: patient.address_line4 || '',
+    crn: patient.crn || '',
+    dateOfBirth: patient.date_of_birth || '',
+    sex: patient.sex || '',
+  };
 }

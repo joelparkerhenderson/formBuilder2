@@ -30,6 +30,7 @@ interface fbRoVFooterProps {
   reachedByRoVButton?: boolean;
   onSwitchToEV: () => void;
   onBack: () => void;
+  backLabel?: string;
   superseded?: boolean;
   onHistory?: (anchorRect: DOMRect) => void;
 }
@@ -77,6 +78,7 @@ export const fbRoVFooter: React.FC<fbRoVFooterProps> = ({
   reachedByRoVButton,
   onSwitchToEV,
   onBack,
+  backLabel = 'Back',
   superseded,
   onHistory,
 }) => {
@@ -118,7 +120,7 @@ export const fbRoVFooter: React.FC<fbRoVFooterProps> = ({
           onClick={onBack}
           style={{ marginLeft: '0.4rem' }}
         >
-          Back
+          {backLabel}
         </FbButton>
       ) : !reachedByRoVButton && (
         <>
@@ -134,7 +136,7 @@ export const fbRoVFooter: React.FC<fbRoVFooterProps> = ({
             onClick={onBack}
             style={{ marginLeft: '0.4rem' }}
           >
-            Back
+            {backLabel}
           </FbButton>
         </>
       )}

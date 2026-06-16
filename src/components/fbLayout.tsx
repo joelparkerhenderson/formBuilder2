@@ -85,6 +85,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
       while (current) {
         if (
           current.classList.contains("fb-question-container") ||
+          current.classList.contains("fb-radio-checkbox-group-container") ||
           current.classList.contains("fb-radio-checkbox-item") ||
           current.classList.contains("fb-subquestion") ||
           current.tagName === "TD"
@@ -122,7 +123,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
 
     const addListeners = () => {
       const elements = document.querySelectorAll(
-        ".fb-question-container, .fb-radio-checkbox-item, .fb-subquestion",
+        ".fb-question-container, .fb-radio-checkbox-group-container, .fb-radio-checkbox-item, .fb-subquestion",
       );
       elements.forEach((element) => {
         element.addEventListener("mouseenter", handleMouseEnter);
@@ -134,7 +135,7 @@ export const fbLayout: React.FC<fbLayoutProps> = ({
 
     const removeListeners = () => {
       const elements = document.querySelectorAll(
-        ".fb-question-container, .fb-radio-checkbox-item, .fb-subquestion",
+        ".fb-question-container, .fb-radio-checkbox-group-container, .fb-radio-checkbox-item, .fb-subquestion",
       );
       elements.forEach((element) => {
         element.removeEventListener("mouseenter", handleMouseEnter);

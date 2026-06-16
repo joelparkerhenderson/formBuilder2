@@ -19,6 +19,7 @@ import { fbLayout as FbLayout, SectionSpec, areAllSectionsComplete, getSectionSt
 import { fbDropdown as FbDropdown } from "./components/fbDropdown";
 import { fbAddButton as AddButton } from "./components/fbAddButton";
 import { fbTextInput as FbTextInput } from "./components/fbTextInput";
+import { fbTime as FbTime } from "./components/fbTime";
 import { fbTextArea as FbTextArea } from "./components/fbTextArea";
 import { fbNumberInput as FbNumberInput } from "./components/fbNumberInput";
 import { fbTableCell as FbTableCell } from "./components/fbTableCell";
@@ -33,7 +34,7 @@ import { fbFormHistoryMenu as FbFormHistoryMenu, fbFormHistoryItem } from "./com
 import { compareFormStatesObj, cleanArrayOfObjects } from "./utils/formStateUtils";
 import { generateUUID } from "./utils/formUtils";
 import { clinicalDateToIsoDate, formatClinicalDate } from "./utils/dateFormat";
-import { resizeTextareaToContent, useEditFormAutoExpandTextareas, useEditFormLabelEqualization } from "./utils/formLayoutEffects";
+import { useEditFormAutoExpandTextareas, useEditFormLabelEqualization } from "./utils/formLayoutEffects";
 import { appendRow, removeRowIfMultiple, updateRowById } from "./utils/rowState";
 import { useFbTooltips } from "./utils/useFbTooltips";
 import { useFormSaveFeedback } from "./utils/useFormSaveFeedback";
@@ -533,11 +534,6 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
     confirmPassword(pwd);
   };
 
-  // Auto-resize textarea
-  const handleTextareaInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
-    resizeTextareaToContent(e.currentTarget);
-  };
-
   // Set default values and track active section
   React.useEffect(() => {
     const today = formatDate(new Date());
@@ -781,7 +777,7 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
             }
 
             .fb-add-button:hover,
-            .fb-add-button:focus-visible,
+            .fb-add-button:focus-visible {
               background-color: #fee715 !important;
               color: black !important;
               border-color: #fee715 !important;
@@ -810,11 +806,12 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
             .fb-layout-edit-view-form select:focus,
             .fb-layout-edit-view-form textarea:focus,
             .fb-layout-edit-view-form input.border:focus,
-            .fb-layout-edit-view-form .fb-hide-border-in-rov:focus,
+            .fb-layout-edit-view-form .fb-hide-border-in-rov:focus {
               background-color: white !important;
               outline: none !important;
               border-color: silver !important;
               border: 0.1rem solid silver !important;
+              border-radius: 0.4rem !important;
               box-shadow: none !important;
             }
 
@@ -828,14 +825,14 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
               box-sizing: border-box !important;
             }
 
-            .fb-layout-edit-view-form .fb-input-with-units {
+            .fb-layout-edit-view-form .fb-number-input-with-units {
               border: 0.1rem solid silver !important;
               border-radius: 0.4rem !important;
               height: 2.0rem !important;
               overflow: hidden;
             }
-            .fb-layout-edit-view-form .fb-input-with-units input,
-            .fb-layout-edit-view-form .fb-input-with-units input:not([type="radio"]):not([type="checkbox"]) {
+            .fb-layout-edit-view-form .fb-number-input-with-units input,
+            .fb-layout-edit-view-form .fb-number-input-with-units input:not([type="radio"]):not([type="checkbox"]) {
               border: none !important;
               border-width: 0px !important;
               outline: none !important;
@@ -1091,52 +1088,28 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
                       required
                     />
                   </div>
-                  <div className="space-y-2 fb-question-container">
-                    <label
-                      className="font-medium"
-                      style={{fontWeight: 500, fontSize: '1rem'}}
-                      htmlFor="startTime"
-                      onMouseEnter={(e) => showTooltip('Knife to skin', e.currentTarget)}
-                      onMouseLeave={hideTooltip}
-                    >
-                      Start
-                    </label>
-                    <input
-                      type="time"
-                      id="startTime"
-                      onMouseEnter={(e) => showTooltipForControl('Knife to skin', e.currentTarget)}
-                      onMouseLeave={hideTooltip}
-                      onFocus={(e) => showTooltipForControl('Knife to skin', e.currentTarget)}
-                      onBlur={hideTooltip}
-                      name="startTime"
-                      className="w-full border rounded p-2"
-                      value={formState.startTime || ''}
-                      onChange={(e) => handleFieldChange('startTime', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2 fb-question-container">
-                    <label
-                      className="font-medium"
-                      style={{fontWeight: 500, fontSize: '1rem'}}
-                      htmlFor="endTime"
-                      onMouseEnter={(e) => showTooltip('Dressings applied', e.currentTarget)}
-                      onMouseLeave={hideTooltip}
-                    >
-                      End
-                    </label>
-                    <input
-                      type="time"
-                      id="endTime"
-                      name="endTime"
-                      className="w-full border rounded p-2"
-                      value={formState.endTime || ''}
-                      onChange={(e) => handleFieldChange('endTime', e.target.value)}
-                      onMouseEnter={(e) => showTooltipForControl('Dressings applied', e.currentTarget)}
-                      onMouseLeave={hideTooltip}
-                      onFocus={(e) => showTooltipForControl('Dressings applied', e.currentTarget)}
-                      onBlur={hideTooltip}
-                    />
-                  </div>
+                  <FbTime
+                    label="Start"
+                    id="startTime"
+                    name="startTime"
+                    value={formState.startTime || ''}
+                    onChange={(value) => handleFieldChange('startTime', value)}
+                    onMouseEnter={(e) => showTooltipForControl('Knife to skin', e.currentTarget)}
+                    onMouseLeave={hideTooltip}
+                    onFocus={(e) => showTooltipForControl('Knife to skin', e.currentTarget)}
+                    onBlur={hideTooltip}
+                  />
+                  <FbTime
+                    label="End"
+                    id="endTime"
+                    name="endTime"
+                    value={formState.endTime || ''}
+                    onChange={(value) => handleFieldChange('endTime', value)}
+                    onMouseEnter={(e) => showTooltipForControl('Dressings applied', e.currentTarget)}
+                    onMouseLeave={hideTooltip}
+                    onFocus={(e) => showTooltipForControl('Dressings applied', e.currentTarget)}
+                    onBlur={hideTooltip}
+                  />
                 </div>
               </div>
             </div>
@@ -1299,41 +1272,38 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2 fb-question-container">
                     <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="antibioticProphylaxis">Antibiotic prophylaxis</label>
-                    <textarea
+                    <FbTextArea
                       id="antibioticProphylaxis"
                       name="antibioticProphylaxis"
-                      className="w-full border rounded p-2"
                       value={formState.antibioticProphylaxis || ''}
-                      onChange={(e) => handleFieldChange('antibioticProphylaxis', e.target.value)}
-                      onInput={handleTextareaInput}
+                      onChange={(value) => handleFieldChange('antibioticProphylaxis', value)}
                       rows={1}
-                      style={{minHeight: '2.4rem', overflow: 'hidden', resize: 'none'}}
+                      fullWidth
+                      inputStyle={{minHeight: '2.4rem'}}
                     />
                   </div>
                   <div className="space-y-2 fb-question-container">
                     <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="vteProphylaxis">Venous thromboembolism prophylaxis</label>
-                    <textarea
+                    <FbTextArea
                       id="vteProphylaxis"
                       name="vteProphylaxis"
-                      className="w-full border rounded p-2"
                       value={formState.vteProphylaxis || ''}
-                      onChange={(e) => handleFieldChange('vteProphylaxis', e.target.value)}
-                      onInput={handleTextareaInput}
+                      onChange={(value) => handleFieldChange('vteProphylaxis', value)}
                       rows={1}
-                      style={{minHeight: '2.4rem', overflow: 'hidden', resize: 'none'}}
+                      fullWidth
+                      inputStyle={{minHeight: '2.4rem'}}
                     />
                   </div>
                   <div className="space-y-2 fb-question-container">
                     <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="otherMedication">Other</label>
-                    <textarea
+                    <FbTextArea
                       id="otherMedication"
                       name="otherMedication"
-                      className="w-full border rounded p-2"
                       value={formState.otherMedication || ''}
-                      onChange={(e) => handleFieldChange('otherMedication', e.target.value)}
-                      onInput={handleTextareaInput}
+                      onChange={(value) => handleFieldChange('otherMedication', value)}
                       rows={1}
-                      style={{minHeight: '2.4rem', overflow: 'hidden', resize: 'none'}}
+                      fullWidth
+                      inputStyle={{minHeight: '2.4rem'}}
                     />
                   </div>
                 </div>
@@ -1376,17 +1346,17 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
                             <i className="material-icons" style={{color: '#1b6ec2', fontSize: '1.5rem', cursor: 'grab'}}>swap_vertical_circle</i>
                           </FbTableCell>
                           <FbTableCell>
-                            <select
-                                className="w-full border rounded p-1"
-                                value={proc.side}
-                                onChange={(e) => updateProcedure(proc.id, 'side', e.target.value)}
-                              >
-                                <option value="">Select side</option>
-                                <option value="left">Left</option>
-                                <option value="right">Right</option>
-                                <option value="bilateral">Bilateral</option>
-                                <option value="na">Not applicable</option>
-                              </select>
+                            <FbDropdown
+                              value={proc.side}
+                              onChange={(value) => updateProcedure(proc.id, 'side', value)}
+                              placeholder="Select side"
+                              options={[
+                                { value: 'left', label: 'Left' },
+                                { value: 'right', label: 'Right' },
+                                { value: 'bilateral', label: 'Bilateral' },
+                                { value: 'na', label: 'Not applicable' },
+                              ]}
+                            />
                           </FbTableCell>
                           <FbTableCell>
                             <FbSCTProcedure
@@ -1397,12 +1367,10 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
                             />
                           </FbTableCell>
                           <FbTableCell>
-                            <input
-                              type="text"
-                              className="w-full border rounded p-1"
+                            <FbTextInput
                               placeholder="Additional info"
                               value={proc.additionalInfo}
-                              onChange={(e) => updateProcedure(proc.id, 'additionalInfo', e.target.value)}
+                              onChange={(value) => updateProcedure(proc.id, 'additionalInfo', value)}
                             />
                           </FbTableCell>
                           <FbTableCell style={{ textAlign: 'center' }}>
@@ -1432,41 +1400,35 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
               <div style={{marginTop: '0.4rem', marginBottom: '0.6rem'}}>
                 <div className="space-y-2 fb-question-container">
                   <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="indication">Indication</label>
-                  <textarea
+                  <FbTextArea
                     id="indication"
                     name="indication"
                     rows={4}
-                    className="w-full border rounded p-2"
                     value={formState.indication || ''}
-                    onChange={(e) => handleFieldChange('indication', e.target.value)}
-                    onInput={handleTextareaInput}
-                    style={{overflow: 'hidden', resize: 'none'}}
+                    onChange={(value) => handleFieldChange('indication', value)}
+                    fullWidth
                   />
                 </div>
                 <div className="space-y-2 fb-question-container">
                   <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="incision">Incision</label>
-                  <textarea
+                  <FbTextArea
                     id="incision"
                     name="incision"
                     rows={2}
-                    className="w-full border rounded p-2"
                     value={formState.incision || ''}
-                    onChange={(e) => handleFieldChange('incision', e.target.value)}
-                    onInput={handleTextareaInput}
-                    style={{overflow: 'hidden', resize: 'none'}}
+                    onChange={(value) => handleFieldChange('incision', value)}
+                    fullWidth
                   />
                 </div>
                 <div className="space-y-2 fb-question-container">
                   <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="findings">Findings</label>
-                  <textarea
+                  <FbTextArea
                     id="findings"
                     name="findings"
                     rows={4}
-                    className="w-full border rounded p-2"
                     value={formState.findings || ''}
-                    onChange={(e) => handleFieldChange('findings', e.target.value)}
-                    onInput={handleTextareaInput}
-                    style={{overflow: 'hidden', resize: 'none'}}
+                    onChange={(value) => handleFieldChange('findings', value)}
+                    fullWidth
                   />
                 </div>
 
@@ -1538,33 +1500,29 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
 
                 <div className="space-y-2 fb-question-container">
                   <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="procedureDescription">Procedure description</label>
-                  <textarea
+                  <FbTextArea
                     id="procedureDescription"
                     name="procedureDescription"
                     rows={4}
-                    className="w-full border rounded p-2"
                     value={formState.procedureDescription || ''}
-                    onChange={(e) => handleFieldChange('procedureDescription', e.target.value)}
-                    onInput={handleTextareaInput}
-                    style={{overflow: 'hidden', resize: 'none'}}
+                    onChange={(value) => handleFieldChange('procedureDescription', value)}
+                    fullWidth
                   />
                 </div>
                 <div className="space-y-2 fb-question-container">
                   <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="extraProcedures">Extra procedures undertaken</label>
-                  <textarea
+                  <FbTextArea
                     id="extraProcedures"
                     name="extraProcedures"
                     rows={4}
-                    className="w-full border rounded p-2"
                     value={formState.extraProcedures || ''}
-                    onChange={(e) => handleFieldChange('extraProcedures', e.target.value)}
-                    onInput={handleTextareaInput}
-                    style={{overflow: 'hidden', resize: 'none'}}
+                    onChange={(value) => handleFieldChange('extraProcedures', value)}
+                    fullWidth
                   />
                 </div>
                 <div className="space-y-2 fb-question-container">
                   <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="bloodLoss">Estimated blood loss</label>
-                  <div className="fb-input-with-units" style={{width: 'auto', maxWidth: '10rem'}}>
+                  <div className="fb-number-input-with-units" style={{width: 'auto', maxWidth: '10rem'}}>
                     <input
                       type="number"
                       id="bloodLoss"
@@ -1581,54 +1539,46 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
                 </div>
                 <div className="space-y-2 fb-question-container">
                   <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="problems">Specific surgical intraoperative problems encountered</label>
-                  <textarea
+                  <FbTextArea
                     id="problems"
                     name="problems"
                     rows={4}
-                    className="w-full border rounded p-2"
                     value={formState.problems || ''}
-                    onChange={(e) => handleFieldChange('problems', e.target.value)}
-                    onInput={handleTextareaInput}
-                    style={{overflow: 'hidden', resize: 'none'}}
+                    onChange={(value) => handleFieldChange('problems', value)}
+                    fullWidth
                   />
                 </div>
                 <div className="space-y-2 fb-question-container">
                   <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="closure">Closure</label>
-                  <textarea
+                  <FbTextArea
                     id="closure"
                     name="closure"
                     rows={4}
-                    className="w-full border rounded p-2"
                     value={formState.closure || ''}
-                    onChange={(e) => handleFieldChange('closure', e.target.value)}
-                    onInput={handleTextareaInput}
-                    style={{overflow: 'hidden', resize: 'none'}}
+                    onChange={(value) => handleFieldChange('closure', value)}
+                    fullWidth
                   />
                 </div>
                 <div className="space-y-2 fb-question-container">
                   <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="postOpInstructions">Post-op instructions</label>
-                  <textarea
+                  <FbTextArea
                     id="postOpInstructions"
                     name="postOpInstructions"
                     rows={4}
-                    className="w-full border rounded p-2"
                     value={formState.postOpInstructions || ''}
-                    onChange={(e) => handleFieldChange('postOpInstructions', e.target.value)}
-                    onInput={handleTextareaInput}
-                    style={{overflow: 'hidden', resize: 'none'}}
+                    onChange={(value) => handleFieldChange('postOpInstructions', value)}
+                    fullWidth
                   />
                 </div>
                 <div className="space-y-2 fb-question-container">
                   <label className="font-medium" style={{fontWeight: 500, fontSize: '1rem'}} htmlFor="followUp">Follow-up</label>
-                  <textarea
+                  <FbTextArea
                     id="followUp"
                     name="followUp"
                     rows={2}
-                    className="w-full border rounded p-2"
                     value={formState.followUp || ''}
-                    onChange={(e) => handleFieldChange('followUp', e.target.value)}
-                    onInput={handleTextareaInput}
-                    style={{overflow: 'hidden', resize: 'none'}}
+                    onChange={(value) => handleFieldChange('followUp', value)}
+                    fullWidth
                   />
                 </div>
               </div>
@@ -1672,22 +1622,19 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
                             <i className="material-icons" style={{color: '#1b6ec2', fontSize: '1.5rem', cursor: 'grab'}}>swap_vertical_circle</i>
                           </FbTableCell>
                           <FbTableCell style={{ width: '4rem' }}>
-                            <input
-                              type="text"
-                              className="border rounded p-1"
-                              style={{width: '3rem'}}
+                            <FbTextInput
+                              inputStyle={{width: '3rem'}}
                               value={spec.label}
-                              onChange={(e) => updateSpecimen(spec.id, 'label', e.target.value)}
+                              onChange={(value) => updateSpecimen(spec.id, 'label', value)}
                             />
                           </FbTableCell>
                           <FbTableCell>
-                            <textarea
-                              className="w-full border rounded p-1"
+                            <FbTextArea
                               rows={1}
                               value={spec.description}
-                              onChange={(e) => updateSpecimen(spec.id, 'description', e.target.value)}
-                              onInput={handleTextareaInput}
-                              style={{minHeight: '2rem', overflow: 'hidden', resize: 'none'}}
+                              onChange={(value) => updateSpecimen(spec.id, 'description', value)}
+                              fullWidth
+                              inputStyle={{minHeight: '2rem'}}
                             />
                           </FbTableCell>
                           <FbTableCell style={{ width: '2rem', textAlign: 'center' }}>
@@ -1763,22 +1710,19 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
                       {implants.map((impl) => (
                         <FbTableRow key={impl.id}>
                           <FbTableCell style={{width: '9rem', whiteSpace: 'nowrap'}}>
-                            <input
-                              type="text"
-                              className="border rounded p-1"
+                            <FbTextInput
                               value={impl.implantId}
-                              onChange={(e) => updateImplant(impl.id, 'implantId', e.target.value)}
-                              style={{width: '8rem'}}
+                              onChange={(value) => updateImplant(impl.id, 'implantId', value)}
+                              inputStyle={{width: '8rem'}}
                             />
                           </FbTableCell>
                           <FbTableCell>
-                            <textarea
-                              className="w-full border rounded p-1"
+                            <FbTextArea
                               rows={1}
                               value={impl.description}
-                              onChange={(e) => updateImplant(impl.id, 'description', e.target.value)}
-                              onInput={handleTextareaInput}
-                              style={{minHeight: '2rem', overflow: 'hidden', resize: 'none'}}
+                              onChange={(value) => updateImplant(impl.id, 'description', value)}
+                              fullWidth
+                              inputStyle={{minHeight: '2rem'}}
                             />
                           </FbTableCell>
                           <FbTableCell style={{width: '1%'}}>

@@ -2,6 +2,8 @@ import * as React from 'react';
 import { useParams } from 'react-router';
 import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbAddButton as FbAddButton } from './components/fbAddButton';
+import { fbBloodPressure as FbBloodPressure } from './components/fbBloodPressure';
+import { fbBoxedAlert as FbBoxedAlert, fbBoxedInfo as FbBoxedInfo, fbBoxedWarning as FbBoxedWarning } from './components/fbBoxedMessage';
 import { fbButton as FbButton } from './components/fbButton';
 import { fbDropdown as FbDropdown } from './components/fbDropdown';
 import { fbExactDate as FbExactDate } from './components/fbExactDate';
@@ -15,6 +17,23 @@ import { fbSCTDiagnosis as FbSCTDiagnosis } from './components/fbSCTDiagnosis';
 import { fbSCTProcedure as FbSCTProcedure } from './components/fbSCTProcedure';
 import { fbSection as FbSection } from './components/fbSection';
 import { fbGroup as FbGroup } from './components/fbGroup';
+import { fbValueError as FbValueError } from './components/fbValueError';
+import {
+  fbcAction,
+  fbcActions,
+  fbcBreadcrumbs,
+  fbcFooter,
+  fbcHeader,
+  fbcOptions,
+  fbcPanel,
+  fbcProperties,
+  fbcpCheck,
+  fbcpDropdown,
+  fbcpName,
+  fbcpTextInput,
+  fbcpTextarea,
+  fbcpVal,
+} from './components/fbcComposerComponents';
 import {
   fbTable as FbTable,
   fbTableBody as FbTableBody,
@@ -25,6 +44,7 @@ import {
 import { fbTableCell as FbTableCell } from './components/fbTableCell';
 import { fbTextArea as FbTextArea } from './components/fbTextArea';
 import { fbTextInput as FbTextInput } from './components/fbTextInput';
+import { fbTime as FbTime } from './components/fbTime';
 import { fbRoVCodedIcon as FbRoVCodedIcon } from './components/fbRoVField';
 import { useFbTooltips } from './utils/useFbTooltips';
 import { useEditFormLabelEqualization } from './utils/formLayoutEffects';
@@ -34,12 +54,17 @@ type DesignerComponentType =
   | 'fbGridRow'
   | 'fbGridCell'
   | 'fbTable'
+  | 'fbBoxedWarning'
+  | 'fbBoxedAlert'
+  | 'fbBoxedInfo'
   | 'fbGroup'
   | 'fbTextInput'
+  | 'fbTime'
   | 'fbTextArea'
   | 'fbDropdown'
   | 'fbNumberInput'
   | 'fbNumberInputWithUnits'
+  | 'fbBloodPressure'
   | 'fbCheck'
   | 'fbRadio'
   | 'fbPartialDate'
@@ -63,6 +88,7 @@ interface DesignerComponentSpec {
   databaseColumn?: string;
   placeholder?: string;
   defaultValue?: string;
+  valueError?: string;
   units?: string;
   colSpan?: number;
   fullWidth?: boolean;
@@ -73,8 +99,8 @@ interface DesignerComponentSpec {
   useFullWidth?: boolean;
   includeDragHandles?: boolean;
   includeRowDeleteButtons?: boolean;
-  tableColumns?: string[];
-  tableRows?: number;
+  tableColumns?: Array<string | { id?: string; label?: string }>;
+  tableRows?: number | Array<{ id?: string }>;
   requireAtLeastOneRow?: boolean;
   requireAtLeastOneRowText?: string;
   includeAddButton?: boolean;
@@ -137,41 +163,6 @@ type SelectionChromeOptions = {
   compact?: boolean;
 };
 
-type FbcPanelProps = {
-  header: React.ReactNode;
-  properties: React.ReactNode;
-  actions: React.ReactNode;
-  footer: React.ReactNode;
-  bodyRef?: React.Ref<HTMLDivElement>;
-};
-
-const fbcPanel: React.FC<FbcPanelProps> = ({ header, properties, actions, footer, bodyRef }) => (
-  <aside className="fb-designer-panel fbc-panel">
-    <div className="fbc-panel-header">{header}</div>
-    <div className="fbc-panel-body" ref={bodyRef}>
-      <div className="fbc-panel-scroll fbc-panel-properties">{properties}</div>
-      <div className="fbc-panel-scroll fbc-panel-actions">{actions}</div>
-    </div>
-    <div className="fbc-panel-footer">{footer}</div>
-  </aside>
-);
-
-const fbcHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => <>{children}</>;
-const fbcBreadcrumbs: React.FC<{ children: React.ReactNode }> = ({ children }) => <div className="fbc-breadcrumbs">{children}</div>;
-const fbcOptions: React.FC<{ children: React.ReactNode }> = ({ children }) => <div className="fbc-options">{children}</div>;
-const fbcProperties: React.FC<{ children: React.ReactNode }> = ({ children }) => <div className="fbc-properties">{children}</div>;
-const fbcpName: React.FC<{ children: React.ReactNode }> = ({ children }) => <td className="fbcp-name">{children}</td>;
-const fbcpVal: React.FC<{ children: React.ReactNode }> = ({ children }) => <td className="fbcp-val">{children}</td>;
-const fbcpTextarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>((props, ref) => (
-  <textarea ref={ref} className="fbcp-textarea" rows={1} {...props} />
-));
-const fbcpCheck: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props) => <input className="fbcp-check" type="checkbox" {...props} />;
-const fbcActions: React.FC<{ children: React.ReactNode }> = ({ children }) => <div className="fbc-actions">{children}</div>;
-const fbcAction: React.FC<React.LiHTMLAttributes<HTMLLIElement> & { danger?: boolean }> = ({ danger, className = '', ...props }) => (
-  <li className={`fb-designer-action-item ${danger ? 'fb-designer-action-danger' : ''} ${className}`} {...props} />
-);
-const fbcFooter: React.FC<{ children: React.ReactNode }> = ({ children }) => <>{children}</>;
-
 type DesignerSessionResponse = {
   success?: boolean;
   sessionToken?: string;
@@ -198,10 +189,12 @@ const dragDropProblemText = 'Components can only be dropped into the light green
 
 const questionTypes: DesignerComponentType[] = [
   'fbTextInput',
+  'fbTime',
   'fbTextArea',
   'fbDropdown',
   'fbNumberInput',
   'fbNumberInputWithUnits',
+  'fbBloodPressure',
   'fbCheck',
   'fbRadio',
   'fbGroup',
@@ -212,19 +205,25 @@ const questionTypes: DesignerComponentType[] = [
   'fbSCTProcedure',
 ];
 
-const formOrSectionComponentTypes: DesignerComponentType[] = ['fbTable', ...questionTypes];
+const messageTypes: DesignerComponentType[] = ['fbBoxedWarning', 'fbBoxedAlert', 'fbBoxedInfo'];
+const formOrSectionComponentTypes: DesignerComponentType[] = ['fbTable', ...messageTypes, ...questionTypes];
 
 const typeLabels: Record<DesignerComponentType, string> = {
   fbSection: 'Section',
   fbGridRow: 'Grid row',
   fbGridCell: 'Grid cell',
   fbTable: 'Table',
+  fbBoxedWarning: 'Boxed warning',
+  fbBoxedAlert: 'Boxed alert',
+  fbBoxedInfo: 'Boxed info',
   fbGroup: 'Group',
   fbTextInput: 'Text input',
+  fbTime: 'Time',
   fbTextArea: 'Text area',
   fbDropdown: 'Dropdown',
   fbNumberInput: 'Number input',
   fbNumberInputWithUnits: 'Number input with units',
+  fbBloodPressure: 'Blood pressure',
   fbCheck: 'Checkbox',
   fbRadio: 'Radio button',
   fbPartialDate: 'Partial date',
@@ -394,6 +393,14 @@ const designerButtonStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
+const composerSaveButtonStyle = (state: 'saved' | 'saving' | 'dirty'): React.CSSProperties => ({
+  ...designerButtonStyle,
+  backgroundColor: state === 'saved' ? '#008000' : state === 'saving' ? '#fd8a10' : '#d50000',
+  color: 'black',
+  opacity: 1,
+  cursor: state === 'dirty' ? 'pointer' : 'not-allowed',
+});
+
 const designerDangerButtonStyle: React.CSSProperties = {
   ...designerButtonStyle,
   borderColor: '#d50000',
@@ -413,6 +420,9 @@ const propertyInputStyle: React.CSSProperties = {
   border: 'none',
   padding: 0,
 };
+
+const PropertyTextInput = fbcpTextInput;
+const PropertyDropdown = fbcpDropdown;
 
 type PropertyTextareaProps = {
   value?: string;
@@ -560,6 +570,8 @@ const cleanEditedLabel = (value: string, required?: boolean) => {
   return required ? label.replace(/\s*\*+\s*$/g, '').trim() : label;
 };
 
+const cleanDisplayLabel = (value: string) => value.replace(/\s*\*+\s*$/g, '').trim();
+
 const ensureDesignerComponentKeys = (components: DesignerComponentSpec[], usedKeys = new Set<string>(), usedIds = new Set<string>()): DesignerComponentSpec[] =>
   components.map((component) => {
     const type = normaliseDesignerComponentType(component.type);
@@ -583,6 +595,22 @@ const ensureDesignerSpecKeys = (design: DesignerSpec): DesignerSpec => ({
   ...design,
   components: ensureDesignerComponentKeys(design.components || []),
 });
+
+const designSignature = (design: DesignerSpec) => JSON.stringify(design);
+
+const tableColumnLabel = (column: string | { id?: string; label?: string }, index: number) =>
+  typeof column === 'string' ? column : column.label || column.id || `Column ${index + 1}`;
+
+const normaliseTableColumns = (table: DesignerComponentSpec): string[] => {
+  const columns = table.tableColumns && table.tableColumns.length > 0 ? table.tableColumns : ['Column 1'];
+  return columns.map(tableColumnLabel);
+};
+
+const normaliseTableRowCount = (table?: DesignerComponentSpec | null): number => {
+  if (!table) return 3;
+  if (Array.isArray(table.tableRows)) return Math.max(1, table.tableRows.length);
+  return Math.max(1, Number(table.tableRows) || 3);
+};
 
 const findComponentPath = (
   components: DesignerComponentSpec[],
@@ -799,6 +827,9 @@ const makeComponent = (type: DesignerComponentType, existing: DesignerComponentS
     type === 'fbGridRow' ? `Grid row ${sameTypeCount}` :
     type === 'fbGridCell' ? `Grid cell ${sameTypeCount}` :
     type === 'fbTable' ? `Table ${sameTypeCount}` :
+    type === 'fbBoxedWarning' ? `Warning ${sameTypeCount}` :
+    type === 'fbBoxedAlert' ? `Alert ${sameTypeCount}` :
+    type === 'fbBoxedInfo' ? `Information ${sameTypeCount}` :
     type === 'fbGroup' ? `Group ${sameTypeCount}` :
     type === 'fbCheck' ? `Check ${sameTypeCount}` :
     type === 'fbRadio' ? `Radio ${sameTypeCount}` :
@@ -810,7 +841,7 @@ const makeComponent = (type: DesignerComponentType, existing: DesignerComponentS
     type,
     label,
     required: false,
-    placeholder: ['fbTextInput', 'fbTextArea'].includes(type) ? '' : undefined,
+    placeholder: ['fbTextInput', 'fbTime', 'fbTextArea'].includes(type) ? '' : undefined,
     options: ['fbDropdown', 'fbRadio', 'fbCheck'].includes(type)
       ? [{ value: 'option1', label: 'Option 1' }]
       : undefined,
@@ -855,6 +886,8 @@ export default function Composer() {
   const [verificationCode, setVerificationCode] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
   const [designs, setDesigns] = React.useState<DesignerSpec[]>([]);
+  const [savedDesignSignatures, setSavedDesignSignatures] = React.useState<Record<string, string>>({});
+  const [savingDesign, setSavingDesign] = React.useState(false);
   const [activeDesignId, setActiveDesignId] = React.useState<string | null>(null);
   const [selectedId, setSelectedId] = React.useState<string>('form');
   const [selectedTableTarget, setSelectedTableTarget] = React.useState<TableSelectionTarget | null>(null);
@@ -869,7 +902,7 @@ export default function Composer() {
   const [showAllPurpleBoxes, setShowAllPurpleBoxes] = React.useState(false);
   const [showGreenBoxes, setShowGreenBoxes] = React.useState(false);
   const [selectedSeparator, setSelectedSeparator] = React.useState<SeparatorTarget | null>(null);
-  const [previewValues, setPreviewValues] = React.useState<Record<string, string>>({});
+  const [previewValues, setPreviewValues] = React.useState<Record<string, any>>({});
   const [previewCoded, setPreviewCoded] = React.useState<Record<string, boolean>>({});
   const [draggedId, setDraggedId] = React.useState<string | null>(null);
   const [dragDropProblemVisible, setDragDropProblemVisible] = React.useState(false);
@@ -892,6 +925,9 @@ export default function Composer() {
   const { showDirectTooltip, showDirectTooltipForControl, hideTooltip, renderTooltips } = useFbTooltips();
 
   const activeDesign = designs.find((design) => design.id === activeDesignId) || null;
+  const activeDesignDirty = !!activeDesign && savedDesignSignatures[activeDesign.id] !== designSignature(activeDesign);
+  const saveButtonState: 'saved' | 'saving' | 'dirty' = savingDesign ? 'saving' : activeDesignDirty ? 'dirty' : 'saved';
+  const saveButtonLabel = saveButtonState === 'saved' ? 'Saved' : saveButtonState === 'saving' ? 'Saving...' : 'Save';
   const publicDesign = publicId ? dbPublicDesign : null;
   const displayedDesign = publicId ? publicDesign : activeDesign;
   const selectedPath = displayedDesign && selectedId !== 'form' ? findComponentPath(displayedDesign.components, selectedId) || [] : [];
@@ -985,7 +1021,7 @@ export default function Composer() {
         rememberComposerSession(sessionToken, session.expiresAt);
         loadDbDesignsForSession(sessionToken)
           .then((dbDesigns) => {
-            if (dbDesigns.length > 0) persist(dbDesigns);
+            if (dbDesigns.length > 0) persist(dbDesigns, true);
           })
           .catch(() => {});
         applyDesignerPrefs(session.prefs);
@@ -1005,7 +1041,7 @@ export default function Composer() {
     if (!designerPassword) return;
     loadDbDesigns(email, designerPassword)
       .then((dbDesigns) => {
-        if (dbDesigns.length > 0) persist(dbDesigns);
+        if (dbDesigns.length > 0) persist(dbDesigns, true);
       })
       .catch(() => {});
   }, [email, designerPassword, publicId]);
@@ -1032,8 +1068,19 @@ export default function Composer() {
       .catch(() => {});
   }, [publicId]);
 
-  const persist = (nextDesigns: DesignerSpec[]) => {
+  const markDesignsSaved = (savedDesigns: DesignerSpec[]) => {
+    setSavedDesignSignatures((current) => {
+      const next = { ...current };
+      savedDesigns.forEach((design) => {
+        next[design.id] = designSignature(design);
+      });
+      return next;
+    });
+  };
+
+  const persist = (nextDesigns: DesignerSpec[], markSaved = false) => {
     setDesigns(nextDesigns);
+    if (markSaved) markDesignsSaved(nextDesigns);
   };
 
   const persistAndSave = (nextDesigns: DesignerSpec[], designToSave?: DesignerSpec) => {
@@ -1055,6 +1102,24 @@ export default function Composer() {
     if (!activeDesignId || publicId) return;
     const nextDesigns = designs.map((design) => design.id === activeDesignId ? updater(design) : design);
     persistAndSave(nextDesigns, nextDesigns.find((design) => design.id === activeDesignId));
+  };
+
+  const saveActiveDesign = async () => {
+    if (!activeDesign || publicId || savingDesign || !activeDesignDirty) return;
+    const savedDesign = { ...activeDesign, savedAt: new Date().toISOString() };
+    const nextDesigns = designs.map((design) => design.id === savedDesign.id ? savedDesign : design);
+    setSavingDesign(true);
+    persist(nextDesigns);
+    try {
+      if (email && (designerPassword || sessionToken)) {
+        await saveDbDesign(email, designerPassword || '', savedDesign, sessionToken || undefined);
+      }
+      markDesignsSaved([savedDesign]);
+    } catch {
+      alert('Design may not have been saved');
+    } finally {
+      setSavingDesign(false);
+    }
   };
 
   const applyJsonDraft = () => {
@@ -1305,7 +1370,7 @@ export default function Composer() {
   };
 
   const normaliseTableTemplates = (table: DesignerComponentSpec) => {
-    const columns = table.tableColumns && table.tableColumns.length > 0 ? table.tableColumns : ['Column 1'];
+    const columns = normaliseTableColumns(table);
     const templates = [...(table.tableCellTemplates || [])];
     while (templates.length < columns.length) templates.push(null);
     return templates.slice(0, columns.length);
@@ -1344,7 +1409,7 @@ export default function Composer() {
 
   const updateTableColumnLabel = (tableId: string, columnIndex: number, label: string) => {
     updateTable(tableId, (table) => {
-      const columns = [...(table.tableColumns || ['Column 1'])];
+      const columns = normaliseTableColumns(table);
       columns[columnIndex] = label || `Column ${columnIndex + 1}`;
       return { ...table, tableColumns: columns };
     });
@@ -1353,7 +1418,7 @@ export default function Composer() {
   const addTableColumnRight = () => {
     if (!selectedTableTarget || selectedTableTarget.kind !== 'header') return;
     updateTable(selectedTableTarget.tableId, (table) => {
-      const columns = [...(table.tableColumns || ['Column 1'])];
+      const columns = normaliseTableColumns(table);
       const templates = normaliseTableTemplates(table);
       columns.splice(selectedTableTarget.columnIndex + 1, 0, `Column ${columns.length + 1}`);
       templates.splice(selectedTableTarget.columnIndex + 1, 0, null);
@@ -1365,7 +1430,7 @@ export default function Composer() {
   const deleteTableColumn = () => {
     if (!selectedTableTarget || selectedTableTarget.kind !== 'header') return;
     updateTable(selectedTableTarget.tableId, (table) => {
-      const columns = [...(table.tableColumns || ['Column 1'])];
+      const columns = normaliseTableColumns(table);
       if (columns.length <= 1) return table;
       const templates = normaliseTableTemplates(table);
       columns.splice(selectedTableTarget.columnIndex, 1);
@@ -1378,7 +1443,7 @@ export default function Composer() {
   const deleteTableRow = () => {
     if (!selectedTableTarget || selectedTableTarget.kind !== 'row') return;
     updateTable(selectedTableTarget.tableId, (table) => {
-      const rowCount = Math.max(1, table.tableRows || 3);
+      const rowCount = normaliseTableRowCount(table);
       if (rowCount <= 1) return table;
       return { ...table, tableRows: rowCount - 1 };
     });
@@ -1388,7 +1453,7 @@ export default function Composer() {
   const addTableColumnAtSeparator = () => {
     if (!selectedTableTarget || selectedTableTarget.kind !== 'separator') return;
     updateTable(selectedTableTarget.tableId, (table) => {
-      const columns = [...(table.tableColumns || ['Column 1'])];
+      const columns = normaliseTableColumns(table);
       const templates = normaliseTableTemplates(table);
       const insertIndex = Math.max(0, Math.min(columns.length, selectedTableTarget.separatorIndex));
       columns.splice(insertIndex, 0, `Column ${columns.length + 1}`);
@@ -1400,7 +1465,7 @@ export default function Composer() {
 
   const moveTableColumn = (tableId: string, fromIndex: number, toIndex: number) => {
     updateTable(tableId, (table) => {
-      const columns = [...(table.tableColumns || ['Column 1'])];
+      const columns = normaliseTableColumns(table);
       if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= columns.length || toIndex >= columns.length) return table;
       const templates = normaliseTableTemplates(table);
       const [column] = columns.splice(fromIndex, 1);
@@ -1415,7 +1480,7 @@ export default function Composer() {
   const moveTableColumnToSeparator = (tableId: string, fromIndex: number, separatorIndex: number) => {
     let movedToIndex = fromIndex;
     updateTable(tableId, (table) => {
-      const columns = [...(table.tableColumns || ['Column 1'])];
+      const columns = normaliseTableColumns(table);
       if (
         fromIndex < 0 ||
         fromIndex >= columns.length ||
@@ -1457,7 +1522,7 @@ export default function Composer() {
     });
   };
 
-  const setPreviewValue = (id: string, value: string) => {
+  const setPreviewValue = (id: string, value: any) => {
     setPreviewValues((current) => ({ ...current, [id]: value }));
   };
 
@@ -1680,13 +1745,26 @@ export default function Composer() {
     onBlur: hideTooltip,
   } : {};
 
-  const componentValue = (component: DesignerComponentSpec) => previewValues[component.id] || '';
+  const componentValue = (component: DesignerComponentSpec) => previewValues[component.id] ?? '';
+
+  const componentStringValue = (component: DesignerComponentSpec) => {
+    const value = componentValue(component);
+    if (value == null) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    return '';
+  };
 
   const isQuestionDataVisibleInRoV = (component: DesignerComponentSpec) => {
     if (component.showInRoVIfEmpty) return true;
-    if (component.type === 'fbCheck') return componentValue(component).split('|').filter(Boolean).length > 0 || componentValue(component) === 'checked';
-    if (component.type === 'fbRadio') return Boolean(componentValue(component));
-    return Boolean(componentValue(component).trim());
+    const value = componentValue(component);
+    const stringValue = componentStringValue(component);
+    if (component.type === 'fbBloodPressure' && value && typeof value === 'object') {
+      return Boolean(String(value.systolic || '').trim() || String(value.diastolic || '').trim());
+    }
+    if (component.type === 'fbCheck') return stringValue.split('|').filter(Boolean).length > 0 || stringValue === 'checked';
+    if (component.type === 'fbRadio') return Boolean(stringValue);
+    return Boolean(stringValue.trim());
   };
 
   const componentHasRoVData = (component: DesignerComponentSpec): boolean => {
@@ -1802,23 +1880,26 @@ export default function Composer() {
     component: DesignerComponentSpec,
     patchComponent: (id: string, patch: Partial<DesignerComponentSpec>) => void = updateComponent,
   ) => {
-    const value = previewValues[component.id] || '';
+    const value = previewValues[component.id] ?? '';
+    const stringValue = typeof value === 'string' ? value : '';
     const hasLabel = Boolean(component.label.trim());
     const inputRequired = hasLabel ? false : component.required;
     if (readOnlyPreview) {
       if (!isQuestionDataVisibleInRoV(component)) return null;
       const optionLabels = (component.options || [])
         .filter((option) => component.type === 'fbCheck'
-          ? value.split('|').includes(option.value)
-          : option.value === value)
+          ? stringValue.split('|').includes(option.value)
+          : option.value === stringValue)
         .map((option) => option.label);
       const displayValue = optionLabels.length > 0
         ? optionLabels.join(', ')
-        : (component.type === 'fbRadio' || component.type === 'fbCheck') && value
+        : component.type === 'fbBloodPressure' && value && typeof value === 'object'
+          ? [value.systolic, value.diastolic].filter(Boolean).join('/') + (value.systolic || value.diastolic ? ' mmHg' : '')
+        : (component.type === 'fbRadio' || component.type === 'fbCheck') && stringValue
           ? component.label
-        : component.type === 'fbNumberInputWithUnits' && value
-          ? `${value} ${component.units || 'units'}`
-          : value;
+        : component.type === 'fbNumberInputWithUnits' && stringValue
+          ? `${stringValue} ${component.units || 'units'}`
+          : stringValue;
       const coded = ['fbMSISelector', 'fbSCTDiagnosis', 'fbSCTProcedure'].includes(component.type)
         ? (previewCoded[component.id] ?? true)
         : undefined;
@@ -1838,6 +1919,9 @@ export default function Composer() {
     }
     if (component.type === 'fbTextInput') {
       return <div className="fb-question-container">{renderEditableLabel(component)}<FbTextInput id={component.id} name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+    }
+    if (component.type === 'fbTime') {
+      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTime id={component.id} name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbTextArea') {
       return <div className="fb-question-container">{renderEditableLabel(component)}<FbTextArea id={component.id} name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || ''} fullWidth={!!component.fullWidth} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
@@ -1871,6 +1955,64 @@ export default function Composer() {
           />
           {inputRequired && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}
         </div>
+      );
+    }
+    if (component.type === 'fbBloodPressure') {
+      const bpValue = typeof value === 'object' && value ? value : { systolic: '', diastolic: '' };
+      return (
+        <div className="fb-question-container">
+          {renderEditableLabel(component)}
+          <FbBloodPressure
+            id={component.id}
+            name={component.id}
+            required={inputRequired}
+            systolic={bpValue.systolic || ''}
+            diastolic={bpValue.diastolic || ''}
+            onChange={(nextValue) => setPreviewValue(component.id, nextValue)}
+          />
+        </div>
+      );
+    }
+    if (component.type === 'fbBoxedWarning') {
+      return (
+        <FbBoxedWarning text={(
+          <span
+            contentEditable={!publicId && !readOnlyPreview}
+            suppressContentEditableWarning
+            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
+            style={{ outline: 'none' }}
+          >
+            {cleanDisplayLabel(component.label)}
+          </span>
+        )} />
+      );
+    }
+    if (component.type === 'fbBoxedAlert') {
+      return (
+        <FbBoxedAlert text={(
+          <span
+            contentEditable={!publicId && !readOnlyPreview}
+            suppressContentEditableWarning
+            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
+            style={{ outline: 'none' }}
+          >
+            {cleanDisplayLabel(component.label)}
+          </span>
+        )} />
+      );
+    }
+    if (component.type === 'fbBoxedInfo') {
+      return (
+        <FbBoxedInfo text={(
+          <span
+            contentEditable={!publicId && !readOnlyPreview}
+            suppressContentEditableWarning
+            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
+            style={{ outline: 'none' }}
+          >
+            {cleanDisplayLabel(component.label)}
+          </span>
+        )} />
       );
     }
     if (component.type === 'fbPartialDate') {
@@ -1936,13 +2078,13 @@ export default function Composer() {
       );
     }
     if (component.type === 'fbMSISelector') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbMSISelector name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} hasLabel={hasLabel} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbMSISelector name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} hasLabel={hasLabel} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbSCTDiagnosis') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbSCTDiagnosis name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} {...controlTooltipProps(component)} />{inputRequired && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}</div>;
+      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbSCTDiagnosis name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} required={inputRequired} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbSCTProcedure') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbSCTProcedure name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} {...controlTooltipProps(component)} />{inputRequired && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}</div>;
+      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbSCTProcedure name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} required={inputRequired} {...controlTooltipProps(component)} /></div>;
     }
     return (
       <div className="fb-question-container">
@@ -2257,8 +2399,8 @@ export default function Composer() {
       ));
     }
     if (component.type === 'fbTable') {
-      const columns = component.tableColumns && component.tableColumns.length > 0 ? component.tableColumns : ['Column 1'];
-      const rowCount = Math.max(1, component.tableRows || 3);
+      const columns = normaliseTableColumns(component);
+      const rowCount = normaliseTableRowCount(component);
       const templates = normaliseTableTemplates(component);
       const dataColumnCount = columns.length;
       const selectedHeaderIndex = selectedTableTarget?.kind === 'header' && selectedTableTarget.tableId === component.id ? selectedTableTarget.columnIndex : -1;
@@ -2387,7 +2529,7 @@ export default function Composer() {
                 >
                   {component.includeDragHandles && (
                     <FbTableCell style={{ width: '2rem', textAlign: 'center' }}>
-                      <span className="material-icons" aria-hidden="true" title="Drag up or down to order list" style={{ color: '#777', cursor: 'grab' }}>swap_vertical_circle</span>
+                      <span className="material-icons" aria-hidden="true" title="Drag up or down to order list" style={{ color: '#1b6ec2', cursor: 'grab' }}>swap_vertical_circle</span>
                     </FbTableCell>
                   )}
                   {greenBoxesVisible && (
@@ -2424,6 +2566,9 @@ export default function Composer() {
                         key={`${component.id}-${rowIndex}-${columnIndex}`}
                         className={selectedCell?.columnIndex === columnIndex && selectedCell.rowIndex === rowIndex ? 'fb-composer-table-selected' : ''}
                         style={{ minWidth: '6rem' }}
+                        onClickCapture={() => {
+                          selectTableCell(component.id, rowIndex, columnIndex);
+                        }}
                         onClick={(event) => {
                           event.stopPropagation();
                           selectTableCell(component.id, rowIndex, columnIndex);
@@ -2469,7 +2614,7 @@ export default function Composer() {
                           event.stopPropagation();
                           selectTableRow(component.id, rowIndex);
                           updateTable(component.id, (table) => {
-                            const count = Math.max(1, table.tableRows || 3);
+                            const count = normaliseTableRowCount(table);
                             if (count <= 1) return table;
                             return { ...table, tableRows: count - 1 };
                           });
@@ -2485,7 +2630,12 @@ export default function Composer() {
           </FbTable>
           {component.includeAddButton && (
             <div style={{ marginTop: '0.35rem' }}>
-              <FbAddButton label={component.addButtonLabel || 'Add row'} onClick={() => updateComponent(component.id, { tableRows: rowCount + 1 })} />
+              <FbAddButton
+                label={component.addButtonLabel || 'Add row'}
+                editable={!publicId}
+                onLabelChange={(label) => updateComponent(component.id, { addButtonLabel: label })}
+                onClick={() => updateComponent(component.id, { tableRows: rowCount + 1 })}
+              />
             </div>
           )}
         </div>
@@ -2720,8 +2870,8 @@ export default function Composer() {
       return (
         <table border={1} className="fb-designer-property-grid" style={tableStyle}>
           <tbody>
-            {row('Title', <input value={displayedDesign.title} onChange={(event) => updateActiveDesign((design) => ({ ...design, title: event.target.value }))} style={propertyInputStyle} />)}
-            {row('Public id', <input value={displayedDesign.publicId} readOnly style={propertyInputStyle} />)}
+            {row('Title', <PropertyTextInput value={displayedDesign.title} onChange={(event) => updateActiveDesign((design) => ({ ...design, title: event.target.value }))} style={propertyInputStyle} />)}
+            {row('Public id', <PropertyTextInput value={displayedDesign.publicId} readOnly style={propertyInputStyle} />)}
             {row('Notes', (
               <PropertyTextarea
                 value={displayedDesign.notes || ''}
@@ -2736,12 +2886,12 @@ export default function Composer() {
     if (selectedTableTarget?.kind === 'cell' && selectedComponent.type === 'fbTable') {
       const template = normaliseTableTemplates(selectedComponent)[selectedTableTarget.columnIndex];
       if (template) {
-        const supportsTemplatePlaceholder = ['fbTextInput', 'fbTextArea'].includes(template.type);
+        const supportsTemplatePlaceholder = ['fbTextInput', 'fbTime', 'fbTextArea'].includes(template.type);
         const supportsTemplateDefault = questionTypes.includes(template.type) && template.type !== 'fbGroup';
         return (
           <table border={1} className="fb-designer-property-grid" style={tableStyle}>
             <tbody>
-              {row('Table cell template', <input value={typeLabels[template.type]} readOnly style={propertyInputStyle} />)}
+              {row('Table cell template', <PropertyTextInput value={typeLabels[template.type]} readOnly style={propertyInputStyle} />)}
               {row('Label', (
                 <PropertyTextarea
                   value={template.label}
@@ -2775,14 +2925,14 @@ export default function Composer() {
                   onChange={(value) => updateSelectedTableCellTemplate({ placeholder: value })}
                 />
               ))}
-              {row('Database column', <input value={template.databaseColumn || ''} onChange={(event) => updateSelectedTableCellTemplate({ databaseColumn: event.target.value })} style={propertyInputStyle} />)}
+              {row('Database column', <PropertyTextInput value={template.databaseColumn || ''} onChange={(event) => updateSelectedTableCellTemplate({ databaseColumn: event.target.value })} style={propertyInputStyle} />)}
             </tbody>
           </table>
         );
       }
     }
 
-    const supportsPlaceholder = ['fbTextInput', 'fbTextArea'].includes(selectedComponent.type);
+    const supportsPlaceholder = ['fbTextInput', 'fbTime', 'fbTextArea'].includes(selectedComponent.type);
     const supportsDefaultValue = questionTypes.includes(selectedComponent.type) && selectedComponent.type !== 'fbGroup';
     const supportsAcceptUncoded = ['fbMSISelector', 'fbSCTProcedure', 'fbSCTDiagnosis'].includes(selectedComponent.type);
     const isTable = selectedComponent.type.toLowerCase().includes('table');
@@ -2801,9 +2951,9 @@ export default function Composer() {
         <table border={1} className="fb-designer-property-grid" style={tableStyle}>
           <tbody>
             {row('Type', (
-              <select value={selectedComponent.type} onChange={(event) => updateComponent(selectedComponent.id, { type: event.target.value as DesignerComponentType })} style={propertyInputStyle}>
+              <PropertyDropdown value={selectedComponent.type} onChange={(event) => updateComponent(selectedComponent.id, { type: event.target.value as DesignerComponentType })} style={propertyInputStyle}>
                 {Object.entries(typeLabels).map(([type, label]) => <option key={type} value={type}>{label}</option>)}
-              </select>
+              </PropertyDropdown>
             ))}
             {row('Label', (
               <PropertyTextarea
@@ -2812,7 +2962,7 @@ export default function Composer() {
                 onChange={(value) => updateComponent(selectedComponent.id, { label: value })}
               />
             ))}
-            {row('Id', <input value={selectedComponent.id} onChange={(event) => updateComponent(selectedComponent.id, { id: event.target.value })} style={propertyInputStyle} />)}
+            {row('Id', <PropertyTextInput value={selectedComponent.id} onChange={(event) => updateComponent(selectedComponent.id, { id: event.target.value })} style={propertyInputStyle} />)}
             {supportsDefaultValue && row('Default value', selectedComponent.type === 'fbCheck' || selectedComponent.type === 'fbRadio' ? (
               <input type="checkbox" checked={!!selectedComponent.defaultValue} onChange={(event) => updateComponent(selectedComponent.id, { defaultValue: event.target.checked ? 'checked' : '' })} />
             ) : (
@@ -2829,7 +2979,7 @@ export default function Composer() {
             ))}
             {row('Required', toggle(selectedComponent.required, (checked) => updateComponent(selectedComponent.id, { required: checked })))}
             {colSpanCell && row('Col span', (
-              <input
+              <PropertyTextInput
                 type="number"
                 min={1}
                 max={12}
@@ -2848,10 +2998,10 @@ export default function Composer() {
             {row('Bold override', toggle(selectedComponent.boldOverride, (checked) => updateComponent(selectedComponent.id, { boldOverride: checked })))}
             {row('Plain override', toggle(selectedComponent.plainOverride, (checked) => updateComponent(selectedComponent.id, { plainOverride: checked })))}
             {row('Show in RoV if empty', toggle(selectedComponent.showInRoVIfEmpty, (checked) => updateComponent(selectedComponent.id, { showInRoVIfEmpty: checked })))}
-            {supportsPlaceholder && row('Placeholder', <input value={selectedComponent.placeholder || ''} onChange={(event) => updateComponent(selectedComponent.id, { placeholder: event.target.value })} style={propertyInputStyle} />)}
+            {supportsPlaceholder && row('Placeholder', <PropertyTextInput value={selectedComponent.placeholder || ''} onChange={(event) => updateComponent(selectedComponent.id, { placeholder: event.target.value })} style={propertyInputStyle} />)}
             {selectedComponent.type === 'fbTextArea' && row('Full width', toggle(selectedComponent.fullWidth, (checked) => updateComponent(selectedComponent.id, { fullWidth: checked })))}
             {supportsAcceptUncoded && row('Accept uncoded values', toggle(selectedComponent.acceptUncodedValues, (checked) => updateComponent(selectedComponent.id, { acceptUncodedValues: checked })))}
-            {row('Database column', <input value={selectedComponent.databaseColumn || ''} onChange={(event) => updateComponent(selectedComponent.id, { databaseColumn: event.target.value })} style={propertyInputStyle} />)}
+            {row('Database column', <PropertyTextInput value={selectedComponent.databaseColumn || ''} onChange={(event) => updateComponent(selectedComponent.id, { databaseColumn: event.target.value })} style={propertyInputStyle} />)}
             {isTable && row('Use full width', toggle(selectedComponent.useFullWidth, (checked) => updateComponent(selectedComponent.id, { useFullWidth: checked })))}
             {isTable && row('Include drag handles', toggle(selectedComponent.includeDragHandles, (checked) => updateComponent(selectedComponent.id, { includeDragHandles: checked })))}
             {isTable && row('Include row delete buttons', toggle(selectedComponent.includeRowDeleteButtons, (checked) => updateComponent(selectedComponent.id, { includeRowDeleteButtons: checked })))}
@@ -2871,7 +3021,7 @@ export default function Composer() {
             ))}
             {isTable && row('Columns', (
               <PropertyTextarea
-                value={(selectedComponent.tableColumns || ['Column 1']).join('\n')}
+                value={normaliseTableColumns(selectedComponent).join('\n')}
                 onChange={(value) => updateComponent(selectedComponent.id, {
                   tableColumns: value.split('\n').map((label) => label.trim()).filter(Boolean),
                   tableCellTemplates: normaliseTableTemplates({
@@ -2882,10 +3032,10 @@ export default function Composer() {
               />
             ))}
             {isTable && row('Rows', (
-              <input
+              <PropertyTextInput
                 type="number"
                 min={1}
-                value={selectedComponent.tableRows || 1}
+                value={normaliseTableRowCount(selectedComponent)}
                 onChange={(event) => updateComponent(selectedComponent.id, { tableRows: Math.max(1, Number(event.target.value) || 1) })}
                 style={propertyInputStyle}
               />
@@ -2975,7 +3125,7 @@ export default function Composer() {
     );
     if (selectedTableTarget?.kind === 'header') {
       const table = allComponents(displayedDesign.components).find((component) => component.id === selectedTableTarget.tableId);
-      const canDeleteColumn = (table?.tableColumns || ['Column 1']).length > 1;
+      const canDeleteColumn = table ? normaliseTableColumns(table).length > 1 : false;
       controls.push((
         <li
           key="add-table-column-right"
@@ -3014,7 +3164,7 @@ export default function Composer() {
       }
     } else if (selectedTableTarget?.kind === 'row') {
       const table = allComponents(displayedDesign.components).find((component) => component.id === selectedTableTarget.tableId);
-      const canDeleteRow = Math.max(1, table?.tableRows || 3) > 1;
+      const canDeleteRow = normaliseTableRowCount(table) > 1;
       if (canDeleteRow) {
         controls.push((
           <li
@@ -3408,7 +3558,16 @@ export default function Composer() {
           )}
           <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
             {activeDesign && !publicId && <button type="button" style={designerButtonStyle} onClick={() => { setJsonDraft(JSON.stringify(activeDesign, null, 2)); setShowJson(true); }}>Show JSON</button>}
-            {activeDesign && !publicId && <button type="button" style={designerButtonStyle} onClick={() => updateActiveDesign((design) => ({ ...design, savedAt: new Date().toISOString() }))}>Save</button>}
+            {activeDesign && !publicId && (
+              <button
+                type="button"
+                style={composerSaveButtonStyle(saveButtonState)}
+                disabled={saveButtonState !== 'dirty'}
+                onClick={saveActiveDesign}
+              >
+                {saveButtonLabel}
+              </button>
+            )}
           </div>
           {!publicId && (
             <>
@@ -3463,7 +3622,7 @@ export default function Composer() {
       )}
       {showJson && activeDesign && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001 }}>
-          <div style={{ backgroundColor: 'white', border: `0.1rem solid ${purple}`, padding: '1rem', width: '70vw', height: '70vh' }}>
+          <div style={{ backgroundColor: 'white', border: '0.1rem solid black', padding: '1rem', width: '70vw', height: '70vh' }}>
             <textarea value={jsonDraft} onChange={(event) => setJsonDraft(event.target.value)} wrap="off" style={{ width: '100%', height: 'calc(100% - 3rem)', fontFamily: 'monospace', overflow: 'scroll', whiteSpace: 'pre' }} />
             <button type="button" style={designerButtonStyle} onClick={applyJsonDraft}>OK</button>
             <button type="button" style={{ ...designerButtonStyle, marginLeft: '0.4rem' }} onClick={() => setShowJson(false)}>Cancel</button>

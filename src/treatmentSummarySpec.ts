@@ -11,6 +11,8 @@ export interface DesignerComponentSpec {
   required?: boolean;
   placeholder?: string;
   defaultValue?: string | boolean;
+  valueError?: string;
+  units?: string;
   fullWidth?: boolean;
   colSpan?: number;
   options?: DesignerOption[];

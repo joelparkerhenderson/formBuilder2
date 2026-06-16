@@ -237,7 +237,7 @@ styleSheet.textContent = `
     visibility: hidden;
   }
 
-  .fb-input-with-units {
+  .fb-number-input-with-units {
     display: inline-flex;
     align-items: center;
     border: 0.1rem solid silver;
@@ -246,8 +246,8 @@ styleSheet.textContent = `
     background-color: white;
   }
 
-  .fb-input-with-units input[type="number"],
-  .fb-input-with-units input[type="text"] {
+  .fb-number-input-with-units input[type="number"],
+  .fb-number-input-with-units input[type="text"] {
     border: none;
     border-right: 0.1rem solid silver;
     border-radius: 0;
@@ -259,12 +259,12 @@ styleSheet.textContent = `
     font-size: 1rem;
   }
 
-  .fb-input-with-units input[type="number"]:focus,
-  .fb-input-with-units input[type="text"]:focus {
+  .fb-number-input-with-units input[type="number"]:focus,
+  .fb-number-input-with-units input[type="text"]:focus {
     outline: none;
   }
 
-  .fb-input-with-units .unit-label {
+  .fb-number-input-with-units .unit-label {
     padding: 0.5rem;
     background-color: #f5f5f5;
     white-space: nowrap;
@@ -273,7 +273,7 @@ styleSheet.textContent = `
     font-size: 1rem;
   }
 
-  .fb-input-with-units .unit-value-display {
+  .fb-number-input-with-units .unit-value-display {
     padding: 0.5rem;
     background-color: white;
     white-space: nowrap;
@@ -425,13 +425,13 @@ styleSheet.textContent = `
     padding-right: 0.5rem !important;
   }
 
-  body.read-only-view-from-record .fb-input-with-units {
+  body.read-only-view-from-record .fb-number-input-with-units {
     border: none !important;
     background-color: transparent !important;
     gap: 0.25rem;
   }
 
-  body.read-only-view-from-record .fb-input-with-units .unit-label {
+  body.read-only-view-from-record .fb-number-input-with-units .unit-label {
     border-left: none !important;
     font-weight: 500 !important;
     padding-left: 0 !important;
@@ -442,13 +442,13 @@ styleSheet.textContent = `
   }
 
   /* Hide unit separators and borders */
-  body.read-only-view .fb-input-with-units {
+  body.read-only-view .fb-number-input-with-units {
     border: none !important;
     background-color: transparent !important;
     gap: 0.25rem;
   }
 
-  body.read-only-view .fb-input-with-units .unit-label {
+  body.read-only-view .fb-number-input-with-units .unit-label {
     border-left: none !important;
     font-weight: 500 !important;
     padding-left: 0 !important;

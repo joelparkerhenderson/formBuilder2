@@ -1,21 +1,27 @@
 import * as React from 'react';
+import { fbBloodPressure as FbBloodPressure } from './components/fbBloodPressure';
+import { fbBoxedAlert as FbBoxedAlert, fbBoxedInfo as FbBoxedInfo, fbBoxedWarning as FbBoxedWarning } from './components/fbBoxedMessage';
 import { fbDropdown as FbDropdown } from './components/fbDropdown';
 import { fbGroup as FbGroup } from './components/fbGroup';
 import { fbMSISelector as MSISelector } from './components/fbMSISelector';
+import { fbExactDate as FbExactDate } from './components/fbExactDate';
+import { fbPartialDate as FbPartialDate } from './components/fbPartialDate';
 import { fbQuestion as FbQuestion } from './components/fbQuestion';
 import { fbGridRow as FbGridRow } from './components/fbGridRow';
 import { fbGridCell as FbGridCell } from './components/fbGridCell';
 import { fbRadio as FbRadio } from './components/fbRadio';
 import { fbRoVField as FbRoVField, isFbRoVEmptyValue } from './components/fbRoVField';
 import { fbSCTDiagnosis as SCTDiagnosis } from './components/fbSCTDiagnosis';
+import { fbSCTProcedure as SCTProcedure } from './components/fbSCTProcedure';
 import { fbSection as FbSection } from './components/fbSection';
 import { fbTextArea as FbTextArea } from './components/fbTextArea';
 import { fbTextInput as FbTextInput } from './components/fbTextInput';
+import { fbTime as FbTime } from './components/fbTime';
 import { DesignerComponentSpec, DesignerFormSpec, DesignerOption } from './treatmentSummarySpec';
 
 type FormState = Record<string, any>;
 
-const fieldTypes = new Set(['fbDropdown', 'fbMSISelector', 'fbSCTDiagnosis', 'fbTextArea', 'fbTextInput']);
+const fieldTypes = new Set(['fbBloodPressure', 'fbDropdown', 'fbExactDate', 'fbMSISelector', 'fbNumberInput', 'fbNumberInputWithUnits', 'fbPartialDate', 'fbSCTDiagnosis', 'fbSCTProcedure', 'fbTextArea', 'fbTextInput', 'fbTime']);
 
 export const cleanDesignerLabel = (label = '') => label.replace(/\*+$/g, '').trim();
 
@@ -106,7 +112,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
 
     if (type === 'fbGroup') {
       return (
-        <FbGroup key={component.id} label={groupLabel(component)}>
+        <FbGroup key={component.id} label={groupLabel(component)} valueError={component.valueError}>
           {component.children?.map((child) => (
             <FbRadio
               key={child.id}
@@ -123,6 +129,34 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
       );
     }
 
+    if (component.type === 'fbBoxedWarning') {
+      return <FbBoxedWarning key={component.id} text={label} />;
+    }
+
+    if (component.type === 'fbBoxedAlert') {
+      return <FbBoxedAlert key={component.id} text={label} />;
+    }
+
+    if (component.type === 'fbBoxedInfo') {
+      return <FbBoxedInfo key={component.id} text={label} />;
+    }
+
+    if (component.type === 'fbBloodPressure') {
+      const value = formState[component.id] || {};
+      return (
+        <FbBloodPressure
+          key={component.id}
+          id={component.id}
+          label={label}
+          systolic={value.systolic || ''}
+          diastolic={value.diastolic || ''}
+          onChange={(nextValue) => onChange(component.id, nextValue)}
+          required={component.required}
+          valueError={component.valueError}
+        />
+      );
+    }
+
     if (component.type === 'fbDropdown') {
       return (
         <FbDropdown
@@ -133,6 +167,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           onChange={(value) => onChange(component.id, value)}
           options={asOptions(component.options)}
           required={component.required}
+          valueError={component.valueError}
           placeholder=""
         />
       );
@@ -149,6 +184,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           required={component.required}
           placeholder={component.placeholder || ''}
           fullWidth={component.fullWidth}
+          valueError={component.valueError}
         />
       );
     }
@@ -163,35 +199,125 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           onChange={(value) => onChange(component.id, value)}
           required={component.required}
           placeholder={component.placeholder || ''}
+          valueError={component.valueError}
         />
+      );
+    }
+
+    if (component.type === 'fbNumberInput' || component.type === 'fbNumberInputWithUnits') {
+      return (
+        <FbQuestion key={component.id} label={label} required={component.required} valueError={component.valueError}>
+          <input
+            id={component.id}
+            type="number"
+            value={formState[component.id] || ''}
+            onChange={(event) => onChange(component.id, event.target.value)}
+            required={component.required}
+            placeholder={component.placeholder || ''}
+            style={{
+              fontFamily: "'Roboto', sans-serif",
+              fontSize: '1rem',
+              fontWeight: 400,
+              border: '0.1rem solid silver',
+              borderRadius: '0.4rem',
+              boxSizing: 'border-box',
+              height: '2rem',
+              maxWidth: component.type === 'fbNumberInputWithUnits' ? 'calc(10ch + 5rem)' : '10ch',
+              padding: '0.2rem 0.4rem',
+              backgroundColor: 'white',
+            }}
+          />
+          {component.type === 'fbNumberInputWithUnits' && component.units && (
+            <span style={{ marginLeft: '0.4rem', fontWeight: 300 }}>{component.units}</span>
+          )}
+        </FbQuestion>
+      );
+    }
+
+    if (component.type === 'fbTime') {
+      return (
+        <FbTime
+          key={component.id}
+          id={component.id}
+          label={label}
+          value={formState[component.id] || ''}
+          onChange={(value) => onChange(component.id, value)}
+          required={component.required}
+          placeholder={component.placeholder || ''}
+          valueError={component.valueError}
+        />
+      );
+    }
+
+    if (component.type === 'fbPartialDate') {
+      return (
+        <FbQuestion key={component.id} label={label} required={component.required} valueError={component.valueError}>
+          <FbPartialDate
+            name={component.id}
+            value={formState[component.id] || ''}
+            onChange={(value) => onChange(component.id, value)}
+            required={component.required}
+            placeholder={component.placeholder || undefined}
+          />
+        </FbQuestion>
+      );
+    }
+
+    if (component.type === 'fbExactDate') {
+      return (
+        <FbQuestion key={component.id} label={label} required={component.required} valueError={component.valueError}>
+          <FbExactDate
+            name={component.id}
+            value={formState[component.id] || ''}
+            onChange={(value) => onChange(component.id, value)}
+            required={component.required}
+          />
+        </FbQuestion>
       );
     }
 
     if (component.type === 'fbMSISelector') {
       return (
-        <FbQuestion key={component.id} label={label} required={component.required}>
-          <MSISelector
-            name={component.id}
-            value={formState[component.id] || ''}
-            coded={!!formState[`${component.id}_coded`]}
-            onChange={(value, coded) => onChange(component.id, value, coded)}
-            required={component.required}
-            hasLabel={false}
-          />
-        </FbQuestion>
+        <MSISelector
+          key={component.id}
+          label={label}
+          name={component.id}
+          value={formState[component.id] || ''}
+          coded={!!formState[`${component.id}_coded`]}
+          onChange={(value, coded) => onChange(component.id, value, coded)}
+          required={component.required}
+          valueError={component.valueError}
+        />
       );
     }
 
     if (component.type === 'fbSCTDiagnosis') {
       return (
-        <FbQuestion key={component.id} label={label} required={component.required}>
-          <SCTDiagnosis
-            name={component.id}
-            value={formState[component.id] || ''}
-            coded={!!formState[`${component.id}_coded`]}
-            onChange={(value, coded) => onChange(component.id, value, coded)}
-          />
-        </FbQuestion>
+        <SCTDiagnosis
+          key={component.id}
+          label={label}
+          name={component.id}
+          value={formState[component.id] || ''}
+          coded={!!formState[`${component.id}_coded`]}
+          onChange={(value, coded) => onChange(component.id, value, coded)}
+          required={component.required}
+          valueError={component.valueError}
+        />
+      );
+    }
+
+    if (component.type === 'fbSCTProcedure') {
+      return (
+        <SCTProcedure
+          key={component.id}
+          label={label}
+          name={component.id}
+          value={formState[component.id] || ''}
+          coded={!!formState[`${component.id}_coded`]}
+          onChange={(value, coded) => onChange(component.id, value, coded)}
+          required={component.required}
+          valueError={component.valueError}
+        />
       );
     }
 
@@ -249,9 +375,29 @@ export const GeneratedReadOnlyForm: React.FC<RoVProps> = ({ spec, formState }) =
       return <FbRoVField key={component.id} label={label} value={formState[component.id]} lookupTable={lookup} preserveGridSpace />;
     }
 
+    if (component.type === 'fbBoxedWarning') {
+      return <FbBoxedWarning key={component.id} text={label} />;
+    }
+
+    if (component.type === 'fbBoxedAlert') {
+      return <FbBoxedAlert key={component.id} text={label} />;
+    }
+
+    if (component.type === 'fbBoxedInfo') {
+      return <FbBoxedInfo key={component.id} text={label} />;
+    }
+
+    if (component.type === 'fbBloodPressure') {
+      const value = formState[component.id];
+      const displayValue = value && typeof value === 'object'
+        ? [value.systolic, value.diastolic].filter(Boolean).join('/') + (value.systolic || value.diastolic ? ' mmHg' : '')
+        : value;
+      return <FbRoVField key={component.id} label={label} value={displayValue} preserveGridSpace />;
+    }
+
     if (fieldTypes.has(component.type)) {
       const value = formState[component.id];
-      const coded = component.type === 'fbMSISelector' || component.type === 'fbSCTDiagnosis'
+      const coded = component.type === 'fbMSISelector' || component.type === 'fbSCTDiagnosis' || component.type === 'fbSCTProcedure'
         ? !!formState[`${component.id}_coded`]
         : undefined;
       return (

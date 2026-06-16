@@ -37,6 +37,7 @@ export interface WaitingListCardRoVProps {
   username: string;
   onSwitchToEV: () => void;
   onBack: () => void;
+  backLabel?: string;
   reachedByRoVButton?: boolean;
   superseded?: boolean;
   onHistory?: (anchorRect: DOMRect) => void;
@@ -52,6 +53,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
     username,
     onSwitchToEV,
     onBack,
+    backLabel,
     reachedByRoVButton,
     superseded,
     onHistory
@@ -647,6 +649,7 @@ export function WaitingListCardRoV(props: WaitingListCardRoVProps) {
         reachedByRoVButton={reachedByRoVButton}
         onSwitchToEV={onSwitchToEV}
         onBack={onBack}
+        backLabel={backLabel}
         superseded={superseded}
         onHistory={onHistory}
       />

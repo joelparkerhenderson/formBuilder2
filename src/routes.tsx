@@ -9,6 +9,7 @@ import PatientRecord from './PatientRecord';
 import PatientRegistry from './PatientRegistry';
 import PatientSearch from './PatientSearch';
 import Composer from './Composer';
+import ComponentLibrary from './ComponentLibrary';
 
 const routes = [
   {
@@ -46,6 +47,14 @@ const routes = [
   {
     path: '/patient-search',
     element: <PatientSearch />,
+  },
+  {
+    path: '/components.html',
+    element: <ComponentLibrary />,
+  },
+  {
+    path: '/formBuilder2/components.html',
+    element: <ComponentLibrary />,
   },
   {
     path: '/composer.html',

@@ -13,6 +13,7 @@ interface fbTextInputProps {
   style?: React.CSSProperties;
   inputStyle?: React.CSSProperties;
   subfield?: boolean;
+  valueError?: string;
 }
 
 export const fbTextInput: React.FC<fbTextInputProps> = ({
@@ -27,6 +28,7 @@ export const fbTextInput: React.FC<fbTextInputProps> = ({
   style,
   inputStyle,
   subfield = false,
+  valueError,
 }) => {
   const renderInput = () => {
     return (
@@ -76,6 +78,7 @@ export const fbTextInput: React.FC<fbTextInputProps> = ({
       className={className}
       style={style}
       labelStyle={subfield ? { fontWeight: 300, fontSize: '1rem' } : undefined}
+      valueError={valueError}
     >
       {renderInput()}
     </FbQuestion>

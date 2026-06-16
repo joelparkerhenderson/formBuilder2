@@ -1,4 +1,5 @@
 import React from 'react';
+import { fbValueError as FbValueError } from './fbValueError';
 
 interface fbQuestionProps {
   label: string;
@@ -7,6 +8,7 @@ interface fbQuestionProps {
   style?: React.CSSProperties;
   className?: string;
   labelStyle?: React.CSSProperties;
+  valueError?: string;
 }
 
 export const fbQuestion: React.FC<fbQuestionProps> = ({
@@ -16,6 +18,7 @@ export const fbQuestion: React.FC<fbQuestionProps> = ({
   style,
   className = '',
   labelStyle,
+  valueError,
 }) => {
   // Gracefully parses the label string to group the last word and required asterisk
   const renderLabelText = () => {
@@ -62,6 +65,7 @@ export const fbQuestion: React.FC<fbQuestionProps> = ({
         ...style
       }}
     >
+      <FbValueError message={valueError} />
       <label
         style={{
           fontFamily: "'Roboto', sans-serif",

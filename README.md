@@ -5,6 +5,8 @@
 There is a working demo at https://www.shadesOfPale.net/formBuilder2/index.html. Use the usual userName and password.
 ## Roll your own
 Try the WYSIWYG app at https://www.shadesOfPale.net/formBuilder2/composer.html.
+## React vs Svelte
+The version in the top level of this repo uses React and is currently the most correct version. There is a Svelte version in svelte/, which is not yet fully tested. A working demo of the Svelte version is at [www.shadesOfPale.net/formBuilder2/svelte/index.html](https://www.shadesOfPale.net/formBuilder2/svelete/index.html) with matching WYSIWYG app at [www.shadesOfPale.net/formBuilder2/svelte/composer.html](https://www.shadesOfPale.net/formBuilder2/svelete/composer.html)
 ## Intended audience
 Any persons (clinicians, PMs, BAs, devs) interested in experimenting or working with WCP form design.
 ## Suggested usage

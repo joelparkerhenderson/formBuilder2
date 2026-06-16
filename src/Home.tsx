@@ -6,6 +6,15 @@ const DONALD_DUCK_PATIENT_UUID = 'fd55880a-7ada-47a8-adbb-65850af6f7e2';
 
 export default function Home() {
   const [username, setUsername] = React.useState<string>('demoUser');
+  const componentLibraryHref = window.location.pathname.startsWith('/formBuilder2/')
+    ? '/formBuilder2/components.html'
+    : '/components.html';
+  const composerHref = window.location.pathname.startsWith('/formBuilder2/')
+    ? '/formBuilder2/composer.html'
+    : '/composer.html';
+  const caseNoteTrackerHref = window.location.pathname.startsWith('/formBuilder2/')
+    ? '/formBuilder2/caseNoteTracker.html'
+    : '/caseNoteTracker.html';
 
   const handleUsernameChange = (val: string) => {
     setUsername(val);
@@ -222,6 +231,66 @@ export default function Home() {
             >
               Patient record
             </Link>
+            <a
+              href={caseNoteTrackerHref}
+              style={{
+                display: 'block',
+                padding: '1rem',
+                backgroundColor: 'rgb(27, 110, 194)',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: '0.4rem',
+                fontSize: '1.1rem',
+                fontWeight: 500,
+                textAlign: 'center',
+                transition: 'background-color 0.2s',
+                fontFamily: "'Roboto', sans-serif"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgb(21, 88, 156)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgb(27, 110, 194)'}
+            >
+              Case note tracker
+            </a>
+            <a
+              href={composerHref}
+              style={{
+                display: 'block',
+                padding: '1rem',
+                backgroundColor: 'rgb(27, 110, 194)',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: '0.4rem',
+                fontSize: '1.1rem',
+                fontWeight: 500,
+                textAlign: 'center',
+                transition: 'background-color 0.2s',
+                fontFamily: "'Roboto', sans-serif"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgb(21, 88, 156)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgb(27, 110, 194)'}
+            >
+              Composer
+            </a>
+            <a
+              href={componentLibraryHref}
+              style={{
+                display: 'block',
+                padding: '1rem',
+                backgroundColor: 'rgb(27, 110, 194)',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: '0.4rem',
+                fontSize: '1.1rem',
+                fontWeight: 500,
+                textAlign: 'center',
+                transition: 'background-color 0.2s',
+                fontFamily: "'Roboto', sans-serif"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgb(21, 88, 156)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgb(27, 110, 194)'}
+            >
+              Component library
+            </a>
           </div>
           <p
             style={{

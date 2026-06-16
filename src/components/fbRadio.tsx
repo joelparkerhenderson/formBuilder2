@@ -37,7 +37,7 @@ export const fbRadio: React.FC<fbRadioProps> = ({
           fontSize: '1rem',
           fontWeight: 300,
           userSelect: 'none',
-          display: 'inline-flex',
+          display: 'flex',
           alignItems: 'flex-start',
           borderRadius: '0.4rem',
           boxSizing: 'border-box'

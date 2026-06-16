@@ -16,6 +16,7 @@ interface fbTextAreaProps {
   subfield?: boolean;
   rows?: number;
   fullWidth?: boolean;
+  valueError?: string;
 }
 
 export const fbTextArea: React.FC<fbTextAreaProps> = ({
@@ -32,6 +33,7 @@ export const fbTextArea: React.FC<fbTextAreaProps> = ({
   subfield = false,
   rows = 2,
   fullWidth = false,
+  valueError,
 }) => {
   const renderTextarea = () => {
     return (
@@ -47,14 +49,14 @@ export const fbTextArea: React.FC<fbTextAreaProps> = ({
         style={{
           fontFamily: "'Roboto', sans-serif",
           fontWeight: 400,
-          border: '0.1rem solid silver',
-          borderRadius: '0.4rem',
           padding: '0.3rem 0.5rem',
           fontSize: '1rem',
           minHeight: '2rem',
           maxWidth: fullWidth ? undefined : '37rem',
           backgroundColor: 'white',
           ...inputStyle,
+          border: '0.1rem solid silver',
+          borderRadius: '0.4rem',
         }}
       />
     );
@@ -81,6 +83,7 @@ export const fbTextArea: React.FC<fbTextAreaProps> = ({
       className={className}
       style={style}
       labelStyle={subfield ? { fontWeight: 300, fontSize: '1rem' } : undefined}
+      valueError={valueError}
     >
       {renderTextarea()}
     </FbQuestion>

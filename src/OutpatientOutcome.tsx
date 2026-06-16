@@ -310,7 +310,7 @@ export default function OutpatientOutcome({ inlineProps }: { inlineProps?: Inlin
   const openLinkedWaitingListCard = () => {
     const linkedUuid = formState.linkedWaitingListCardUuid;
     if (!linkedUuid) return;
-    setInlineWaitingListCard({ formUuid: linkedUuid, openInRoV: isReadOnlyView });
+    setInlineWaitingListCard({ formUuid: linkedUuid, openInRoV: true });
   };
 
   const closeInlineWaitingListCard = () => {
@@ -837,14 +837,14 @@ export default function OutpatientOutcome({ inlineProps }: { inlineProps?: Inlin
               box-sizing: border-box !important;
             }
 
-            .fb-layout-edit-view-form .fb-input-with-units {
+            .fb-layout-edit-view-form .fb-number-input-with-units {
               border: 0.1rem solid silver !important;
               border-radius: 0.4rem !important;
               height: 2.0rem !important;
               overflow: hidden;
             }
-            .fb-layout-edit-view-form .fb-input-with-units input,
-            .fb-layout-edit-view-form .fb-input-with-units input:not([type="radio"]):not([type="checkbox"]) {
+            .fb-layout-edit-view-form .fb-number-input-with-units input,
+            .fb-layout-edit-view-form .fb-number-input-with-units input:not([type="radio"]):not([type="checkbox"]) {
               border: none !important;
               border-width: 0px !important;
               outline: none !important;

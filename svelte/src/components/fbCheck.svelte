@@ -1,0 +1,64 @@
+<script lang="ts">
+  import { createEventDispatcher } from 'svelte';
+  import FbToolTip from './fbToolTip.svelte';
+  export let name = '';
+  export let checked = false;
+  export let label = '';
+  export let tooltip = '';
+  export let disabled = false;
+  export let onChange: (checked: boolean) => void = () => {};
+  export let change: (checked: boolean) => void = () => {};
+  const dispatch = createEventDispatcher<{ change: boolean }>();
+
+  function emitValue(nextChecked: boolean) {
+    onChange(nextChecked);
+    change(nextChecked);
+    dispatch('change', nextChecked);
+  }
+</script>
+
+<div class="fb-subquestion-wrapper">
+  <FbToolTip text={tooltip} as="label" className="fb-radio-checkbox-item">
+    <input
+      type="checkbox"
+      {name}
+      {disabled}
+      checked={checked}
+      onchange={(event) => emitValue((event.currentTarget as HTMLInputElement).checked)}
+    />
+    <span>{label}</span>
+  </FbToolTip>
+  {#if checked}
+    <div class="fb-subquestion-wrapper"><slot /></div>
+  {/if}
+</div>
+
+<style>
+  .fb-subquestion-wrapper {
+    padding: 0;
+  }
+
+  :global(.fb-radio-checkbox-item) {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0 0.2rem;
+    margin: 0;
+    border-radius: 0.4rem;
+    box-sizing: border-box;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 300;
+    line-height: 1.2;
+    user-select: none;
+  }
+
+  input {
+    margin: 0;
+  }
+
+  .fb-subquestion-wrapper .fb-subquestion-wrapper {
+    padding-left: 1.5rem;
+  }
+</style>

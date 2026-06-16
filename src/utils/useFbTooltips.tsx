@@ -113,6 +113,15 @@ export const useFbTooltips = () => {
     ]);
   };
 
+  const showDirectTooltip = (
+    text: string,
+    element: HTMLElement,
+    offsetRight: boolean = false,
+    showClose: boolean = true
+  ) => {
+    showTooltipRequests([{ text, element, offsetRight, showClose }]);
+  };
+
   const showMultipleTooltips = (tooltips: FbTooltipRequest[]) => {
     showTooltipRequests(tooltips.flatMap((tooltip) => [
       tooltip,
@@ -199,6 +208,36 @@ export const useFbTooltips = () => {
     ]);
   };
 
+  const showDirectTooltipForControl = (
+    text: string,
+    element: HTMLElement,
+    belowLabel: boolean = false
+  ) => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+
+    const anchor = getQuestionLabelAnchor(element);
+    const inputAnchor = anchor.querySelector('input[type="radio"], input[type="checkbox"]');
+    const placeBelowLabel = belowLabel && !hasOpenSubquestion(anchor);
+    const horizontalAnchorElement = placeBelowLabel && inputAnchor instanceof HTMLElement
+      ? inputAnchor
+      : undefined;
+
+    showTooltipRequests([
+      {
+        text,
+        element: anchor,
+        offsetRight: false,
+        showClose: !belowLabel,
+        placeBelowLabel,
+        horizontalAnchorElement,
+        horizontalOffsetPx: horizontalAnchorElement ? 32 : 0,
+      },
+    ]);
+  };
+
   React.useLayoutEffect(() => {
     if (activeTooltips.length === 0 || activeTooltips.every((tooltip) => tooltip.x !== 0 || tooltip.y !== 0)) {
       return;
@@ -268,8 +307,10 @@ export const useFbTooltips = () => {
 
   return {
     showTooltip,
+    showDirectTooltip,
     showMultipleTooltips,
     showTooltipForControl,
+    showDirectTooltipForControl,
     hideTooltip,
     closeTooltip,
     renderTooltips,

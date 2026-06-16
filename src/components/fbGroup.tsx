@@ -1,4 +1,5 @@
 import React from 'react';
+import { fbValueError as FbValueError } from './fbValueError';
 
 interface fbGroupProps {
   label?: React.ReactNode;
@@ -6,6 +7,8 @@ interface fbGroupProps {
   style?: React.CSSProperties;
   children?: React.ReactNode;
   className?: string;
+  valueError?: string;
+  labelStyle?: React.CSSProperties;
 }
 
 export const fbGroup: React.FC<fbGroupProps> = ({
@@ -14,10 +17,12 @@ export const fbGroup: React.FC<fbGroupProps> = ({
   style,
   children,
   className = '',
+  valueError,
+  labelStyle,
 }) => {
   return (
     <div
-      className={`fb-radio-checkbox-group-container ${className}`}
+      className={`fb-question-container fb-radio-checkbox-group-container ${className}`}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -27,6 +32,7 @@ export const fbGroup: React.FC<fbGroupProps> = ({
         ...style
       }}
     >
+      <FbValueError message={valueError} />
       {label && (
         <label
           style={{
@@ -35,7 +41,8 @@ export const fbGroup: React.FC<fbGroupProps> = ({
             fontWeight: 300,
             color: 'black',
             margin: 0,
-            display: 'block'
+            display: 'block',
+            ...labelStyle
           }}
         >
           {label}
@@ -45,7 +52,7 @@ export const fbGroup: React.FC<fbGroupProps> = ({
         style={{
           display: 'flex',
           flexDirection: direction === 'row' ? 'row' : 'column',
-          gap: direction === 'row' ? '1rem' : '0.2rem',
+          gap: direction === 'row' ? '1rem' : 0,
         }}
       >
         {children}

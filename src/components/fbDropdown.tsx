@@ -19,6 +19,7 @@ interface fbDropdownProps {
   selectStyle?: React.CSSProperties;
   placeholder?: string;
   subfield?: boolean;
+  valueError?: string;
 }
 
 export const fbDropdown: React.FC<fbDropdownProps> = ({
@@ -34,6 +35,7 @@ export const fbDropdown: React.FC<fbDropdownProps> = ({
   selectStyle,
   placeholder,
   subfield = false,
+  valueError,
 }) => {
   const parsedOptions = options.map((opt) => {
     if (typeof opt === 'string') {
@@ -87,6 +89,7 @@ export const fbDropdown: React.FC<fbDropdownProps> = ({
       className={className}
       style={style}
       labelStyle={subfield ? { fontWeight: 300, fontSize: '1rem' } : undefined}
+      valueError={valueError}
     >
       {renderSelect()}
     </FbQuestion>

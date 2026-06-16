@@ -1,6 +1,6 @@
 import React from 'react';
 import { fbQuestion as FbQuestion } from './fbQuestion';
-import { fbTextInputWithUnits as FbTextInputWithUnits } from './fbTextInputWithUnits';
+import { fbNumberInputWithUnits as FbNumberInputWithUnits } from './fbNumberInputWithUnits';
 
 interface fbNumberInputProps {
   label?: string;
@@ -18,6 +18,7 @@ interface fbNumberInputProps {
   inputStyle?: React.CSSProperties;
   unitLabelProps?: React.HTMLAttributes<HTMLSpanElement>;
   subfield?: boolean;
+  valueError?: string;
 }
 
 export const fbNumberInput: React.FC<fbNumberInputProps> = ({
@@ -36,11 +37,19 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
   inputStyle,
   unitLabelProps,
   subfield = false,
+  valueError,
 }) => {
+  const [hasBadInput, setHasBadInput] = React.useState(false);
+  const currentValue = String(value ?? '');
+  const automaticValueError = hasBadInput || (currentValue.trim() && !Number.isFinite(Number(currentValue)))
+    ? 'Enter a number'
+    : '';
+  const displayedValueError = valueError || automaticValueError;
+
   const renderInput = () => {
     if (units) {
       return (
-        <FbTextInputWithUnits
+        <FbNumberInputWithUnits
           value={value}
           onChange={onChange}
           units={units}
@@ -51,6 +60,7 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
           inputStyle={inputStyle}
           unitLabelProps={unitLabelProps}
           style={{ maxWidth: 'calc(10ch + 5rem)' }}
+          onBadInputChange={setHasBadInput}
         />
       );
     }
@@ -61,7 +71,10 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
         id={id}
         name={name}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          setHasBadInput(e.currentTarget.validity.badInput);
+          onChange(e.target.value);
+        }}
         placeholder={placeholder}
         min={min}
         max={max}
@@ -99,6 +112,7 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
         fontSize: '1rem',
         fontWeight: subfield ? 300 : 500,
       }}
+      valueError={displayedValueError}
     >
       {renderInput()}
     </FbQuestion>

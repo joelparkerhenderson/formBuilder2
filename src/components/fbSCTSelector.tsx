@@ -1,30 +1,40 @@
 import * as React from 'react';
 import { parseServerResponse } from '../utils/shadesOfPaleParser';
+import { fbQuestion as FbQuestion } from './fbQuestion';
+import { fbValueError as FbValueError } from './fbValueError';
 
 type SCTSearchCommand = 'findDisorder' | 'findProcedure';
 type SCTSelectorMode = 'diagnosis' | 'procedure';
 
 interface fbSCTSelectorProps {
+  label?: string;
   name: string;
   value: string;
   onChange: (value: string, coded: boolean) => void;
   onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
   onBlur?: () => void;
   placeholder?: string;
+  required?: boolean;
   coded?: boolean;
+  valueError?: string;
+  labelStyle?: React.CSSProperties;
   searchCommand: SCTSearchCommand;
   mode: SCTSelectorMode;
   inputClassName?: string;
 }
 
 export const fbSCTSelector: React.FC<fbSCTSelectorProps> = ({
+  label,
   name,
   value,
   onChange,
   onFocus,
   onBlur,
   placeholder = 'Type to search SNOMED CT',
+  required,
   coded,
+  valueError,
+  labelStyle,
   searchCommand,
   mode,
   inputClassName = '',
@@ -298,7 +308,7 @@ export const fbSCTSelector: React.FC<fbSCTSelectorProps> = ({
       ? searchTerm === lastSelectedValue
       : hasSelected;
 
-  return (
+  const renderContent = () => (
     <div style={{display: 'flex', alignItems: 'center', width: '100%', gap: '0.3rem'}}>
       <div ref={containerRef} style={{position: 'relative', flex: 1}}>
         <div style={{position: 'relative', display: 'flex', alignItems: 'center'}}>
@@ -336,6 +346,7 @@ export const fbSCTSelector: React.FC<fbSCTSelectorProps> = ({
               backgroundColor: 'white'
             }}
             placeholder={placeholder}
+            required={required}
             autoComplete="off"
           />
           <div style={{
@@ -446,6 +457,7 @@ export const fbSCTSelector: React.FC<fbSCTSelectorProps> = ({
               padding: '0.25rem',
               overflowY: 'hidden',
               fontSize: '0.9rem',
+              lineHeight: 1.2,
               display: 'flex',
               flexDirection: 'column'
             }}>
@@ -627,6 +639,31 @@ export const fbSCTSelector: React.FC<fbSCTSelectorProps> = ({
           warning
         </span>
       )}
+    </div>
+  );
+
+  if (label) {
+    return (
+      <FbQuestion label={label} required={required} valueError={valueError} labelStyle={labelStyle}>
+        {renderContent()}
+      </FbQuestion>
+    );
+  }
+
+  const content = renderContent();
+  if (!valueError && !required) return content;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', width: '100%' }}>
+      <FbValueError message={valueError} />
+      {required ? (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.2rem', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ flex: 1, width: '100%' }}>
+            {content}
+          </div>
+          <span style={{ color: '#d50000', fontSize: '1rem', fontWeight: 'bold', lineHeight: '1.2rem', marginTop: '0.15rem', display: 'inline-block', userSelect: 'none' }}>*</span>
+        </div>
+      ) : content}
     </div>
   );
 };

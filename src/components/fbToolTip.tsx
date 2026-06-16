@@ -45,11 +45,18 @@ export const fbToolTip: React.FC<fbToolTipProps> = ({
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClose?.();
+      }}
     >
       <div style={{ paddingBottom: showClose ? '1.5rem' : '0' }}>{text}</div>
       {showClose && (
         <button
-          onClick={onClose}
+          onClick={(event) => {
+            event.stopPropagation();
+            onClose?.();
+          }}
           style={{
             position: 'absolute',
             bottom: '0.2rem',

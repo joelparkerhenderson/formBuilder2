@@ -2,6 +2,8 @@ import * as React from 'react';
 import { fbSavingPopup as SavingPopup } from '../components/fbSavingPopup';
 import { fbSavedPopup as SavedPopup } from '../components/fbSavedPopup';
 import { fbSaveErrorPopup as SaveErrorPopup } from '../components/fbSaveErrorPopup';
+import { fbStaleSavePopup as StaleSavePopup } from '../components/fbStaleSavePopup';
+import { isStaleFormVersionError } from './formVersion';
 
 const SAVE_SUCCESS_DISPLAY_MS = 1000;
 
@@ -9,12 +11,14 @@ interface UseFormSaveFeedbackOptions<SaveStatus extends string> {
   onSave: (status: SaveStatus, password: string) => Promise<void>;
   onSaved: () => void;
   onError?: () => void;
+  onStaleSave?: () => void;
 }
 
 export const useFormSaveFeedback = <SaveStatus extends string>({
   onSave,
   onSaved,
   onError,
+  onStaleSave,
 }: UseFormSaveFeedbackOptions<SaveStatus>) => {
   const [password, setPasswordState] = React.useState<string>('');
   const passwordRef = React.useRef<string>('');
@@ -25,6 +29,7 @@ export const useFormSaveFeedback = <SaveStatus extends string>({
   const [isSaving, setIsSaving] = React.useState<boolean>(false);
   const [showSavedPopup, setShowSavedPopup] = React.useState<boolean>(false);
   const [saveError, setSaveError] = React.useState<unknown>(null);
+  const [showStaleSavePopup, setShowStaleSavePopup] = React.useState<boolean>(false);
 
   const clearPasswordTimeout = React.useCallback(() => {
     if (passwordTimeoutRef.current !== null) {
@@ -60,6 +65,10 @@ export const useFormSaveFeedback = <SaveStatus extends string>({
       console.error(`Error saving ${status}:`, error);
       setIsSaving(false);
       setShowSavedPopup(false);
+      if (isStaleFormVersionError(error)) {
+        setShowStaleSavePopup(true);
+        return;
+      }
       setSaveError(error);
       onError?.();
     }
@@ -98,10 +107,19 @@ export const useFormSaveFeedback = <SaveStatus extends string>({
     setShowSavedPopup(false);
   }, []);
 
+  const continueAfterStaleSave = React.useCallback(() => {
+    setShowStaleSavePopup(false);
+    setIsSaving(false);
+    setShowSavedPopup(false);
+    setSaveError(null);
+    onStaleSave?.();
+  }, [onStaleSave]);
+
   const renderSaveFeedbackPopups = React.useCallback(() => (
     <>
       {isSaving && <SavingPopup />}
       {showSavedPopup && <SavedPopup />}
+      {showStaleSavePopup && <StaleSavePopup onContinue={continueAfterStaleSave} />}
       {saveError && (
         <SaveErrorPopup
           error={saveError}
@@ -109,7 +127,7 @@ export const useFormSaveFeedback = <SaveStatus extends string>({
         />
       )}
     </>
-  ), [isSaving, returnToFormAfterError, saveError, showSavedPopup]);
+  ), [continueAfterStaleSave, isSaving, returnToFormAfterError, saveError, showSavedPopup, showStaleSavePopup]);
 
   React.useEffect(() => clearPasswordTimeout, [clearPasswordTimeout]);
 
