@@ -207,7 +207,7 @@ export function loadCntStore(): CntStore {
   if (existing) {
     try {
       const parsed = JSON.parse(existing);
-      if (parsed?.storeVersion === currentStoreVersion) return parsed;
+      if (parsed?.storeVersion === currentStoreVersion) return normaliseCntStore(parsed);
     } catch {
       // Fall through and rebuild the simulated database.
     }
@@ -220,6 +220,19 @@ export function loadCntStore(): CntStore {
 
 export function saveCntStore(store: CntStore) {
   localStorage.setItem(storageKey, JSON.stringify(store));
+}
+
+function normaliseCntStore(store: CntStore): CntStore {
+  return {
+    ...store,
+    preferences: store.preferences || {},
+    cntPickList: store.cntPickList || [],
+    volumes: (store.volumes || []).map((volume) => ({
+      ...volume,
+      events: Array.isArray(volume.events) ? volume.events : [],
+    })),
+    clinicInstances: (store.clinicInstances || []).map((instance) => dedupeClinicInstanceAppointments(instance)),
+  };
 }
 
 export function getSessionUserUuid() {
@@ -442,7 +455,7 @@ function ensureClinicWindow(store: CntStore) {
       const isoDate = date.toISOString().slice(0, 10);
       const id = uuid(`${clinic.uuid}-${isoDate}`);
       if (!store.clinicInstances.some((instance) => instance.uuid === id)) {
-        store.clinicInstances.push({
+        store.clinicInstances.push(dedupeClinicInstanceAppointments({
           uuid: id,
           clinicUuid: clinic.uuid,
           date: isoDate,
@@ -457,7 +470,7 @@ function ensureClinicWindow(store: CntStore) {
             cancelled: false,
             notes: '',
           })),
-        });
+        }));
       }
     });
   }
@@ -475,7 +488,8 @@ function churnAppointments(store: CntStore) {
       instance.appointments.slice(0, churnCount).forEach((appointment, apptIndex) => {
         appointment.cancelled = true;
         appointment.notes = 'Cancelled during simulated login churn';
-        const replacement = patients[(index + apptIndex + 3) % patients.length];
+        const replacement = nextReplacementPatient(instance, index + apptIndex + 3);
+        if (!replacement) return;
         instance.appointments.push({
           uuid: uuid(`${instance.uuid}-replacement-${apptIndex}`),
           time: appointment.time,
@@ -484,7 +498,41 @@ function churnAppointments(store: CntStore) {
           notes: 'Replacement booking from simulated churn',
         });
       });
+      instance.appointments = dedupeClinicInstanceAppointments(instance).appointments;
     });
+}
+
+function nextReplacementPatient(instance: CntClinicInstance, startIndex: number) {
+  const bookedPatientUuids = new Set(instance.appointments.map((appointment) => appointment.patientUuid));
+  for (let offset = 0; offset < patients.length; offset += 1) {
+    const candidate = patients[(startIndex + offset) % patients.length];
+    if (!bookedPatientUuids.has(candidate.uuid)) return candidate;
+  }
+  return undefined;
+}
+
+function dedupeClinicInstanceAppointments(instance: CntClinicInstance): CntClinicInstance {
+  const preferredByPatient = new Map<string, { uuid: string; cancelled: boolean; time: string }>();
+  instance.appointments.forEach((appointment) => {
+    const existing = preferredByPatient.get(appointment.patientUuid);
+    if (
+      !existing
+      || (existing.cancelled && !appointment.cancelled)
+      || (existing.cancelled === appointment.cancelled && appointment.time.localeCompare(existing.time) < 0)
+    ) {
+      preferredByPatient.set(appointment.patientUuid, {
+        uuid: appointment.uuid,
+        cancelled: appointment.cancelled,
+        time: appointment.time,
+      });
+    }
+  });
+  return {
+    ...instance,
+    appointments: instance.appointments.filter((appointment) =>
+      preferredByPatient.get(appointment.patientUuid)?.uuid === appointment.uuid
+    ),
+  };
 }
 
 export function locationLabel(store: CntStore, uuidValue = '') {

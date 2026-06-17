@@ -44,11 +44,9 @@ export function FbcntSelectedVolumesLocation({
                     const sortedItems = sortVolumes(items);
                     const receivedClass = sortedItems.every((volume) => received.has(volume.uuid)) ? 'visible' : 'hidden';
                     return (
-                      <React.Fragment key={location}>
-                        <HighlightLevel level={3} style={styles.level3} tabIndex={0}>
-                          {volumeRangeLabel(sortedItems)}
-                        </HighlightLevel>
-                        <HighlightLevel level={4} style={styles.level4UnderVolume}>
+                      <HighlightLevel key={location} level={3} style={styles.volumeLocationGroup} tabIndex={0}>
+                        <div>{volumeRangeLabel(sortedItems)}</div>
+                        <div style={styles.locationUnderVolume}>
                           <span
                             className="material-icons"
                             style={{ ...styles.tick, visibility: receivedClass }}
@@ -57,8 +55,8 @@ export function FbcntSelectedVolumesLocation({
                             check_circle
                           </span>
                           <span>{location}</span>
-                        </HighlightLevel>
-                      </React.Fragment>
+                        </div>
+                      </HighlightLevel>
                     );
                   })}
                 </HighlightLevel>
@@ -68,34 +66,6 @@ export function FbcntSelectedVolumesLocation({
         </HighlightLevel>
       ))}
     </div>
-  );
-}
-
-export function FbcntSelectedVolumesReceived({
-  volumes,
-  checkedVolumeUuids,
-  toggleVolume,
-}: {
-  store: CntStore;
-  volumes: CntVolume[];
-  checkedVolumeUuids: string[];
-  toggleVolume: (volumeUuid: string) => void;
-}) {
-  if (!volumes.length) return <span style={styles.empty}>No volumes selected</span>;
-  return (
-    <VolumeGroups
-      volumes={volumes}
-      renderVolumeDetail={(volume) => (
-        <label style={styles.checkLine}>
-          <input
-            type="checkbox"
-            checked={checkedVolumeUuids.includes(volume.uuid)}
-            onChange={() => toggleVolume(volume.uuid)}
-          />
-          <span>Received</span>
-        </label>
-      )}
-    />
   );
 }
 
@@ -257,6 +227,16 @@ const styles = {
     columnGap: '0.25rem',
     alignItems: 'start',
   } as React.CSSProperties,
+  volumeLocationGroup: {
+    marginLeft: '1rem',
+  } as React.CSSProperties,
+  locationUnderVolume: {
+    marginLeft: '1rem',
+    display: 'grid',
+    gridTemplateColumns: '1.1rem 1fr',
+    columnGap: '0.25rem',
+    alignItems: 'start',
+  } as React.CSSProperties,
   locationLine: {
     display: 'inline-flex',
     gap: '0.35rem',
@@ -269,12 +249,6 @@ const styles = {
     color: fbGreen,
     fontSize: '1rem',
     lineHeight: 1.2,
-  } as React.CSSProperties,
-  checkLine: {
-    display: 'inline-flex',
-    gap: '0.35rem',
-    alignItems: 'center',
-    fontWeight: 400,
   } as React.CSSProperties,
   empty: {
     color: '#555',

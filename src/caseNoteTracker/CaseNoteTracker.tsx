@@ -47,9 +47,12 @@ import {
 import { fbBlue, fbGreen, fbLightBlue, fbOrange, fbRed } from './cntStyles';
 import { FbGroupWithBorder } from './fbGroupWithBorder';
 import { FbcntHeader } from './fbcntHeader';
+import { FbcntHeaderForUser } from './fbcntHeaderForUser';
 import { FbcntFromLocation, FbcntLocation, FbcntToLocation } from './fbcntLocation';
 import { FbcntScan } from './fbcntScan';
-import { FbcntSelectedVolumes, FbcntSelectedVolumesLocation, FbcntSelectedVolumesReceived } from './fbcntSelectedVolumes';
+import { FbcntSelectedVolumes, FbcntSelectedVolumesLocation } from './fbcntSelectedVolumes';
+import { FbcntPicklistReceivedPopup } from './fbcntPicklistReceivedPopup';
+import { FbcntReturnListSendPopup } from './fbcntReturnListSendPopup';
 import { FbcntSmallButton } from './fbcntSmallButton';
 import { FbcntAdminPage } from './fbcntAdminPage';
 import { FbcntBatchPage } from './fbcntBatchPage';
@@ -131,11 +134,13 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
   const [view, setView] = React.useState<View>('home');
   const [movementPopup, setMovementPopup] = React.useState<'send' | 'receive' | null>(null);
   const [pickListReceivePopupOpen, setPickListReceivePopupOpen] = React.useState(false);
+  const [returnListSendPopup, setReturnListSendPopup] = React.useState<{ patientUuid: string; volumeUuids: string[]; locationUuid: string } | null>(null);
   const [identifier, setIdentifier] = React.useState('');
   const [selectedPatientUuid, setSelectedPatientUuid] = React.useState('');
   const [selectedVolumeUuids, setSelectedVolumeUuids] = React.useState<string[]>([]);
   const [selectedClinicInstanceUuid, setSelectedClinicInstanceUuid] = React.useState('');
   const [receivePickListVolumeUuids, setReceivePickListVolumeUuids] = React.useState<string[]>([]);
+  const [returnListSendVolumeUuids, setReturnListSendVolumeUuids] = React.useState<string[]>([]);
   const [preferencesReturnView, setPreferencesReturnView] = React.useState<View>('home');
   const [preferenceHealthBoard, setPreferenceHealthBoard] = React.useState('');
   const [preferenceLocality, setPreferenceLocality] = React.useState('');
@@ -665,7 +670,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
 
   const openBatch = (batchUuid: string) => {
     setSelectedBatchUuid(batchUuid);
-    pushCntNavigation({ kind: 'cnt-view', label: 'My batches', view: 'batch' });
+    pushCntNavigation({ kind: 'cnt-view', label: 'Batches', view: 'batch' });
     setView('batchDetail');
   };
 
@@ -834,7 +839,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
     setSelectedVolumeUuids(current.filter((volumeUuid) =>
       store.volumes.some((volume) => volume.uuid === volumeUuid && volume.patientUuid === patientUuid)
     ));
-    pushCntNavigation({ kind: 'cnt-view', label: 'My picklist', view: 'clinics' });
+    pushCntNavigation({ kind: 'cnt-view', label: 'Picklist', view: 'clinics' });
     setView('selector');
   };
 
@@ -863,42 +868,60 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
   };
 
   const openPickListReceive = (clinicInstanceUuid: string, patientUuid: string) => {
-    const selection = store.cntPickList.filter((entry) => entry.clinicInstanceUuid === clinicInstanceUuid);
+    const patientVolumeUuids = new Set(store.volumes.filter((volume) => volume.patientUuid === patientUuid).map((volume) => volume.uuid));
+    const selection = store.cntPickList.filter((entry) =>
+      entry.clinicInstanceUuid === clinicInstanceUuid && patientVolumeUuids.has(entry.volumeUuid)
+    );
     setSelectedClinicInstanceUuid(clinicInstanceUuid);
     setSelectedPatientUuid(patientUuid);
-    setReceivePickListVolumeUuids(selection.filter((entry) => !entry.received).map((entry) => entry.volumeUuid));
+    setReceivePickListVolumeUuids(selection.filter((entry) => entry.received).map((entry) => entry.volumeUuid));
     setPickListReceivePopupOpen(true);
   };
 
   const receivePickListVolumes = () => {
     if (!user || !selectedClinicInstanceUuid) return;
-    const received = new Set(receivePickListVolumeUuids);
+    const checked = new Set(receivePickListVolumeUuids);
+    const rowVolumeUuids = new Set(store.volumes
+      .filter((volume) => volume.patientUuid === selectedPatientUuid)
+      .filter((volume) => store.cntPickList.some((entry) => entry.clinicInstanceUuid === selectedClinicInstanceUuid && entry.volumeUuid === volume.uuid))
+      .map((volume) => volume.uuid));
+    const previouslyReceived = new Set(store.cntPickList
+      .filter((entry) => entry.clinicInstanceUuid === selectedClinicInstanceUuid && rowVolumeUuids.has(entry.volumeUuid) && entry.received)
+      .map((entry) => entry.volumeUuid));
+    const receiveLocationUuid = clinicHoldingLocationUuid(store, selectedClinicInstanceUuid);
     const now = new Date().toISOString();
     persist({
       ...store,
       cntPickList: store.cntPickList.map((entry) =>
-        entry.clinicInstanceUuid === selectedClinicInstanceUuid && received.has(entry.volumeUuid)
-          ? { ...entry, received: true }
+        entry.clinicInstanceUuid === selectedClinicInstanceUuid && rowVolumeUuids.has(entry.volumeUuid)
+          ? { ...entry, received: checked.has(entry.volumeUuid) }
           : entry
       ),
       volumes: store.volumes.map((volume) => {
-        if (!received.has(volume.uuid)) return volume;
-        const latestSend = [...volume.events].reverse().find((event) => event.kind === 'sent');
-        return {
-          ...volume,
-          events: [
-            ...volume.events,
-            {
-              uuid: uuid(`${volume.uuid}-picklist-received-${now}`),
-              kind: 'received',
-              datetime: now,
-              fromLocationUuid: latestSend?.toLocationUuid,
-              toLocationUuid: volume.currentLocationUuid,
-              userUuid: user.uuid,
-              note: 'Received from My picklist',
-            },
-          ],
-        };
+        if (!rowVolumeUuids.has(volume.uuid)) return volume;
+        const isChecked = checked.has(volume.uuid);
+        const wasReceived = previouslyReceived.has(volume.uuid);
+        if (isChecked && !wasReceived) {
+          const toLocationUuid = receiveLocationUuid || volume.currentLocationUuid;
+          return {
+            ...volume,
+            currentLocationUuid: toLocationUuid,
+            events: [
+              ...volume.events,
+              {
+                uuid: uuid(`${volume.uuid}-picklist-received-${now}`),
+                kind: 'received',
+                datetime: now,
+                fromLocationUuid: volume.currentLocationUuid,
+                toLocationUuid,
+                userUuid: user.uuid,
+                note: 'Received from Picklist',
+              },
+            ],
+          };
+        }
+        if (!isChecked && wasReceived) return undoPickListReceived(volume);
+        return volume;
       }),
     });
     setPickListReceivePopupOpen(false);
@@ -1026,10 +1049,21 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
   };
 
   const sendReturnRow = (patientUuid: string, volumeUuids: string[], locationUuid: string) => {
-    setSelectedPatientUuid(patientUuid);
-    setSelectedVolumeUuids(volumeUuids);
-    setSendSourceUuid(locationUuid || store.locations[0]?.uuid || '');
-    setSendDestinationUuid(store.preferences[user?.uuid || '']?.sendLocationUuid || locationUuid || store.locations[0]?.uuid || '');
+    setReturnListSendPopup({ patientUuid, volumeUuids, locationUuid });
+    setReturnListSendVolumeUuids(volumeUuids);
+  };
+
+  const confirmReturnListSend = () => {
+    if (!returnListSendPopup) return;
+    if (!returnListSendVolumeUuids.length) {
+      showError('Select at least one volume to send.');
+      return;
+    }
+    setSelectedPatientUuid(returnListSendPopup.patientUuid);
+    setSelectedVolumeUuids(returnListSendVolumeUuids);
+    setSendSourceUuid(returnListSendPopup.locationUuid || store.locations[0]?.uuid || '');
+    setSendDestinationUuid(store.preferences[user?.uuid || '']?.sendLocationUuid || returnListSendPopup.locationUuid || store.locations[0]?.uuid || '');
+    setReturnListSendPopup(null);
     setMovementPopup('send');
   };
 
@@ -1155,6 +1189,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
   return (
     <Shell
       title={title}
+      user={isUserSpecificView(view) ? user : undefined}
       right={patientHeader}
       footerLeft={footerLeft}
       footer={
@@ -1523,27 +1558,29 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
         </FbPopup>
       )}
       {pickListReceivePopupOpen && (
-        <FbPopup
-          title="Received"
-          footer={
-            <div style={styles.popupFooter}>
-              <button type="button" style={styles.sendButton} onClick={receivePickListVolumes}>Ok</button>
-              <button type="button" style={styles.cancelButton} onClick={() => setPickListReceivePopupOpen(false)}>Cancel</button>
-            </div>
-          }
-        >
-          <FbcntSelectedVolumesReceived
-            store={store}
-            volumes={store.volumes.filter((volume) =>
-              volume.patientUuid === selectedPatientUuid
-              && store.cntPickList.some((entry) => entry.clinicInstanceUuid === selectedClinicInstanceUuid && entry.volumeUuid === volume.uuid)
-            ).sort(volumeSort)}
-            checkedVolumeUuids={receivePickListVolumeUuids}
-            toggleVolume={(volumeUuid) => setReceivePickListVolumeUuids((current) =>
-              current.includes(volumeUuid) ? current.filter((item) => item !== volumeUuid) : [...current, volumeUuid]
-            )}
-          />
-        </FbPopup>
+        <FbcntPicklistReceivedPopup
+          volumes={store.volumes.filter((volume) =>
+            volume.patientUuid === selectedPatientUuid
+            && store.cntPickList.some((entry) => entry.clinicInstanceUuid === selectedClinicInstanceUuid && entry.volumeUuid === volume.uuid)
+          ).sort(volumeSort)}
+          checkedVolumeUuids={receivePickListVolumeUuids}
+          toggleVolume={(volumeUuid) => setReceivePickListVolumeUuids((current) =>
+            current.includes(volumeUuid) ? current.filter((item) => item !== volumeUuid) : [...current, volumeUuid]
+          )}
+          onOk={receivePickListVolumes}
+          onCancel={() => setPickListReceivePopupOpen(false)}
+        />
+      )}
+      {returnListSendPopup && (
+        <FbcntReturnListSendPopup
+          volumes={store.volumes.filter((volume) => returnListSendPopup.volumeUuids.includes(volume.uuid)).sort(volumeSort)}
+          checkedVolumeUuids={returnListSendVolumeUuids}
+          toggleVolume={(volumeUuid) => setReturnListSendVolumeUuids((current) =>
+            current.includes(volumeUuid) ? current.filter((item) => item !== volumeUuid) : [...current, volumeUuid]
+          )}
+          onSend={confirmReturnListSend}
+          onCancel={() => setReturnListSendPopup(null)}
+        />
       )}
     </Shell>
   );
@@ -1570,20 +1607,20 @@ function titleForView(view: View, store: CntStore, selectedVolumes: CntVolume[],
     history: 'Volume history',
     send: 'Send',
     receive: 'Receive',
-    batch: 'My batches',
+    batch: 'Batches',
     tags: 'Tags',
     requests: 'Outbox',
     inbox: 'Inbox',
     request: 'Request',
     requestPatient: 'Select patient',
     requestSelector: 'Case notes selector',
-    returnList: 'My return list',
-    clinics: 'My picklist',
-    myClinics: 'My clinics',
+    returnList: 'Return list',
+    clinics: 'Picklist',
+    myClinics: 'Clinics',
     selectClinics: 'Select clinic(s)',
-    locations: 'My libraries',
+    locations: 'Libraries',
     admin: 'Admin',
-    preferences: 'User preferences',
+    preferences: 'Preferences',
     selector: 'Case notes selector',
     addVolume: 'Register volume',
     batchDetail: '',
@@ -1614,10 +1651,39 @@ function isPatientView(view: View) {
   return ['locator', 'history', 'send', 'receive', 'tags', 'selector', 'addVolume'].includes(view);
 }
 
-function Shell({ title, right, footerLeft, footer, children }: { title: TitleSpec; right?: React.ReactNode; footerLeft?: React.ReactNode; footer?: React.ReactNode; children: React.ReactNode }) {
+function clinicHoldingLocationUuid(store: CntStore, clinicInstanceUuid: string) {
+  const instance = store.clinicInstances.find((item) => item.uuid === clinicInstanceUuid);
+  const clinic = store.clinics.find((item) => item.uuid === instance?.clinicUuid);
+  return clinic?.holdingLocationUuid || '';
+}
+
+function undoPickListReceived(volume: CntVolume): CntVolume {
+  let eventIndex = -1;
+  for (let index = volume.events.length - 1; index >= 0; index -= 1) {
+    const event = volume.events[index];
+    if (event.kind === 'received' && event.note === 'Received from Picklist') {
+      eventIndex = index;
+      break;
+    }
+  }
+  if (eventIndex < 0) return volume;
+  const removedEvent = volume.events[eventIndex];
+  const events = volume.events.filter((_, index) => index !== eventIndex);
+  return {
+    ...volume,
+    currentLocationUuid: removedEvent.fromLocationUuid || events.at(-1)?.toLocationUuid || volume.currentLocationUuid,
+    events,
+  };
+}
+
+function isUserSpecificView(view: View) {
+  return ['batch', 'requests', 'request', 'inbox', 'returnList', 'clinics', 'myClinics', 'locations', 'preferences'].includes(view);
+}
+
+function Shell({ title, user, right, footerLeft, footer, children }: { title: TitleSpec; user?: CntUser; right?: React.ReactNode; footerLeft?: React.ReactNode; footer?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div style={styles.shell}>
-      <FbcntHeader title={title} right={right} />
+      {user ? <FbcntHeaderForUser title={title} user={user} right={right} /> : <FbcntHeader title={title} right={right} />}
       {children}
       <footer style={styles.footer}>
         <div style={styles.footerLeft}>{footerLeft}</div>
@@ -1708,7 +1774,7 @@ function nextVolumeNumber(store: CntStore, patientUuid: string, healthBoard: str
 }
 
 function uniqueValues(values: string[]) {
-  return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  return Array.from(new Set(values.filter(Boolean).map(String))).sort((a, b) => a.localeCompare(b));
 }
 
 function randomItem<T>(items: readonly T[]): T | undefined {
@@ -1767,16 +1833,6 @@ function requestMatchesRow(request: CntRequest, row: RequestRow) {
     && request.status === row.status;
 }
 
-function highlightStyleForLevel(level: number): React.CSSProperties {
-  return {
-    backgroundColor: level % 2 === 0 ? '#ffffcc' : '#fee715',
-    borderRadius: '0.2rem',
-    paddingTop: '0.05rem',
-    paddingBottom: '0.05rem',
-    marginTop: '0.08rem',
-  };
-}
-
 function volumeLabelForRequest(volume: CntVolume) {
   return `${volume.temporary ? 'Temporary volume' : 'Volume'} ${volume.volumeNumber} - ${volume.healthBoard} / ${volume.locality} / ${volume.type}`;
 }
@@ -1818,14 +1874,6 @@ function volumeLocationCounts(store: CntStore, volumes: CntVolume[]) {
   return Array.from(counts.entries())
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => a.label.localeCompare(b.label));
-}
-
-function formatClinicalDate(dateString: string) {
-  return new Date(`${dateString}T00:00:00`).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
 }
 
 function clinicSummary(clinic?: { clinicName: string; speciality: string; clinician: string }) {

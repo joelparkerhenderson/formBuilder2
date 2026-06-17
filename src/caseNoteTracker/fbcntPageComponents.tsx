@@ -13,6 +13,8 @@ import { fbRadio as FbRadio } from '../components/fbRadio';
 import { fbTextArea as FbTextArea } from '../components/fbTextArea';
 import { fbTextInput as FbTextInput } from '../components/fbTextInput';
 import { fbToolTip as FbToolTip } from '../components/fbToolTip';
+import { fbDateDisplay as FbDateDisplay, formatDisplayDate } from '../components/fbDateDisplay';
+import { fbTimeDisplay as FbTimeDisplay, formatDisplayTime } from '../components/fbTimeDisplay';
 import {
   fbTable as FbTable,
   fbTableBody as FbTableBody,
@@ -21,14 +23,15 @@ import {
   fbTableRow as FbTableRow,
 } from '../components/fbTable';
 import { fbTableCell as FbTableCell } from '../components/fbTableCell';
-import type { CntClinicInstance, CntRequest, CntPatient, CntStore, CntUser, CntVolume } from './cntStore';
+import type { CntClinicInstance, CntRequest, CntPatient, CntStore, CntVolume } from './cntStore';
 import { locationLabel, locationLabelForVolume, patientName } from './cntStore';
 import { fbBlue, fbGreen, fbLightBlue, fbOrange, fbRed } from './cntStyles';
 import { FbGroupWithBorder } from './fbGroupWithBorder';
 import { FbcntBatchVolumeSet } from './fbcntBatchVolumeSet';
 import { FbcntFromLocation, FbcntLocation, FbcntToLocation } from './fbcntLocation';
-import { FbcntSelectedVolumes, FbcntSelectedVolumesLocation, FbcntSelectedVolumesReceived } from './fbcntSelectedVolumes';
+import { FbcntSelectedVolumes, FbcntSelectedVolumesLocation } from './fbcntSelectedVolumes';
 import { FbcntSmallButton } from './fbcntSmallButton';
+import { FbcntUserBadge } from './fbcntUserBadge';
 import { cntHomeEntry, pushCntNavigation } from './cntNavigation';
 
 type View =
@@ -78,14 +81,14 @@ export function HomeView({
 }) {
   const items: Array<{ target?: View; label: string; subtext?: string; href?: string; background: string; onClick?: () => void }> = [
     { label: 'Patient search', href: patientSearchUrl(), background: 'linear-gradient(135deg, #1b6ec2, #8cd2e7)' },
-    { target: 'batch', label: 'My batches', background: 'linear-gradient(135deg, #7048e8, #8cd2e7)' },
+    { target: 'batch', label: 'Batches', background: 'linear-gradient(135deg, #7048e8, #8cd2e7)' },
     { target: 'requests', label: 'Outbox', background: 'linear-gradient(135deg, #d50000, #fd8a10)' },
     { target: 'inbox', label: 'Inbox', background: 'linear-gradient(135deg, #7048e8, #8cd2e7)' },
-    { target: 'returnList', label: 'My return list', background: 'linear-gradient(135deg, #008000, #c5e1a5)' },
-    { target: 'clinics', label: 'My picklist', background: 'linear-gradient(135deg, #1b6ec2, #7048e8)' },
-    { target: 'myClinics', label: 'My clinics', background: 'linear-gradient(135deg, #fd8a10, #fee715)' },
-    { target: 'locations', label: 'My libraries', background: 'linear-gradient(135deg, #008000, #8cd2e7)' },
-    { label: 'My preferences', background: 'linear-gradient(135deg, #1b6ec2, #008000)', onClick: openPreferences },
+    { target: 'returnList', label: 'Return list', background: 'linear-gradient(135deg, #008000, #c5e1a5)' },
+    { target: 'clinics', label: 'Picklist', background: 'linear-gradient(135deg, #1b6ec2, #7048e8)' },
+    { target: 'myClinics', label: 'Clinics', background: 'linear-gradient(135deg, #fd8a10, #fee715)' },
+    { target: 'locations', label: 'Libraries', background: 'linear-gradient(135deg, #008000, #8cd2e7)' },
+    { label: 'Preferences', background: 'linear-gradient(135deg, #1b6ec2, #008000)', onClick: openPreferences },
     { target: 'admin', label: 'Admin', subtext: 'For medical records admins', background: 'linear-gradient(135deg, #333, #8cd2e7)' },
   ];
   return (
@@ -107,7 +110,7 @@ export function HomeView({
           <button
             key={item.label}
             type="button"
-            style={{ ...styles.homeButton, background: item.background, color: item.label === 'My clinics' ? 'black' : 'white' }}
+            style={{ ...styles.homeButton, background: item.background, color: item.label === 'Clinics' ? 'black' : 'white' }}
             onClick={() => {
               if (item.href) {
                 pushCntNavigation(cntHomeEntry());
@@ -253,7 +256,6 @@ export function LocatorView({
                         key={volume.uuid}
                         level={3}
                         style={{ ...styles.volumeRow, gridTemplateColumns: 'minmax(10rem, 1fr) 2fr auto', paddingLeft: '4.8rem' }}
-                        tabIndex={0}
                       >
                         <label style={styles.volumeLabel}>
                           <input
@@ -302,6 +304,7 @@ function TreeNode({
 }) {
   const isCollapsed = !!collapsed[nodeKey];
   return (
+    <>
     <HighlightBlock level={level}>
       <button
         type="button"
@@ -315,21 +318,20 @@ function TreeNode({
         <span aria-hidden="true">{isCollapsed ? '\u25b6' : '\u25bc'}</span>
         <strong>{label}</strong>
       </button>
-      {!isCollapsed && <div>{children}</div>}
     </HighlightBlock>
+    {!isCollapsed && <div>{children}</div>}
+    </>
   );
 }
 
 function HighlightBlock({
   level,
   style,
-  tabIndex,
   children,
 }: {
   key?: React.Key;
   level: number;
   style?: React.CSSProperties;
-  tabIndex?: number;
   children: React.ReactNode;
 }) {
   const [active, setActive] = React.useState(false);
@@ -341,7 +343,6 @@ function HighlightBlock({
       onMouseLeave={() => setActive(false)}
       onFocusCapture={() => setActive(true)}
       onBlurCapture={() => setActive(false)}
-      tabIndex={tabIndex}
     >
       {children}
     </div>
@@ -357,8 +358,8 @@ function VolumeTagLine({ store, volume }: { store: CntStore; volume: CntVolume }
     return [
       `Purpose: ${tag.purpose}`,
       `Location: ${locationLabel(store, tag.locationUuid)}`,
-      `Required by: ${new Date(tag.requiredBy).toLocaleString('en-GB')}`,
-      `Expires: ${new Date(tag.expiresAt).toLocaleString('en-GB')}`,
+      `Required by: ${formatDisplayDate(tag.requiredBy)} ${formatDisplayTime(tag.requiredBy)}`,
+      `Expires: ${formatDisplayDate(tag.expiresAt)} ${formatDisplayTime(tag.expiresAt)}`,
       `Created by: ${createdBy ? `${createdBy.firstNames} ${createdBy.surname}` : tag.createdByUserUuid}`,
     ].join('\n');
   }).join('\n\n');
@@ -470,7 +471,6 @@ export function SelectorView({
                           key={volume.uuid}
                           level={3}
                           style={{ ...styles.volumeRow, gridTemplateColumns: 'minmax(10rem, 1fr) 2fr auto', paddingLeft: '4.8rem' }}
-                          tabIndex={0}
                         >
                           <label style={styles.volumeLabel}>
                             <input
@@ -514,7 +514,11 @@ export function HistoryView({ store, volumes }: { store: CntStore; volumes: CntV
         <FbTableBody>
           {events.map((event) => (
             <FbTableRow key={event.uuid}>
-              <FbTableCell>{new Date(event.datetime).toLocaleString('en-GB')}</FbTableCell>
+              <FbTableCell>
+                <FbDateDisplay value={event.datetime} />
+                <br />
+                <FbTimeDisplay value={event.datetime} />
+              </FbTableCell>
               <FbTableCell>{event.kind}</FbTableCell>
               <FbTableCell>{locationLabel(store, event.fromLocationUuid)}</FbTableCell>
               <FbTableCell>{locationLabel(store, event.toLocationUuid)}</FbTableCell>
@@ -714,7 +718,7 @@ export function BatchView({
   const batches = store.batches.filter((batch) => favouriteUuids.includes(batch.uuid));
   return (
     <div style={styles.tablePageStack}>
-      <FbTable aria-label="My batches">
+      <FbTable aria-label="Batches">
         <FbTableHeader>
           <FbTableRow>
             <FbTableHeaderCell>Batch</FbTableHeaderCell>
@@ -915,7 +919,7 @@ export function TagsView({ store }: { store: CntStore }) {
                 <FbTableCell>{volume ? `Volume ${volume.volumeNumber}` : ''}</FbTableCell>
                 <FbTableCell>{patientName(store, tag.patientUuid)}</FbTableCell>
                 <FbTableCell>{tag.purpose}</FbTableCell>
-                <FbTableCell>{new Date(tag.requiredBy).toLocaleDateString('en-GB')}</FbTableCell>
+                <FbTableCell><FbDateDisplay value={tag.requiredBy} /></FbTableCell>
                 <FbTableCell>{tag.status}</FbTableCell>
               </FbTableRow>
             );
@@ -973,7 +977,7 @@ export function RequestsView({
                 <FbTableCell><FbcntSelectedVolumes volumes={volumes} /></FbTableCell>
                 <FbTableCell>
                   <div>{row.requiredFor}</div>
-                  <div>{formatClinicalDate(row.requiredBy.slice(0, 10))}</div>
+                  <div><FbDateDisplay value={row.requiredBy} /></div>
                 </FbTableCell>
                 <FbTableCell>{locationLabel(store, row.fromLocationUuid)}</FbTableCell>
                 <FbTableCell>{locationLabel(store, row.toLocationUuid)}</FbTableCell>
@@ -1014,11 +1018,11 @@ export function ReturnListView({
   sendReturnRow: (patientUuid: string, volumeUuids: string[], locationUuid: string) => void;
   removeReturnRow: (patientUuid: string) => void;
 }) {
-  const volumes = store.volumes.filter((volume) => volume.events.at(-1)?.kind === 'received');
+  const volumes = store.volumes.filter((volume) => latestVolumeEvent(volume)?.kind === 'received');
   const patientUuids = uniqueValues(volumes.map((volume) => volume.patientUuid)).filter((patientUuid) => !removedPatientUuids.includes(patientUuid));
   return (
     <div style={styles.fullWidthTableWrap}>
-      <FbTable aria-label="My return list">
+      <FbTable aria-label="Return list">
         <FbTableHeader>
           <FbTableRow>
             <FbTableHeaderCell style={{ width: '9rem' }}>Appointment</FbTableHeaderCell>
@@ -1033,23 +1037,18 @@ export function ReturnListView({
             const patient = store.patients.find((item) => item.uuid === patientUuid);
             const patientVolumes = volumes.filter((volume) => volume.patientUuid === patientUuid).sort(volumeSort);
             const latestReceived = patientVolumes
-              .map((volume) => volume.events.at(-1))
+              .map((volume) => latestVolumeEvent(volume))
               .filter((event) => event?.kind === 'received')
               .sort((a, b) => String(b?.datetime).localeCompare(String(a?.datetime)))[0];
-            const receivedDate = latestReceived?.datetime?.slice(0, 10) || new Date().toISOString().slice(0, 10);
-            const receivedTime = latestReceived?.datetime?.slice(11, 16) || '';
+            const receivedDateTime = latestReceived?.datetime || new Date().toISOString();
             const currentLocationUuid = patientVolumes[0]?.currentLocationUuid || '';
             const returnClinicSummary = clinicSummaryForReturnList(store, patientVolumes);
             return (
               <FbTableRow key={patientUuid}>
                 <FbTableCell>
-                  {formatClinicalDate(receivedDate)}
-                  {receivedTime && (
-                    <>
-                      <br />
-                      {receivedTime}
-                    </>
-                  )}
+                  <FbDateDisplay value={receivedDateTime} />
+                  <br />
+                  <FbTimeDisplay value={receivedDateTime} />
                 </FbTableCell>
                 <FbTableCell>{returnClinicSummary ? renderMultiline(returnClinicSummary) : 'Return list'}</FbTableCell>
                 <FbTableCell>{patient && <PatientAddressograph patient={patient} />}</FbTableCell>
@@ -1069,6 +1068,10 @@ export function ReturnListView({
       </FbTable>
     </div>
   );
+}
+
+function latestVolumeEvent(volume: CntVolume) {
+  return Array.isArray(volume.events) ? volume.events.at(-1) : undefined;
 }
 
 export function RequestPage({
@@ -1175,7 +1178,7 @@ export function PicklistView({
 
   return (
     <div style={styles.fullWidthTableWrap}>
-      <FbTable aria-label="My picklist appointments">
+      <FbTable aria-label="Picklist appointments">
         <FbTableHeader>
           <FbTableRow>
             <FbTableHeaderCell style={{ width: '9rem' }}>Appointment</FbTableHeaderCell>
@@ -1197,9 +1200,9 @@ export function PicklistView({
             return (
               <FbTableRow key={appointment.uuid}>
                 <FbTableCell>
-                  {formatClinicalDate(instance.date)}
+                  <FbDateDisplay value={instance.date} />
                   <br />
-                  {appointment.time}
+                  <FbTimeDisplay value={appointment.time} />
                 </FbTableCell>
                 <FbTableCell>{clinicSummary(clinic)}</FbTableCell>
                 <FbTableCell>{patient && <PatientAddressograph patient={patient} />}</FbTableCell>
@@ -1255,15 +1258,15 @@ export function MyClinicsView({
               return (
                 <FbTableRow key={instance.uuid}>
                   <FbTableCell>
-                    {formatClinicalDate(instance.date)}
+                    <FbDateDisplay value={instance.date} />
                     <br />
-                    {instance.startTime}-{instance.endTime}
+                    <FbTimeDisplay value={instance.startTime} />-<FbTimeDisplay value={instance.endTime} />
                   </FbTableCell>
                   <FbTableCell>{clinicSummary(clinic)}</FbTableCell>
                   <FbTableCell>
                     {instance.retrieverUserUuids.map((retrieverUuid) => {
                       const retriever = store.users.find((item) => item.uuid === retrieverUuid);
-                      return retriever ? <div key={retriever.uuid}>{userInitials(retriever)}: {retriever.nadexId}</div> : null;
+                      return retriever ? <div key={retriever.uuid}><FbcntUserBadge user={retriever} /></div> : null;
                     })}
                   </FbTableCell>
                   <FbTableCell style={{ textAlign: 'right' }}>
@@ -1326,15 +1329,15 @@ export function SelectClinicsView({
               return (
                 <FbTableRow key={instance.uuid}>
                   <FbTableCell>
-                    {formatClinicalDate(instance.date)}
+                    <FbDateDisplay value={instance.date} />
                     <br />
-                    {instance.startTime}-{instance.endTime}
+                    <FbTimeDisplay value={instance.startTime} />-<FbTimeDisplay value={instance.endTime} />
                   </FbTableCell>
                   <FbTableCell>{clinicSummary(clinic)}</FbTableCell>
                   <FbTableCell>
                     {instance.retrieverUserUuids.map((retrieverUuid) => {
                       const retriever = store.users.find((item) => item.uuid === retrieverUuid);
-                      return retriever ? <div key={retriever.uuid}>{userInitials(retriever)}: {retriever.nadexId}</div> : null;
+                      return retriever ? <div key={retriever.uuid}><FbcntUserBadge user={retriever} /></div> : null;
                     })}
                   </FbTableCell>
                   <FbTableCell style={{ textAlign: 'center' }}>
@@ -1395,7 +1398,7 @@ export function LocationsView({ store, userUuid, removeLibrary }: { store: CntSt
   const locations = store.locations.filter((location) => userLibraryUuids(store, userUuid).includes(location.uuid));
   return (
     <div style={styles.fullWidthTableWrap}>
-      <FbTable aria-label="My libraries">
+      <FbTable aria-label="Libraries">
         <FbTableHeader>
           <FbTableRow>
             <FbTableHeaderCell>Library</FbTableHeaderCell>
@@ -1416,7 +1419,7 @@ export function LocationsView({ store, userUuid, removeLibrary }: { store: CntSt
               <FbTableCell>
                 {location.custodianUserUuids.map((custodianUuid) => {
                   const custodian = store.users.find((item) => item.uuid === custodianUuid);
-                  return custodian ? <div key={custodian.uuid}>{userInitials(custodian)}: {custodian.nadexId}</div> : null;
+                  return custodian ? <div key={custodian.uuid}><FbcntUserBadge user={custodian} /></div> : null;
                 })}
               </FbTableCell>
               <FbTableCell>{location.acceptsRequests ? 'Accepts requests' : 'No request inbox'}</FbTableCell>
@@ -1527,7 +1530,7 @@ function nextVolumeNumber(store: CntStore, patientUuid: string, healthBoard: str
 }
 
 function uniqueValues(values: string[]) {
-  return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  return Array.from(new Set(values.filter(Boolean).map(String))).sort((a, b) => a.localeCompare(b));
 }
 
 export type RequestRow = {
@@ -1583,7 +1586,7 @@ function requestMatchesRow(request: CntRequest, row: RequestRow) {
 
 function highlightStyleForLevel(level: number, active: boolean): React.CSSProperties {
   return {
-    backgroundColor: active ? (level % 2 === 0 ? '#ffffcc' : '#fee715') : 'transparent',
+    backgroundColor: active ? '#fee715' : 'transparent',
     borderRadius: '0.2rem',
     paddingTop: '0.05rem',
     paddingBottom: '0.05rem',
@@ -1655,14 +1658,6 @@ function volumeLocationCounts(store: CntStore, volumes: CntVolume[]) {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-function formatClinicalDate(dateString: string) {
-  return new Date(`${dateString}T00:00:00`).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
 function clinicSummary(clinic?: { clinicName: string; speciality: string; clinician: string }) {
   if (!clinic) return null;
   return (
@@ -1673,11 +1668,6 @@ function clinicSummary(clinic?: { clinicName: string; speciality: string; clinic
     </>
   );
 }
-
-function userInitials(user: CntUser) {
-  return `${user.firstNames.slice(0, 1)}${user.surname.slice(0, 1)}`.toUpperCase();
-}
-
 
 export const styles = {
   shell: {

@@ -5,6 +5,7 @@ export const fbGreen = '#008000';
 export const fbOrange = '#fd8a10';
 export const fbRed = '#d50000';
 export const fbLightBlue = '#8cd2e7';
+export const fbDarkerYellow = '#fee715';
 
 export const cntControlStyles = {
   label: {

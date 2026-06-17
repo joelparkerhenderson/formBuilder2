@@ -166,10 +166,10 @@
       <div class="task-card">Create, find, favourite, open, and manage batches.</div>
       <div class="task-card">Tag selected volumes for follow-up.</div>
       <div class="task-card">Create requests, view Outbox, and action Inbox.</div>
-      <div class="task-card">Set up and use My picklist for clinic retrieval.</div>
-      <div class="task-card">Maintain My clinics and Select clinic(s).</div>
-      <div class="task-card">Maintain My libraries and custodial locations.</div>
-      <div class="task-card">Use My return list for notes that should be sent back.</div>
+      <div class="task-card">Set up and use Picklist for clinic retrieval.</div>
+      <div class="task-card">Maintain Clinics and Select clinic(s).</div>
+      <div class="task-card">Maintain Libraries and custodial locations.</div>
+      <div class="task-card">Use Return list for notes that should be sent back.</div>
       <div class="task-card">Simulate NHS number, hospital number, volume number, and batch number scans.</div>
       <div class="task-card">Review volume movement history.</div>
       <div class="task-card">Display blocking action errors in an <code>fbPopup</code> titled Error.</div>
@@ -198,13 +198,13 @@
     <p>Inbox lists open requests for locations where the current user is a custodian. Send opens the same send workflow used by the locator. Done marks the request as actioned and removes it from Inbox.</p>
 
     <h3>Setting up a pick list</h3>
-    <p>Open My clinics, choose Add clinic(s), filter future clinics by Health board, Locality, Facility, and Speciality, tick clinics, and choose Ok. The filter starts from the saved login preferences. My clinics then lists the clinic instances the user retrieves for.</p>
+    <p>Open Clinics, choose Add clinic(s), filter future clinics by Health board, Locality, Facility, and Speciality, tick clinics, and choose Ok. The filter starts from the saved login preferences. Clinics then lists the clinic instances the user retrieves for.</p>
 
     <h3>Using a pick list</h3>
-    <p>Open My picklist. Each row identifies a clinic, appointment, patient, and required volumes. Select opens Case notes selector for that patient and clinic instance; Ok saves the selected required volumes. Receive opens a popup for marking selected required volumes as received.</p>
+    <p>Open Picklist. Each row identifies a clinic, appointment, patient, and required volumes. Fictitious data allows only one appointment per patient per clinic instance. Select opens Case notes selector for that patient and clinic instance; Ok saves the selected required volumes. Receive opens a popup for marking selected required volumes as received.</p>
 
-    <h3>Using My return list</h3>
-    <p>My return list looks like My picklist and lists patient volume groups that should be returned. Send opens the send workflow for the row volumes. Remove hides that row from the current return list.</p>
+    <h3>Using Return list</h3>
+    <p>Return list looks like Picklist and lists patient volume groups that should be returned. Send opens a row-volume selection popup, then opens the send workflow for the checked volumes. Remove hides that row from the current return list.</p>
 
     <h3>Registering a volume</h3>
     <p>From Case notes locator choose Register volume. Enter Created date, Health board, Locality, Type, Status, optional permanent Volume number, Initial location, Bar code, and RfID. Register creates and selects the new volume; blank identifiers are generated safely.</p>
@@ -216,7 +216,7 @@
     <p>Select one or more volumes and choose Receive selected. The popup infers a From location from a recent send where possible, requires To, and appends received movement history.</p>
 
     <h3>Managing batches</h3>
-    <p>My batches lists favourite batches. Open shows the Batch page grouped by patient with addressographs and removable volume rows. Remove removes a favourite from the user's list. Find batch opens a filterable list of existing batches. Create batch captures Purpose, Current location, Intended destination, and Barcode.</p>
+    <p>Batches lists favourite batches. Open shows the Batch page grouped by patient with addressographs and removable volume rows. Remove removes a favourite from the user's list. Find batch opens a filterable list of existing batches. Create batch captures Purpose, Current location, Intended destination, and Barcode.</p>
 
     <h3>Adding selected volumes to a batch</h3>
     <p>On Case notes locator choose Batch selected. The popup lists the user's favourite batches. Choosing one adds the selected volumes to that batch.</p>
@@ -228,7 +228,7 @@
     <p>On Case notes locator choose Tag selected. Enter Purpose and Location, then Create tag. Active tags display under volume location strings as an abbreviated single line; hovering or focusing the tag summary opens an <code>fbToolTip</code> with each tag field on its own line.</p>
 
     <h3>Managing libraries</h3>
-    <p>My libraries lists favourite library locations and their custodians. Remove removes a library from the user's favourites. Add library asks for a location through <code>fbcntLocation</code> and stores it as a favourite.</p>
+    <p>Libraries lists favourite library locations and their custodians. Remove removes a library from the user's favourites. Add library asks for a location through <code>fbcntLocation</code> and stores it as a favourite.</p>
 
     <h3>Using identifier scanning</h3>
     <p>The CNT home scan bar accepts patient NHS numbers, hospital numbers, volume barcodes or RFIDs, batch barcodes, and location codes. Open resolves the identifier and opens the appropriate target or sets a send/receive destination for locations. Empty or unknown identifiers display an Error popup.</p>
@@ -250,7 +250,7 @@
         <tr><td><code>cnt_appointments</code></td><td>Patient appointments within clinic instances.</td></tr>
         <tr><td><code>cnt_requests</code></td><td>Retrieve requests from a source location to a destination location.</td></tr>
         <tr><td><code>cnt_pick_list</code></td><td>Selected pick-list volumes for a clinic instance and received status.</td></tr>
-        <tr><td><code>cnt_preferences</code></td><td>User preferences, favourite batches/libraries, filters, and recent workflow choices.</td></tr>
+        <tr><td><code>cnt_preferences</code></td><td>Preferences, favourite batches/libraries, filters, and recent workflow choices.</td></tr>
         <tr><td><code>search_patients_fuzzy(search_term)</code></td><td>Main formBuilder2 fuzzy patient query used before opening CNT from Patient search.</td></tr>
         <tr><td><code>cnt location search</code></td><td>Future server query for <code>fbcntLocation</code>, matching health board, locality, facility, department, extra, and code.</td></tr>
         <tr><td><code>cnt clinic instance search</code></td><td>Future server query for Select clinic(s), filtering future non-cancelled instances.</td></tr>
@@ -263,17 +263,17 @@
     <div class="page-spec">
       <h3>Login</h3>
       <p><strong>Component:</strong> top-level <code>CaseNoteTracker</code>. <strong>Source:</strong> <code>src/caseNoteTracker/CaseNoteTracker.tsx</code>.</p>
-      <p>Contains the CNT title, an <code>fbBoxedInfo</code> simulated-login note, and colourful identity buttons. Choosing a user stores the simulated session and opens User preferences before Home.</p>
+      <p>Contains the CNT title, an <code>fbBoxedInfo</code> simulated-login note, and colourful identity buttons. Choosing a user stores the simulated session and opens Preferences before Home.</p>
     </div>
 
     <div class="page-spec">
       <h3>Home</h3>
       <p><strong>Component:</strong> <code>FbcntHomePage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntHomePage.tsx</code> and <code>fbcntPageComponents.tsx</code>.</p>
-      <p>Contains <code>fbcntScan</code>, simulated scan buttons, navigation buttons for Patient search, My batches, Outbox, Inbox, My return list, My picklist, My clinics, My libraries, My preferences, Admin, and Show offline warning.</p>
+      <p>Contains <code>fbcntScan</code>, simulated scan buttons, navigation buttons for Patient search, Batches, Outbox, Inbox, Return list, Picklist, Clinics, Libraries, Preferences, Admin, and Show offline warning.</p>
     </div>
 
     <div class="page-spec">
-      <h3>User preferences</h3>
+      <h3>Preferences</h3>
       <p><strong>Component:</strong> <code>FbcntPreferencesPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPreferencesPage.tsx</code>.</p>
       <p>Contains <code>fbDropdown</code> controls for Health board, Locality, and Facility. Ok saves preferences. Logout and Back are replaced by a bottom-right Ok pattern when opened after login.</p>
     </div>
@@ -309,7 +309,7 @@
     </div>
 
     <div class="page-spec">
-      <h3>My batches</h3>
+      <h3>Batches</h3>
       <p><strong>Component:</strong> <code>FbcntMyBatchesPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntMyBatchesPage.tsx</code>.</p>
       <p>Contains an <code>fbTable</code> of favourite batches with Open and Remove buttons. Footer buttons Find batch and Create batch open their respective pages.</p>
     </div>
@@ -351,27 +351,27 @@
     </div>
 
     <div class="page-spec">
-      <h3>My picklist</h3>
+      <h3>Picklist</h3>
       <p><strong>Component:</strong> <code>FbcntPicklistPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPicklistPage.tsx</code>.</p>
-      <p>Contains appointment, clinic, patient, volumes required, and actions. Select opens Case notes selector. Receive opens a received-volume popup.</p>
+      <p>Contains appointment, clinic, patient, volumes required, and actions. Select opens Case notes selector. Receive opens a received-volume popup with previously received volumes already checked; Ok applies checked and unchecked receive states.</p>
     </div>
 
     <div class="page-spec">
-      <h3>My return list</h3>
+      <h3>Return list</h3>
       <p><strong>Component:</strong> <code>FbcntReturnListPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntReturnListPage.tsx</code>.</p>
-      <p>Contains appointment, clinic, patient, volumes required, and actions. Send opens the send workflow. Remove hides the row.</p>
+      <p>Contains appointment, clinic, patient, volumes required, and actions. Send opens a row-volume selection popup and then the send workflow for the checked volumes. Remove hides the row.</p>
     </div>
 
     <div class="page-spec">
-      <h3>My clinics and Select clinic(s)</h3>
+      <h3>Clinics and Select clinic(s)</h3>
       <p><strong>Components:</strong> <code>FbcntMyClinicsPage</code>, <code>FbcntSelectClinicsPage</code>. <strong>Sources:</strong> <code>src/caseNoteTracker/fbcntMyClinicsPage.tsx</code>, <code>src/caseNoteTracker/fbcntSelectClinicsPage.tsx</code>.</p>
-      <p>My clinics lists retrieval clinic instances with retrievers and Stop retrieving. Select clinic(s) filters future clinics and Ok adds selected clinics to the user's retrieval list.</p>
+      <p>Clinics lists retrieval clinic instances with retrievers and Stop retrieving. Select clinic(s) filters future clinics and Ok adds selected clinics to the user's retrieval list. Retriever entries use <code>fbcntUserBadge</code> hover highlighting and tooltips.</p>
     </div>
 
     <div class="page-spec">
-      <h3>My libraries</h3>
+      <h3>Libraries</h3>
       <p><strong>Component:</strong> <code>FbcntLibrariesPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntLibrariesPage.tsx</code>.</p>
-      <p>Contains favourite library locations, custodians, request acceptance, Remove buttons, and an Add library popup.</p>
+      <p>Contains favourite library locations, custodians, request acceptance, Remove buttons, and an Add library popup. Custodian entries use <code>fbcntUserBadge</code> hover highlighting and tooltips.</p>
     </div>
 
     <div class="page-spec">
@@ -452,7 +452,7 @@
 
     <div class="control-spec">
       <h3><code>fbcntSelectedVolumesLocation</code></h3>
-      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntSelectedVolumes.tsx</code>. Read-only selected-volume location tree: Health board, Locality, Type, volume group, and location. Volumes sharing a location are grouped into ranges such as Volumes 1-3.</p>
+      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntSelectedVolumes.tsx</code>. Read-only selected-volume location tree: Health board, Locality, Type, and combined volume/location groups. Volumes sharing a location are grouped into ranges such as Volumes 1-3, and highlighting a volume or volume range also highlights its associated location string.</p>
 <pre><code class="language-html">&lt;div&gt;HB&lt;/div&gt;
 &lt;div&gt;Locality&lt;/div&gt;
 &lt;div&gt;Type&lt;/div&gt;
@@ -469,7 +469,7 @@
 
     <div class="control-spec">
       <h3><code>fbcntSelectedVolumesReceived</code></h3>
-      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntSelectedVolumes.tsx</code>. Grouped volume list with per-volume checkboxes for marking pick-list rows received.</p>
+      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntSelectedVolumesReceived.tsx</code>. Grouped volume list with per-volume checkboxes for Picklist receive and Return list send popups. Health board, locality, type, and volume rows use the same alternating yellow hover/focus highlighting as <code>fbcntSelectedVolumes</code>.</p>
 <pre><code class="language-html">&lt;label&gt;
   &lt;input type="checkbox" /&gt;
   Volume 1
@@ -501,8 +501,8 @@
     </div>
 
     <div class="control-spec">
-      <h3><code>fbcntHeader</code>, <code>fbcntSmallButton</code>, <code>fbGroupWithBorder</code>, and <code>fbcntClinicFilter</code></h3>
-      <p><strong>Sources:</strong> <code>fbcntHeader.tsx</code>, <code>fbcntSmallButton.tsx</code>, <code>fbGroupWithBorder.tsx</code>, and <code>fbcntPageComponents.tsx</code>. Header, compact row actions, bordered filter group, and clinic filter controls used across CNT pages.</p>
+      <h3><code>fbcntHeader</code>, <code>fbcntHeaderForUser</code>, <code>fbcntSmallButton</code>, <code>fbGroupWithBorder</code>, and <code>fbcntClinicFilter</code></h3>
+      <p><strong>Sources:</strong> <code>fbcntHeader.tsx</code>, <code>fbcntHeaderForUser.tsx</code>, <code>fbcntSmallButton.tsx</code>, <code>fbGroupWithBorder.tsx</code>, and <code>fbcntPageComponents.tsx</code>. Header, user-specific list header, compact row actions, bordered filter group, and clinic filter controls used across CNT pages.</p>
 <pre><code class="language-html">&lt;header&gt;
   &lt;div&gt;NHS Wales - Case note tracker&lt;/div&gt;
   &lt;h1&gt;Page title&lt;/h1&gt;
@@ -522,6 +522,22 @@
 }</code></pre>
     </div>
 
+    <div class="control-spec">
+      <h3><code>fbcntUserBadge</code></h3>
+      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntUserBadge.tsx</code>. Compact retriever/custodian identity display used in Clinics, Select clinic(s), and Libraries.</p>
+<pre><code class="language-html">&lt;span&gt;RS: ri000106&lt;/span&gt;
+&lt;fbToolTip&gt;
+SULLIVAN, Rita, Mrs
+Medical records clerk
+Llyn Teg Community
+ri000106
+&lt;/fbToolTip&gt;</code></pre>
+<pre><code class="language-css">.fbcntUserBadge:hover,
+.fbcntUserBadge:focus {
+  background-color: #fee715;
+}</code></pre>
+    </div>
+
     <h2 id="tables">Tables and queries</h2>
     <h3>Seeded CNT table fields</h3>
     <table>
@@ -537,7 +553,7 @@
         <tr><td><code>cnt_tags</code></td><td><code>uuid UUID</code>, volume UUID, patient UUID, purpose, location UUID, required by, expires at, creator, forget flag, status.</td></tr>
         <tr><td><code>cnt_clinics</code></td><td><code>uuid UUID</code>, clinic name, speciality, facility, holding location UUID, clinician.</td></tr>
         <tr><td><code>cnt_clinic_instances</code></td><td><code>uuid UUID</code>, clinic UUID, date, start/end time, cancelled, <code>retriever_user_uuids UUID[]</code>.</td></tr>
-        <tr><td><code>cnt_appointments</code></td><td><code>uuid UUID</code>, clinic instance UUID, appointment time, patient UUID, cancelled, notes.</td></tr>
+        <tr><td><code>cnt_appointments</code></td><td><code>uuid UUID</code>, clinic instance UUID, appointment time, patient UUID, cancelled, notes; unique clinic-instance/patient pairs.</td></tr>
         <tr><td><code>cnt_requests</code></td><td><code>uuid UUID</code>, volume UUID, patient UUID, requester UUID, required by, required for, from/to location UUIDs, status.</td></tr>
         <tr><td><code>cnt_pick_list</code></td><td><code>clinic_instance_uuid UUID</code>, <code>volume_uuid UUID</code>, received boolean.</td></tr>
         <tr><td><code>cnt_preferences</code></td><td>User UUID, send location UUID, favourite batch/library UUID arrays, collapsed keys, preferred HB/locality/facility, recent choices JSONB.</td></tr>

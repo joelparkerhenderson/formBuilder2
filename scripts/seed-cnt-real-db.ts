@@ -197,6 +197,11 @@ TRUNCATE TABLE
 RESTART IDENTITY CASCADE;
 `;
 
+const invariantSql = `
+CREATE UNIQUE INDEX IF NOT EXISTS cnt_appointments_one_patient_per_instance_idx
+ON cnt_appointments (clinic_instance_uuid, patient_uuid);
+`;
+
 async function main() {
   const client = new Client({
     connectionString,
@@ -209,6 +214,7 @@ async function main() {
     await client.query('BEGIN');
     await client.query(schemaSql);
     await client.query(resetSql);
+    await client.query(invariantSql);
 
     for (const user of store.users) {
       await client.query(
