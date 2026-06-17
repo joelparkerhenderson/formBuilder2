@@ -5,10 +5,14 @@
 There is a working demo at https://www.shadesOfPale.net/formBuilder2/index.html. Use the usual userName and password.
 ## Roll your own
 Try the WYSIWYG app at https://www.shadesOfPale.net/formBuilder2/composer.html.
-## React vs Svelte
-The version in the top level of this repo uses React and is currently the most correct version. There is a Svelte version in svelte/, which is not yet fully tested. A working demo of the Svelte version is at [www.shadesOfPale.net/formBuilder2/svelte/index.html](https://www.shadesOfPale.net/formBuilder2/svelete/index.html) with matching WYSIWYG app at [www.shadesOfPale.net/formBuilder2/svelte/composer.html](https://www.shadesOfPale.net/formBuilder2/svelete/composer.html)
+## Case note tracker
+This repo also contains the source for case note tracker, mostly in src/caseNoteTracker. For this week, it's React only. Working demo at [www.shadesOfPale.net/formBuilder2/caseNoteTracker.html](https://www.shadesOfPale.net/formBuilder2/caseNoteTracker.html)
 ## Intended audience
 Any persons (clinicians, PMs, BAs, devs) interested in experimenting or working with WCP form design.
+## Specifcations and documentation
+See docs/
+## React vs Svelte
+The version in the top level of this repo uses React and is currently the most correct version. There is a Svelte version in svelte/, which is not yet fully tested. A working demo of the Svelte version is at [www.shadesOfPale.net/formBuilder2/svelte/index.html](https://www.shadesOfPale.net/formBuilder2/svelete/index.html) with matching WYSIWYG app at [www.shadesOfPale.net/formBuilder2/svelte/composer.html](https://www.shadesOfPale.net/formBuilder2/svelete/composer.html)
 ## Suggested usage
 Engage with SGS about your form(s). You'll get:
 - A clinical sense check

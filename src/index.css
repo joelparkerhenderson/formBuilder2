@@ -64,6 +64,36 @@ html,
   background-color: #fee715;
 }
 
+.fbcnt-highlight-level {
+  transition: background-color 0.5s ease-out;
+}
+
+.fbcnt-highlight-level-0:hover,
+.fbcnt-highlight-level-0:focus,
+.fbcnt-highlight-level-0:focus-visible,
+.fbcnt-highlight-level-0:focus-within,
+.fbcnt-highlight-level-2:hover,
+.fbcnt-highlight-level-2:focus,
+.fbcnt-highlight-level-2:focus-visible,
+.fbcnt-highlight-level-2:focus-within,
+.fbcnt-highlight-level-4:hover,
+.fbcnt-highlight-level-4:focus,
+.fbcnt-highlight-level-4:focus-visible,
+.fbcnt-highlight-level-4:focus-within {
+  background-color: #ffffcc !important;
+}
+
+.fbcnt-highlight-level-1:hover,
+.fbcnt-highlight-level-1:focus,
+.fbcnt-highlight-level-1:focus-visible,
+.fbcnt-highlight-level-1:focus-within,
+.fbcnt-highlight-level-3:hover,
+.fbcnt-highlight-level-3:focus,
+.fbcnt-highlight-level-3:focus-visible,
+.fbcnt-highlight-level-3:focus-within {
+  background-color: #fee715 !important;
+}
+
 .fb-radio-checkbox-item input[type="radio"],
 .fb-radio-checkbox-item input[type="checkbox"] {
   margin-top: 0.1rem;

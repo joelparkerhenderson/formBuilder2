@@ -50,7 +50,7 @@ export const fbToolTip: React.FC<fbToolTipProps> = ({
         onClose?.();
       }}
     >
-      <div style={{ paddingBottom: showClose ? '1.5rem' : '0' }}>{text}</div>
+      <div style={{ paddingBottom: showClose ? '1.5rem' : '0', whiteSpace: 'pre-line' }}>{text}</div>
       {showClose && (
         <button
           onClick={(event) => {

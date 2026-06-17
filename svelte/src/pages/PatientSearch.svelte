@@ -151,6 +151,7 @@
   td {
     padding: 0.8rem 0;
     border-bottom: 0.1rem solid #e2e8f0;
+    vertical-align: top;
   }
 
   .patient-list-row {

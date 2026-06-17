@@ -35,6 +35,7 @@ export type CntLocation = {
   department: string;
   extra: string;
   acceptsRequests: boolean;
+  custodianUserUuids: string[];
 };
 
 export type CntVolumeEvent = {
@@ -118,6 +119,23 @@ export type CntRequest = {
   status: 'open' | 'actioned' | 'cancelled';
 };
 
+export type CntPickListEntry = {
+  clinicInstanceUuid: string;
+  volumeUuid: string;
+  received: boolean;
+};
+
+export type CntUserPreferences = {
+  sendLocationUuid?: string;
+  batchUuids?: string[];
+  libraryUuids?: string[];
+  collapsedKeys?: string[];
+  healthBoard?: string;
+  locality?: string;
+  facility?: string;
+  recentChoices?: Record<string, string[]>;
+};
+
 export type CntStore = {
   storeVersion: number;
   lastClinicWindowEnd: string;
@@ -130,14 +148,16 @@ export type CntStore = {
   clinics: CntClinic[];
   clinicInstances: CntClinicInstance[];
   requests: CntRequest[];
-  preferences: Record<string, { sendLocationUuid?: string; collapsedKeys?: string[]; recentChoices?: Record<string, string[]> }>;
+  cntPickList: CntPickListEntry[];
+  preferences: Record<string, CntUserPreferences>;
 };
 
 export const defaultCntLoginUserUuid = 'bbbbbbbb-0005-4000-8000-000000000005';
 
-const currentStoreVersion = 2;
+const currentStoreVersion = 5;
 const storageKey = 'fbcntStore';
 const sessionKey = 'fbcntUserUuid';
+const selectedBatchSessionKey = 'fbcntSelectedBatchUuid';
 
 const users: CntUser[] = [
   { uuid: 'bbbbbbbb-0001-4000-8000-000000000001', nadexId: 'gw000101', title: 'Mrs', firstNames: 'Gwen', surname: 'Cooper', role: 'Medical secretary', speciality: 'General surgery', facility: 'Ysbyty Abermawr' },
@@ -193,7 +213,7 @@ export function loadCntStore(): CntStore {
     }
     localStorage.removeItem(storageKey);
   }
-  const store = createInitialStore();
+  const store = createInitialCntStore();
   saveCntStore(store);
   return store;
 }
@@ -214,11 +234,24 @@ export function clearSessionUserUuid() {
   sessionStorage.removeItem(sessionKey);
 }
 
+export function getSelectedBatchUuid() {
+  return sessionStorage.getItem(selectedBatchSessionKey) || '';
+}
+
+export function setSelectedBatchUuid(uuidValue: string) {
+  sessionStorage.setItem(selectedBatchSessionKey, uuidValue);
+}
+
+export function clearSelectedBatchUuid() {
+  sessionStorage.removeItem(selectedBatchSessionKey);
+}
+
 export function loginMaintenance(store: CntStore, userUuid: string): CntStore {
-  const next = { ...store, preferences: { ...store.preferences } };
+  const next = { ...store, preferences: { ...store.preferences }, cntPickList: [...(store.cntPickList || [])] };
   next.preferences[userUuid] ||= { recentChoices: {} };
   ensureClinicWindow(next);
   churnAppointments(next);
+  prunePastPickList(next);
   saveCntStore(next);
   return next;
 }
@@ -237,7 +270,7 @@ export function resolveIdentifier(store: CntStore, identifier: string) {
   return { kind: 'unknown' as const };
 }
 
-function createInitialStore(): CntStore {
+export function createInitialCntStore(): CntStore {
   const locations: CntLocation[] = locationSeed.map((item, index) => ({
     uuid: uuid(`loc-${index}`),
     code: `LOC-${1000 + index}`,
@@ -247,6 +280,9 @@ function createInitialStore(): CntStore {
     department: item[3],
     extra: item[4],
     acceptsRequests: item[5],
+    custodianUserUuids: users
+      .filter((user) => user.facility === item[2])
+      .map((user) => user.uuid),
   }));
   const volumes = createVolumes(locations);
   const clinics = createClinics(locations);
@@ -290,6 +326,7 @@ function createInitialStore(): CntStore {
       toLocationUuid: locations[3].uuid,
       status: 'open',
     }],
+    cntPickList: [],
     preferences: {},
   };
   store.batches[0].volumeUuids.forEach((volumeUuid) => {
@@ -300,6 +337,16 @@ function createInitialStore(): CntStore {
   return store;
 }
 
+function prunePastPickList(store: CntStore) {
+  const today = new Date().toISOString().slice(0, 10);
+  const currentClinicInstanceUuids = new Set(
+    store.clinicInstances
+      .filter((instance) => instance.date >= today)
+      .map((instance) => instance.uuid)
+  );
+  store.cntPickList = (store.cntPickList || []).filter((entry) => currentClinicInstanceUuids.has(entry.clinicInstanceUuid));
+}
+
 function createVolumes(locations: CntLocation[]) {
   const volumes: CntVolume[] = [];
   patients.forEach((patient, patientIndex) => {
@@ -308,7 +355,7 @@ function createVolumes(locations: CntLocation[]) {
     const groupCounters: Record<string, number> = {};
     for (let i = 0; i < normalCount + tempCount; i += 1) {
       const temporary = i >= normalCount;
-      const location = locations[(patientIndex + Math.floor(i / 3)) % locations.length];
+      const location = locations[patientIndex % locations.length];
       const type = volumeTypes[(patientIndex + Math.floor(i / 2)) % volumeTypes.length];
       const groupKey = `${location.healthBoard}|${location.locality}|${type}`;
       const volumeNumber = (groupCounters[groupKey] || 0) + 1;
@@ -337,17 +384,21 @@ function createVolumes(locations: CntLocation[]) {
 
 function createHistory(volume: CntVolume, locations: CntLocation[], seed: number): CntVolumeEvent[] {
   const count = 1 + (seed % 40);
+  const homeLocations = locations.filter((location) => location.healthBoard === volume.healthBoard && location.locality === volume.locality);
+  const homeLocation = homeLocations[seed % Math.max(homeLocations.length, 1)] || locations[seed % locations.length];
+  const rareRemoteLocation = locations.find((location) => location.healthBoard !== volume.healthBoard || location.locality !== volume.locality) || homeLocation;
   const events: CntVolumeEvent[] = [{
     uuid: uuid(`${volume.uuid}-event-created`),
     kind: 'created',
     datetime: addDays(-120 - seed),
-    toLocationUuid: locations[seed % locations.length].uuid,
+    toLocationUuid: homeLocation.uuid,
     userUuid: users[seed % users.length].uuid,
     note: `Created ${volume.temporary ? 'temporary ' : ''}${volume.type} volume`,
   }];
   for (let i = 1; i < count; i += 1) {
-    const from = locations[(seed + i - 1) % locations.length];
-    const to = locations[(seed + i) % locations.length];
+    const fromUuid = events[events.length - 1].toLocationUuid || homeLocation.uuid;
+    const from = locations.find((location) => location.uuid === fromUuid) || homeLocation;
+    const to = seed % 10 === 0 && i === count - 1 ? rareRemoteLocation : homeLocations[(seed + i) % Math.max(homeLocations.length, 1)] || homeLocation;
     events.push({
       uuid: uuid(`${volume.uuid}-event-${i}`),
       kind: i % 2 ? 'sent' : 'received',
@@ -358,6 +409,9 @@ function createHistory(volume: CntVolume, locations: CntLocation[], seed: number
       note: i % 2 ? `Sent to ${to.department}` : `Received from ${from.department}`,
     });
     volume.currentLocationUuid = to.uuid;
+  }
+  if (seed % 10 !== 0) {
+    volume.currentLocationUuid = homeLocation.uuid;
   }
   return events;
 }
@@ -416,13 +470,14 @@ function churnAppointments(store: CntStore) {
     .filter((instance) => instance.date >= today)
     .slice(0, 12)
     .forEach((instance, index) => {
+      if (instance.appointments.some((appointment) => appointment.notes === 'Replacement booking from simulated churn')) return;
       const churnCount = 2 + (index % 3);
       instance.appointments.slice(0, churnCount).forEach((appointment, apptIndex) => {
         appointment.cancelled = true;
         appointment.notes = 'Cancelled during simulated login churn';
         const replacement = patients[(index + apptIndex + 3) % patients.length];
         instance.appointments.push({
-          uuid: uuid(`${instance.uuid}-replacement-${Date.now()}-${apptIndex}`),
+          uuid: uuid(`${instance.uuid}-replacement-${apptIndex}`),
           time: appointment.time,
           patientUuid: replacement.uuid,
           cancelled: false,
@@ -435,6 +490,19 @@ function churnAppointments(store: CntStore) {
 export function locationLabel(store: CntStore, uuidValue = '') {
   const loc = store.locations.find((item) => item.uuid === uuidValue);
   return loc ? `${loc.healthBoard} / ${loc.locality} / ${loc.facility} / ${loc.department} ${loc.extra}` : '';
+}
+
+export function locationLabelForVolume(store: CntStore, volume: CntVolume) {
+  const loc = store.locations.find((item) => item.uuid === volume.currentLocationUuid);
+  if (!loc) return '';
+  const parts = [
+    loc.healthBoard === volume.healthBoard ? '' : loc.healthBoard,
+    loc.locality === volume.locality ? '' : loc.locality,
+    loc.facility,
+    loc.department,
+    loc.extra,
+  ].filter(Boolean);
+  return parts.join(' / ');
 }
 
 export function patientName(store: CntStore, uuidValue = '') {

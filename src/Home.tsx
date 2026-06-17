@@ -13,8 +13,8 @@ export default function Home() {
     ? '/formBuilder2/composer.html'
     : '/composer.html';
   const caseNoteTrackerHref = window.location.pathname.startsWith('/formBuilder2/')
-    ? '/formBuilder2/caseNoteTracker.html'
-    : '/caseNoteTracker.html';
+    ? '/formBuilder2/caseNoteTracker.html?forceLogin=1'
+    : '/caseNoteTracker.html?forceLogin=1';
 
   const handleUsernameChange = (val: string) => {
     setUsername(val);

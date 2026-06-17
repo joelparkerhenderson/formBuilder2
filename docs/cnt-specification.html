@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Case note tracker specification and user guide</title>
+  <style>
+    :root {
+      --fb-blue: #1b6ec2;
+      --fb-green: #008000;
+      --fb-red: #d50000;
+      --fb-orange: #fd8a10;
+      --fb-light-blue: #8cd2e7;
+      --fb-lighter-yellow: #ffffcc;
+      --fb-darker-yellow: #fee715;
+      --fb-silver: #c0c0c0;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      color: #111;
+      background: #fff;
+      font-family: Roboto, Arial, Helvetica, sans-serif;
+      line-height: 1.45;
+    }
+    header {
+      border-bottom: 0.2rem solid var(--fb-blue);
+      padding: 1rem 1.25rem;
+    }
+    main {
+      max-width: 76rem;
+      margin: 0 auto;
+      padding: 1rem 1.25rem 4rem;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 500;
+    }
+    h2 {
+      border-bottom: 0.1rem solid var(--fb-blue);
+      margin-top: 2rem;
+      padding-bottom: 0.2rem;
+      color: var(--fb-blue);
+      font-size: 1.45rem;
+      font-weight: 500;
+    }
+    h3 {
+      margin-top: 1.35rem;
+      color: #111;
+      font-size: 1.15rem;
+      font-weight: 500;
+    }
+    h4 {
+      margin: 1rem 0 0.3rem;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+    a {
+      color: var(--fb-blue);
+    }
+    code {
+      background: #f4f7fb;
+      border: 0.1rem solid #e1e5ea;
+      border-radius: 0.25rem;
+      padding: 0 0.2rem;
+    }
+    pre {
+      overflow-x: auto;
+      background: #f4f7fb;
+      border: 0.1rem solid var(--fb-silver);
+      border-radius: 0.4rem;
+      padding: 0.7rem;
+    }
+    pre code {
+      background: transparent;
+      border: 0;
+      padding: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.6rem 0 1rem;
+    }
+    th,
+    td {
+      border: 0.1rem solid var(--fb-silver);
+      padding: 0.35rem 0.45rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f4f7fb;
+      font-weight: 500;
+    }
+    .intro {
+      max-width: 54rem;
+      margin: 0.4rem 0 0;
+      font-size: 1rem;
+      font-weight: 300;
+    }
+    .contents {
+      columns: 2;
+      gap: 2rem;
+    }
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+      gap: 0.6rem;
+    }
+    .task-card {
+      border-left: 0.35rem solid var(--fb-green);
+      background: #f8fbf8;
+      padding: 0.55rem 0.7rem;
+    }
+    .note {
+      border-left: 0.35rem solid var(--fb-blue);
+      background: #f4f7fb;
+      padding: 0.6rem 0.8rem;
+    }
+    .warning {
+      border-left: 0.35rem solid var(--fb-orange);
+      background: #fff8ed;
+      padding: 0.6rem 0.8rem;
+    }
+    .page-spec,
+    .control-spec {
+      border: 0.1rem solid var(--fb-silver);
+      border-radius: 0.4rem;
+      margin: 0.85rem 0;
+      padding: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>NHS Wales - formBuilder2</div>
+    <h1>Case note tracker specification and user guide</h1>
+    <p class="intro">Case note tracker is a React prototype for tracking paper case-note volumes, requests, pick lists, batches, tags, and custodial locations. It uses the formBuilder2 visual language and components so the tracker feels consistent with the clinical forms application. This guide describes how users complete the supported tasks and records the current implementation contract.</p>
+  </header>
+  <main>
+    <p class="note">The shared eForms visual vocabulary is specified in <a href="wcp-eForms-designSystem-specification.html">WCP eForms design system specification</a>. CNT-specific behaviour is maintained in <code>cnt.spec.md</code> and future server endpoints are listed in <code>docs/cnt.restAPI.md</code>.</p>
+
+    <h2>Contents</h2>
+    <ul class="contents">
+      <li><a href="#features">Features and supported tasks</a></li>
+      <li><a href="#user-guide">User guide</a></li>
+      <li><a href="#data-model">Data model overview</a></li>
+      <li><a href="#pages">Pages</a></li>
+      <li><a href="#controls">Custom controls</a></li>
+      <li><a href="#tables">Tables and queries</a></li>
+      <li><a href="#rest-api">REST API</a></li>
+      <li><a href="#implementation">Implementation notes</a></li>
+    </ul>
+
+    <h2 id="features">Features and supported tasks</h2>
+    <div class="task-grid">
+      <div class="task-card">Simulated login and user preferences.</div>
+      <div class="task-card">Patient lookup from formBuilder2 Patient search and Patient registry.</div>
+      <div class="task-card">Barcode-style identifier resolution for patients, volumes, batches, and locations.</div>
+      <div class="task-card">Case notes locator with grouped volumes, current locations, history, tags, and selection.</div>
+      <div class="task-card">Register volume for a patient.</div>
+      <div class="task-card">Send and receive selected volumes.</div>
+      <div class="task-card">Create, find, favourite, open, and manage batches.</div>
+      <div class="task-card">Tag selected volumes for follow-up.</div>
+      <div class="task-card">Create requests, view Outbox, and action Inbox.</div>
+      <div class="task-card">Set up and use My picklist for clinic retrieval.</div>
+      <div class="task-card">Maintain My clinics and Select clinic(s).</div>
+      <div class="task-card">Maintain My libraries and custodial locations.</div>
+      <div class="task-card">Use My return list for notes that should be sent back.</div>
+      <div class="task-card">Simulate NHS number, hospital number, volume number, and batch number scans.</div>
+      <div class="task-card">Review volume movement history.</div>
+      <div class="task-card">Display blocking action errors in an <code>fbPopup</code> titled Error.</div>
+    </div>
+
+    <h2 id="user-guide">User guide</h2>
+    <h3>Logging in and setting preferences</h3>
+    <p>Open <code>/formBuilder2/caseNoteTracker.html</code>, choose a simulated user, then confirm Health board, Locality, and Facility preferences. These preferences prefill filters such as Select clinic(s) and workflow defaults such as Register volume locations.</p>
+
+    <h3>Searching for a patient</h3>
+    <p>From formBuilder2 Patient search or Patient registry, use the Case notes action to open the patient's Case notes locator. From the CNT home page, simulated NHS number and hospital number scan buttons open a random patient locator.</p>
+
+    <h3>Opening a case notes locator</h3>
+    <p>The locator groups volumes by Health board, Locality, Type, and Volume number. Use checkboxes to select volumes, expand/collapse group headings, and History to inspect a volume's movement events. Selected enclosing groups remain open until their selected volumes are cleared.</p>
+
+    <h3>Requesting a volume or set of volumes</h3>
+    <p>On Case notes locator or Case notes selector, tick one or more volumes and choose Request selected. The request workflow is only allowed when every selected volume is in a location with at least one custodian; otherwise an Error popup explains the problem. The Request page is prefilled with the patient, selected volumes, source, and destination, then Request creates Outbox rows and matching Inbox rows for custodians.</p>
+
+    <h3>Creating a new request from Outbox</h3>
+    <p>Open Outbox and choose New request. Select patient opens a search-like page. Select opens the volume selector for the chosen patient. Complete Required for, From, and To, then choose Request. Cancel returns without saving.</p>
+
+    <h3>Using Outbox</h3>
+    <p>Outbox lists requests made by the current user. It shows the patient with <code>fbAddressograph</code>, requested volumes with <code>fbcntSelectedVolumes</code>, request details, source, destination, status, and actions. Cancel cancels and hides a row. Locator opens the patient locator with those volumes selected. Done actions in Inbox update Outbox status to actioned.</p>
+
+    <h3>Using Inbox</h3>
+    <p>Inbox lists open requests for locations where the current user is a custodian. Send opens the same send workflow used by the locator. Done marks the request as actioned and removes it from Inbox.</p>
+
+    <h3>Setting up a pick list</h3>
+    <p>Open My clinics, choose Add clinic(s), filter future clinics by Health board, Locality, Facility, and Speciality, tick clinics, and choose Ok. The filter starts from the saved login preferences. My clinics then lists the clinic instances the user retrieves for.</p>
+
+    <h3>Using a pick list</h3>
+    <p>Open My picklist. Each row identifies a clinic, appointment, patient, and required volumes. Select opens Case notes selector for that patient and clinic instance; Ok saves the selected required volumes. Receive opens a popup for marking selected required volumes as received.</p>
+
+    <h3>Using My return list</h3>
+    <p>My return list looks like My picklist and lists patient volume groups that should be returned. Send opens the send workflow for the row volumes. Remove hides that row from the current return list.</p>
+
+    <h3>Registering a volume</h3>
+    <p>From Case notes locator choose Register volume. Enter Created date, Health board, Locality, Type, Status, optional permanent Volume number, Initial location, Bar code, and RfID. Register creates and selects the new volume; blank identifiers are generated safely.</p>
+
+    <h3>Sending selected volumes</h3>
+    <p>Select one or more volumes and choose Send selected. The popup collects From and To using CNT location selectors. Send updates each volume's current location, appends movement history, and saves the user's send-location preference.</p>
+
+    <h3>Receiving selected volumes</h3>
+    <p>Select one or more volumes and choose Receive selected. The popup infers a From location from a recent send where possible, requires To, and appends received movement history.</p>
+
+    <h3>Managing batches</h3>
+    <p>My batches lists favourite batches. Open shows the Batch page grouped by patient with addressographs and removable volume rows. Remove removes a favourite from the user's list. Find batch opens a filterable list of existing batches. Create batch captures Purpose, Current location, Intended destination, and Barcode.</p>
+
+    <h3>Adding selected volumes to a batch</h3>
+    <p>On Case notes locator choose Batch selected. The popup lists the user's favourite batches. Choosing one adds the selected volumes to that batch.</p>
+
+    <h3>Using simulated batch scans</h3>
+    <p>The home page Simulate batch number scan creates a fresh batch, adds a small sample of volumes, adds the batch to the user's favourites, and opens the Batch page.</p>
+
+    <h3>Tagging volumes</h3>
+    <p>On Case notes locator choose Tag selected. Enter Purpose and Location, then Create tag. Active tags display under volume location strings as an abbreviated single line; hovering or focusing the tag summary opens an <code>fbToolTip</code> with each tag field on its own line.</p>
+
+    <h3>Managing libraries</h3>
+    <p>My libraries lists favourite library locations and their custodians. Remove removes a library from the user's favourites. Add library asks for a location through <code>fbcntLocation</code> and stores it as a favourite.</p>
+
+    <h3>Using identifier scanning</h3>
+    <p>The CNT home scan bar accepts patient NHS numbers, hospital numbers, volume barcodes or RFIDs, batch barcodes, and location codes. Open resolves the identifier and opens the appropriate target or sets a send/receive destination for locations. Empty or unknown identifiers display an Error popup.</p>
+
+    <h2 id="data-model">Data model overview</h2>
+    <table>
+      <thead><tr><th>Table/query</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>cnt_users</code></td><td>Simulated CNT identities, NADEX IDs, roles, specialities, and home facilities.</td></tr>
+        <tr><td><code>cnt_patients</code></td><td>Fictitious patients used by the tracker, mirrored into <code>patients</code> for formBuilder2 search entry points.</td></tr>
+        <tr><td><code>cnt_locations</code></td><td>Health board, locality, facility, department, request acceptance, and custodians.</td></tr>
+        <tr><td><code>cnt_volumes</code></td><td>Current case-note volume state, identifiers, owning patient, created health board/locality, type, number, and current location.</td></tr>
+        <tr><td><code>cnt_volume_events</code></td><td>Created, sent, received, merged, and destroyed movement history.</td></tr>
+        <tr><td><code>cnt_batches</code></td><td>Batch barcode, current location, intended purpose, and intended destination.</td></tr>
+        <tr><td><code>cnt_batch_volumes</code></td><td>Many-to-many membership between batches and volumes.</td></tr>
+        <tr><td><code>cnt_tags</code></td><td>Active or forgotten volume tags with purpose, required-by, expiry, location, and creator.</td></tr>
+        <tr><td><code>cnt_clinics</code></td><td>Clinic definitions, speciality, facility, holding location, and clinician.</td></tr>
+        <tr><td><code>cnt_clinic_instances</code></td><td>Dated clinic sessions with times, cancellation flag, and retrievers.</td></tr>
+        <tr><td><code>cnt_appointments</code></td><td>Patient appointments within clinic instances.</td></tr>
+        <tr><td><code>cnt_requests</code></td><td>Retrieve requests from a source location to a destination location.</td></tr>
+        <tr><td><code>cnt_pick_list</code></td><td>Selected pick-list volumes for a clinic instance and received status.</td></tr>
+        <tr><td><code>cnt_preferences</code></td><td>User preferences, favourite batches/libraries, filters, and recent workflow choices.</td></tr>
+        <tr><td><code>search_patients_fuzzy(search_term)</code></td><td>Main formBuilder2 fuzzy patient query used before opening CNT from Patient search.</td></tr>
+        <tr><td><code>cnt location search</code></td><td>Future server query for <code>fbcntLocation</code>, matching health board, locality, facility, department, extra, and code.</td></tr>
+        <tr><td><code>cnt clinic instance search</code></td><td>Future server query for Select clinic(s), filtering future non-cancelled instances.</td></tr>
+        <tr><td><code>cnt request inbox query</code></td><td>Future server query for requests sent to locations where the user is a custodian.</td></tr>
+        <tr><td><code>cnt request outbox query</code></td><td>Future server query for requests created by the user.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="pages">Pages</h2>
+    <div class="page-spec">
+      <h3>Login</h3>
+      <p><strong>Component:</strong> top-level <code>CaseNoteTracker</code>. <strong>Source:</strong> <code>src/caseNoteTracker/CaseNoteTracker.tsx</code>.</p>
+      <p>Contains the CNT title, an <code>fbBoxedInfo</code> simulated-login note, and colourful identity buttons. Choosing a user stores the simulated session and opens User preferences before Home.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Home</h3>
+      <p><strong>Component:</strong> <code>FbcntHomePage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntHomePage.tsx</code> and <code>fbcntPageComponents.tsx</code>.</p>
+      <p>Contains <code>fbcntScan</code>, simulated scan buttons, navigation buttons for Patient search, My batches, Outbox, Inbox, My return list, My picklist, My clinics, My libraries, My preferences, Admin, and Show offline warning.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>User preferences</h3>
+      <p><strong>Component:</strong> <code>FbcntPreferencesPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPreferencesPage.tsx</code>.</p>
+      <p>Contains <code>fbDropdown</code> controls for Health board, Locality, and Facility. Ok saves preferences. Logout and Back are replaced by a bottom-right Ok pattern when opened after login.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Case notes locator</h3>
+      <p><strong>Component:</strong> <code>FbcntLocatorPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntLocatorPage.tsx</code>.</p>
+      <p>Contains the grouped volume tree, checkboxes, history shortcuts, current location strings, active tag summaries, and footer actions Register volume, Send selected, Receive selected, Batch selected, Tag selected, and Request selected.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Case notes selector</h3>
+      <p><strong>Component:</strong> <code>FbcntSelectorPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntSelectorPage.tsx</code>.</p>
+      <p>Contains the locator tree without history and movement buttons. Ok saves selection for the calling workflow. Request selected opens a prefilled Request page when used as a standalone selector.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Volume history</h3>
+      <p><strong>Component:</strong> <code>FbcntHistoryPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntHistoryPage.tsx</code>.</p>
+      <p>Contains a full-height <code>fbTable</code> with Date/time, Event, From, To, and Note columns.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Register volume</h3>
+      <p><strong>Component:</strong> <code>FbcntRegisterVolumePage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntRegisterVolumePage.tsx</code>.</p>
+      <p>Contains Created, Health board, Locality, Type, Status, Volume number, Initial location, Bar code, and RfID. Register creates a volume. Cancel returns unchanged.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Send selected volumes and Receive selected volumes</h3>
+      <p><strong>Component:</strong> <code>FbcntMovementPopup</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntMovementPopup.tsx</code>.</p>
+      <p>Popup pages contain <code>fbcntFromLocation</code>, <code>fbcntToLocation</code>, an action button, and Cancel. Send and Receive update current location and movement history.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>My batches</h3>
+      <p><strong>Component:</strong> <code>FbcntMyBatchesPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntMyBatchesPage.tsx</code>.</p>
+      <p>Contains an <code>fbTable</code> of favourite batches with Open and Remove buttons. Footer buttons Find batch and Create batch open their respective pages.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Find batch</h3>
+      <p><strong>Component:</strong> <code>FbcntFindBatchPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntFindBatchPage.tsx</code>.</p>
+      <p>Contains a filter group and a filterable batch table. Select adds the batch to the user's favourites.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Create batch</h3>
+      <p><strong>Component:</strong> <code>FbcntCreateBatchPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntCreateBatchPage.tsx</code>.</p>
+      <p>Contains Purpose as <code>fbTextArea</code>, Current location, Intended destination, and Barcode. Create saves a favourite batch. Cancel returns unchanged.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Batch</h3>
+      <p><strong>Component:</strong> <code>FbcntBatchPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntBatchPage.tsx</code>.</p>
+      <p>The header identifies the batch. The body groups member volumes by patient using <code>fbAddressograph</code> and <code>fbcntBatchVolumeSet</code>. Each volume has a small red-on-white Material Icons cancel button. The bottom-left add action opens a Not implemented yet popup.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Tags</h3>
+      <p><strong>Component:</strong> <code>FbcntTagsPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntTagsPage.tsx</code>.</p>
+      <p>Currently lists tag-related data in the prototype. Locator-created tags are the main implemented tag workflow.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Outbox and Inbox</h3>
+      <p><strong>Component:</strong> <code>FbcntRequestsPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntRequestsPage.tsx</code>.</p>
+      <p>Outbox includes New request, Cancel, and Locator. Inbox includes Send and Done. Both use <code>fbTable</code>, patient addressographs, and <code>fbcntSelectedVolumes</code>.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Request and Select patient</h3>
+      <p><strong>Components:</strong> <code>FbcntRequestPage</code>, <code>FbcntRequestPatientPage</code>. <strong>Sources:</strong> <code>src/caseNoteTracker/fbcntRequestPage.tsx</code>, <code>src/caseNoteTracker/fbcntRequestPatientPage.tsx</code>.</p>
+      <p>Request captures patient, selected volumes, Required for, From, and To. Select patient is a patient-search-like page that returns to Request when a patient is selected.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>My picklist</h3>
+      <p><strong>Component:</strong> <code>FbcntPicklistPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPicklistPage.tsx</code>.</p>
+      <p>Contains appointment, clinic, patient, volumes required, and actions. Select opens Case notes selector. Receive opens a received-volume popup.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>My return list</h3>
+      <p><strong>Component:</strong> <code>FbcntReturnListPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntReturnListPage.tsx</code>.</p>
+      <p>Contains appointment, clinic, patient, volumes required, and actions. Send opens the send workflow. Remove hides the row.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>My clinics and Select clinic(s)</h3>
+      <p><strong>Components:</strong> <code>FbcntMyClinicsPage</code>, <code>FbcntSelectClinicsPage</code>. <strong>Sources:</strong> <code>src/caseNoteTracker/fbcntMyClinicsPage.tsx</code>, <code>src/caseNoteTracker/fbcntSelectClinicsPage.tsx</code>.</p>
+      <p>My clinics lists retrieval clinic instances with retrievers and Stop retrieving. Select clinic(s) filters future clinics and Ok adds selected clinics to the user's retrieval list.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>My libraries</h3>
+      <p><strong>Component:</strong> <code>FbcntLibrariesPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntLibrariesPage.tsx</code>.</p>
+      <p>Contains favourite library locations, custodians, request acceptance, Remove buttons, and an Add library popup.</p>
+    </div>
+
+    <div class="page-spec">
+      <h3>Admin</h3>
+      <p><strong>Component:</strong> <code>FbcntAdminPage</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntAdminPage.tsx</code>.</p>
+      <p>Prototype administrative page for reviewing CNT administrative concepts. All prototype users are currently administrators.</p>
+    </div>
+
+    <h2 id="controls">Custom controls</h2>
+    <div class="control-spec">
+      <h3><code>fbcntScan</code></h3>
+      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntScan.tsx</code>. Composite scan bar for identifier input, Open, RFID, and Camera scan.</p>
+<pre><code class="language-html">&lt;section aria-label="Scan or enter identifier"&gt;
+  &lt;input placeholder="Scan NHS number, hospital number, volume barcode, RFID, batch or location" /&gt;
+  &lt;button&gt;Open&lt;/button&gt;
+  &lt;button&gt;RFID&lt;/button&gt;
+  &lt;button&gt;Camera scan&lt;/button&gt;
+&lt;/section&gt;</code></pre>
+<pre><code class="language-css">.fbcntScan {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  width: 100%;
+}
+.fbcntScan input {
+  flex: 1;
+  border: 0.1rem solid silver;
+  border-radius: 0.4rem;
+}</code></pre>
+    </div>
+
+    <div class="control-spec">
+      <h3><code>fbcntLocation</code>, <code>fbcntFromLocation</code>, <code>fbcntToLocation</code></h3>
+      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntLocation.tsx</code>. Location autocomplete equivalent in intent to <code>fbMSISelector</code>, using CNT locations as the data source. It displays coded/not-coded Material Icons with <code>fbToolTip</code>.</p>
+<pre><code class="language-html">&lt;fbQuestion label="Location"&gt;
+  &lt;input type="text" placeholder="Type to search locations" /&gt;
+  &lt;button aria-label="Clear"&gt;&#x2715;&lt;/button&gt;
+  &lt;button aria-label="Toggle results"&gt;&#x25bc;&lt;/button&gt;
+  &lt;span class="material-icons"&gt;check_circle_outline&lt;/span&gt;
+&lt;/fbQuestion&gt;</code></pre>
+<pre><code class="language-css">.fbcntLocation input {
+  width: 100%;
+  height: 2rem;
+  border: 0.1rem solid silver;
+  border-radius: 0.4rem;
+  padding: 0.35rem 2.5rem 0.35rem 0.45rem;
+  background-color: white;
+}
+.fbcntLocationResults {
+  position: fixed;
+  width: 45rem;
+  max-width: calc(100vw - 40px);
+  border: 0.1rem solid silver;
+  background-color: white;
+}</code></pre>
+    </div>
+
+    <div class="control-spec">
+      <h3><code>fbcntSelectedVolumes</code></h3>
+      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntSelectedVolumes.tsx</code>. Read-only grouped volume set by Health board, Locality, Type, and individual volume rows.</p>
+<pre><code class="language-html">&lt;div class="fbcnt-highlight-level fbcnt-highlight-level-0"&gt;Health board&lt;/div&gt;
+&lt;div class="fbcnt-highlight-level fbcnt-highlight-level-1"&gt;Locality&lt;/div&gt;
+&lt;div class="fbcnt-highlight-level fbcnt-highlight-level-2"&gt;Type&lt;/div&gt;
+&lt;div class="fbcnt-highlight-level fbcnt-highlight-level-3"&gt;Volume 1&lt;/div&gt;</code></pre>
+<pre><code class="language-css">.fbcnt-highlight-level {
+  transition: background-color 0.12s ease;
+}
+.fbcnt-highlight-level-0:hover,
+.fbcnt-highlight-level-2:hover,
+.fbcnt-highlight-level-4:hover {
+  background-color: #ffffcc;
+}
+.fbcnt-highlight-level-1:hover,
+.fbcnt-highlight-level-3:hover {
+  background-color: #fee715;
+}</code></pre>
+    </div>
+
+    <div class="control-spec">
+      <h3><code>fbcntSelectedVolumesLocation</code></h3>
+      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntSelectedVolumes.tsx</code>. Read-only selected-volume location tree: Health board, Locality, Type, volume group, and location. Volumes sharing a location are grouped into ranges such as Volumes 1-3.</p>
+<pre><code class="language-html">&lt;div&gt;HB&lt;/div&gt;
+&lt;div&gt;Locality&lt;/div&gt;
+&lt;div&gt;Type&lt;/div&gt;
+&lt;div&gt;Volumes 1-3 &lt;span class="material-icons"&gt;check_circle&lt;/span&gt;&lt;/div&gt;
+&lt;div&gt;Location&lt;/div&gt;</code></pre>
+<pre><code class="language-css">.fbcntSelectedVolumesLocation .material-icons {
+  color: #008000;
+  background-color: transparent;
+}
+.fbcntSelectedVolumesLocationRow {
+  background-color: transparent;
+}</code></pre>
+    </div>
+
+    <div class="control-spec">
+      <h3><code>fbcntSelectedVolumesReceived</code></h3>
+      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntSelectedVolumes.tsx</code>. Grouped volume list with per-volume checkboxes for marking pick-list rows received.</p>
+<pre><code class="language-html">&lt;label&gt;
+  &lt;input type="checkbox" /&gt;
+  Volume 1
+&lt;/label&gt;</code></pre>
+<pre><code class="language-css">.fbcntSelectedVolumesReceived label {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}</code></pre>
+    </div>
+
+    <div class="control-spec">
+      <h3><code>fbcntBatchVolumeSet</code> and <code>fbcntRemoveVolumeButton</code></h3>
+      <p><strong>Sources:</strong> <code>src/caseNoteTracker/fbcntBatchVolumeSet.tsx</code>, <code>src/caseNoteTracker/fbcntRemoveVolumeButton.tsx</code>. Batch detail volume display with a red-on-white Material Icons cancel button for each volume.</p>
+<pre><code class="language-html">&lt;div&gt;
+  &lt;span&gt;Volume 1 General&lt;/span&gt;
+  &lt;button aria-label="Remove volume 1"&gt;
+    &lt;span class="material-icons"&gt;cancel&lt;/span&gt;
+  &lt;/button&gt;
+&lt;/div&gt;</code></pre>
+<pre><code class="language-css">.fbcntRemoveVolumeButton {
+  border: 0.1rem solid #d50000;
+  border-radius: 999px;
+  background-color: white;
+  color: #d50000;
+  width: 1.45rem;
+  height: 1.45rem;
+}</code></pre>
+    </div>
+
+    <div class="control-spec">
+      <h3><code>fbcntHeader</code>, <code>fbcntSmallButton</code>, <code>fbGroupWithBorder</code>, and <code>fbcntClinicFilter</code></h3>
+      <p><strong>Sources:</strong> <code>fbcntHeader.tsx</code>, <code>fbcntSmallButton.tsx</code>, <code>fbGroupWithBorder.tsx</code>, and <code>fbcntPageComponents.tsx</code>. Header, compact row actions, bordered filter group, and clinic filter controls used across CNT pages.</p>
+<pre><code class="language-html">&lt;header&gt;
+  &lt;div&gt;NHS Wales - Case note tracker&lt;/div&gt;
+  &lt;h1&gt;Page title&lt;/h1&gt;
+&lt;/header&gt;
+&lt;button class="fbcntSmallButton"&gt;Open&lt;/button&gt;
+&lt;fieldset&gt;&lt;legend&gt;Filter&lt;/legend&gt;...&lt;/fieldset&gt;</code></pre>
+<pre><code class="language-css">.fbcntSmallButton {
+  background-color: #1b6ec2;
+  color: white;
+  border: 0;
+  border-radius: 0.25rem;
+  padding: 0.28rem 0.5rem;
+}
+.fbGroupWithBorder {
+  border: 0.1rem solid silver;
+  border-radius: 0.4rem;
+}</code></pre>
+    </div>
+
+    <h2 id="tables">Tables and queries</h2>
+    <h3>Seeded CNT table fields</h3>
+    <table>
+      <thead><tr><th>Table</th><th>Key fields and types</th></tr></thead>
+      <tbody>
+        <tr><td><code>cnt_users</code></td><td><code>uuid UUID</code>, <code>nadex_id TEXT</code>, names, role, speciality, facility.</td></tr>
+        <tr><td><code>cnt_patients</code></td><td><code>uuid UUID</code>, <code>nhs_number TEXT</code>, <code>hospital_number TEXT</code>, demographic/addressograph fields.</td></tr>
+        <tr><td><code>cnt_locations</code></td><td><code>uuid UUID</code>, code, health board, locality, facility, department, extra, accepts requests, <code>custodian_user_uuids UUID[]</code>.</td></tr>
+        <tr><td><code>cnt_volumes</code></td><td><code>uuid UUID</code>, barcode, rfid, patient UUID, created HB/locality, type, volume number, temporary, current location, optional batch UUID.</td></tr>
+        <tr><td><code>cnt_volume_events</code></td><td><code>uuid UUID</code>, volume UUID, kind, datetime, from/to location UUIDs, user UUID, note.</td></tr>
+        <tr><td><code>cnt_batches</code></td><td><code>uuid UUID</code>, barcode, current location UUID, intended purpose, intended destination UUID.</td></tr>
+        <tr><td><code>cnt_batch_volumes</code></td><td><code>batch_uuid UUID</code>, <code>volume_uuid UUID</code>.</td></tr>
+        <tr><td><code>cnt_tags</code></td><td><code>uuid UUID</code>, volume UUID, patient UUID, purpose, location UUID, required by, expires at, creator, forget flag, status.</td></tr>
+        <tr><td><code>cnt_clinics</code></td><td><code>uuid UUID</code>, clinic name, speciality, facility, holding location UUID, clinician.</td></tr>
+        <tr><td><code>cnt_clinic_instances</code></td><td><code>uuid UUID</code>, clinic UUID, date, start/end time, cancelled, <code>retriever_user_uuids UUID[]</code>.</td></tr>
+        <tr><td><code>cnt_appointments</code></td><td><code>uuid UUID</code>, clinic instance UUID, appointment time, patient UUID, cancelled, notes.</td></tr>
+        <tr><td><code>cnt_requests</code></td><td><code>uuid UUID</code>, volume UUID, patient UUID, requester UUID, required by, required for, from/to location UUIDs, status.</td></tr>
+        <tr><td><code>cnt_pick_list</code></td><td><code>clinic_instance_uuid UUID</code>, <code>volume_uuid UUID</code>, received boolean.</td></tr>
+        <tr><td><code>cnt_preferences</code></td><td>User UUID, send location UUID, favourite batch/library UUID arrays, collapsed keys, preferred HB/locality/facility, recent choices JSONB.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>SQL query catalogue</h3>
+<pre><code class="language-sql">-- Patient search before opening CNT from formBuilder2
+SELECT * FROM search_patients_fuzzy(:search_term);
+
+-- Locator volume tree
+SELECT *
+FROM cnt_volumes
+WHERE patient_uuid = :patient_uuid
+ORDER BY health_board, locality, type, temporary, volume_number;
+
+-- Movement history
+SELECT *
+FROM cnt_volume_events
+WHERE volume_uuid = :volume_uuid
+ORDER BY event_datetime;
+
+-- Location search for fbcntLocation
+SELECT *
+FROM cnt_locations
+WHERE code ILIKE :query
+   OR health_board ILIKE :query
+   OR locality ILIKE :query
+   OR facility ILIKE :query
+   OR department ILIKE :query
+   OR extra ILIKE :query
+ORDER BY health_board, locality, facility, department;
+
+-- Select clinic(s)
+SELECT ci.*, c.*
+FROM cnt_clinic_instances ci
+JOIN cnt_clinics c ON c.uuid = ci.clinic_uuid
+WHERE ci.clinic_date &gt;= CURRENT_DATE
+  AND ci.cancelled = false
+  AND (:facility IS NULL OR c.facility = :facility)
+  AND (:speciality IS NULL OR c.speciality = :speciality)
+ORDER BY ci.clinic_date, ci.start_time;
+
+-- Outbox
+SELECT *
+FROM cnt_requests
+WHERE requested_by_user_uuid = :user_uuid
+  AND status &lt;&gt; 'cancelled';
+
+-- Inbox
+SELECT r.*
+FROM cnt_requests r
+JOIN cnt_locations l ON l.uuid = r.from_location_uuid
+WHERE :user_uuid = ANY(l.custodian_user_uuids)
+  AND r.status = 'open';</code></pre>
+
+    <h2 id="rest-api">REST API</h2>
+    <p>The future server-backed API is rooted at <code>/api/cnt</code> in Node and <code>/formBuilder2/api/cnt</code> in SWAS/static deployments. Request and response bodies are JSON. UUIDs use RFC-4122 strings. Current browser screens still use the simulated store, while the real database seed creates the future table shape.</p>
+    <table>
+      <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET /api/cnt/session-users</code></td><td>Return simulated login users.</td></tr>
+        <tr><td><code>POST /api/cnt/login-simulated</code></td><td>Start simulated session and run clinic maintenance.</td></tr>
+        <tr><td><code>GET /api/cnt/home-summary</code></td><td>Return counts for home page tasks.</td></tr>
+        <tr><td><code>GET /api/cnt/preferences</code></td><td>Return CNT preferences for the user.</td></tr>
+        <tr><td><code>PUT /api/cnt/preferences</code></td><td>Save CNT preferences.</td></tr>
+        <tr><td><code>POST /api/cnt/barcode/resolve</code></td><td>Resolve scanned patient, volume, batch, or location identifiers.</td></tr>
+        <tr><td><code>GET /api/cnt/patients/:patientUuid/volumes</code></td><td>Return patient and grouped volume summary.</td></tr>
+        <tr><td><code>POST /api/cnt/patients/:patientUuid/volumes</code></td><td>Create a case-note volume.</td></tr>
+        <tr><td><code>GET /api/cnt/volumes/:volumeUuid/history</code></td><td>Return movement history for one volume.</td></tr>
+        <tr><td><code>POST /api/cnt/volumes/send</code></td><td>Send selected volumes.</td></tr>
+        <tr><td><code>POST /api/cnt/volumes/receive</code></td><td>Receive selected volumes.</td></tr>
+        <tr><td><code>POST /api/cnt/batches</code></td><td>Create a batch.</td></tr>
+        <tr><td><code>POST /api/cnt/batches/:batchUuid/volumes</code></td><td>Add volumes to a batch.</td></tr>
+        <tr><td><code>DELETE /api/cnt/batches/:batchUuid/volumes/:volumeUuid</code></td><td>Remove a volume from a batch.</td></tr>
+        <tr><td><code>POST /api/cnt/batches/:batchUuid/send</code></td><td>Send a batch.</td></tr>
+        <tr><td><code>POST /api/cnt/batches/:batchUuid/receive</code></td><td>Receive a batch.</td></tr>
+        <tr><td><code>GET /api/cnt/tags/mine</code></td><td>Return active tags created by the user.</td></tr>
+        <tr><td><code>POST /api/cnt/tags</code></td><td>Create tags for volumes.</td></tr>
+        <tr><td><code>PATCH /api/cnt/tags/:tagUuid</code></td><td>Edit or forget a tag.</td></tr>
+        <tr><td><code>GET /api/cnt/pick-list</code></td><td>Return the user's pick-list rows.</td></tr>
+        <tr><td><code>PUT /api/cnt/pick-list/:clinicInstanceUuid/patients/:patientUuid/volumes</code></td><td>Replace selected pick-list volumes for one appointment patient.</td></tr>
+        <tr><td><code>POST /api/cnt/pick-list/:clinicInstanceUuid/receive</code></td><td>Mark selected pick-list volumes received.</td></tr>
+        <tr><td><code>GET /api/cnt/return-list</code></td><td>Return volumes that should be returned.</td></tr>
+        <tr><td><code>GET /api/cnt/requests/mine</code></td><td>Return Outbox requests.</td></tr>
+        <tr><td><code>GET /api/cnt/requests/custodian</code></td><td>Return Inbox requests.</td></tr>
+        <tr><td><code>POST /api/cnt/requests</code></td><td>Create a retrieve request.</td></tr>
+        <tr><td><code>PATCH /api/cnt/requests/:requestUuid</code></td><td>Cancel or action a request.</td></tr>
+        <tr><td><code>GET /api/cnt/clinics/facility/:facilityUuid</code></td><td>Return clinic instances for a facility.</td></tr>
+        <tr><td><code>POST /api/cnt/clinic-instances/:uuid/retrievers</code></td><td>Choose or unchoose a clinic retriever.</td></tr>
+        <tr><td><code>GET /api/cnt/clinic-instances/search</code></td><td>Search future clinic instances.</td></tr>
+        <tr><td><code>POST /api/cnt/locations/:uuid/custodians</code></td><td>Choose or unchoose a custodian.</td></tr>
+        <tr><td><code>GET /api/cnt/locations/search</code></td><td>Search case-note locations.</td></tr>
+        <tr><td><code>POST /api/cnt/locations</code></td><td>Create a case-note location.</td></tr>
+        <tr><td><code>POST /api/cnt/admin/clinic-retrievers</code></td><td>Admin assignment route for clinic retrievers.</td></tr>
+        <tr><td><code>POST /api/cnt/admin/location-custodians</code></td><td>Admin assignment route for custodians.</td></tr>
+        <tr><td><code>POST /api/cnt/maintenance/generate-clinic-instances</code></td><td>Create clinic instances in the six-week window and churn appointments.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="implementation">Implementation notes</h2>
+    <ul>
+      <li>The current React prototype is client-side and stores runtime CNT state in <code>localStorage.fbcntStore</code>.</li>
+      <li><code>scripts/seed-cnt-real-db.ts</code> seeds real PostgreSQL <code>cnt_*</code> tables from <code>createInitialCntStore()</code>.</li>
+      <li>Local SWAS static deployment should be built with <code>VITE_API_BASE_URL=/formBuilder2/api</code> and copied to <code>D:\swas\dev\root\formBuilder2</code>.</li>
+      <li>Blocking workflow errors display in an <code>fbPopup</code> titled Error with a white-on-green Ok button.</li>
+      <li>Tables use <code>fbTable</code>, and table data cells are top-aligned.</li>
+      <li>CNT page body components are exposed as <code>fbcntXxx</code> files under <code>src/caseNoteTracker</code>; the top-level shell owns session, navigation, persistence, header/footer, and cross-page popups.</li>
+    </ul>
+  </main>
+</body>
+</html>

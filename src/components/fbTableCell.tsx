@@ -16,6 +16,7 @@ export const fbTableCell: React.FC<fbTableCellProps> = ({
       style={{
         padding: '0.4rem',
         borderBottom: '1px solid silver',
+        verticalAlign: 'top',
         ...style
       }}
       {...props}
