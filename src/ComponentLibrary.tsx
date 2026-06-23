@@ -5,13 +5,13 @@ import { fbBoxedAlert as FbBoxedAlert, fbBoxedInfo as FbBoxedInfo, fbBoxedWarnin
 import { fbButton as FbButton } from './components/fbButton';
 import { fbCheck as FbCheck } from './components/fbCheck';
 import { fbDropdown as FbDropdown } from './components/fbDropdown';
-import { fbExactDate as FbExactDate } from './components/fbExactDate';
+import { fbDateExact as FbExactDate } from './components/fbDateExact';
 import { fbGridCell as FbGridCell } from './components/fbGridCell';
 import { fbGridRow as FbGridRow } from './components/fbGridRow';
 import { fbGroup as FbGroup } from './components/fbGroup';
 import { fbMSISelector as FbMSISelector } from './components/fbMSISelector';
 import { fbNumberInput as FbNumberInput } from './components/fbNumberInput';
-import { fbPartialDate as FbPartialDate } from './components/fbPartialDate';
+import { fbDatePartial as FbPartialDate } from './components/fbDatePartial';
 import { fbQuestion as FbQuestion } from './components/fbQuestion';
 import { fbRadio as FbRadio } from './components/fbRadio';
 import { fbRoVField as FbRoVField } from './components/fbRoVField';
@@ -31,7 +31,7 @@ export default function ComponentLibrary() {
   const [username, setUsername] = React.useState<string>('demoUser');
   const [text, setText] = React.useState<string>('Example text');
   const [time, setTime] = React.useState<string>('09:30');
-  const [textarea, setTextarea] = React.useState<string>('A longer clinical note can expand over multiple lines.');
+  const [textarea, setTextarea] = React.useState<string>('A longer form note can expand over multiple lines.');
   const [dropdown, setDropdown] = React.useState<string>('option-one');
   const [number, setNumber] = React.useState<string>('42');
   const [numberWithUnits, setNumberWithUnits] = React.useState<string>('12');
@@ -63,6 +63,11 @@ export default function ComponentLibrary() {
   const goHome = () => navigate('/');
 
   const groupLabelStyle = { fontWeight: 500 };
+  const dropdownOptions = [
+    { value: '', label: '' },
+    { value: 'option-one', label: 'Option one' },
+    { value: 'option-two', label: 'Option two' },
+  ];
 
   const renderEditContent = () => (
     <>
@@ -121,12 +126,12 @@ export default function ComponentLibrary() {
         <FbGridRow cols={3}>
           <FbGridCell>
             <FbQuestion label="Partial date" required>
-              <FbPartialDate name="component-library-partial-date" value={partialDate} onChange={setPartialDate} required />
+              <FbPartialDate name="component-library-partial-date" value={partialDate} onChange={setPartialDate} showRequiredMarkers={false} />
             </FbQuestion>
           </FbGridCell>
           <FbGridCell>
             <FbQuestion label="Exact date" required>
-              <FbExactDate name="component-library-exact-date" value={exactDate} onChange={setExactDate} required />
+              <FbExactDate name="component-library-exact-date" value={exactDate} onChange={setExactDate} showRequiredMarkers={false} />
             </FbQuestion>
           </FbGridCell>
           <EmptyCell />
@@ -193,10 +198,80 @@ export default function ComponentLibrary() {
         </FbGridRow>
       </FbSection>
 
+      <FbSection id="component-library-required-for-audit" title="Required for audit">
+        <FbGridRow cols={3}>
+          <FbGridCell>
+            <FbTextInput label="Text input audit" value={text} onChange={setText} requiredForAudit placeholder="Enter text" />
+          </FbGridCell>
+          <FbGridCell>
+            <FbTime label="Time audit" value={time} onChange={setTime} requiredForAudit />
+          </FbGridCell>
+          <FbGridCell>
+            <FbDropdown label="Dropdown audit" value={dropdown} onChange={setDropdown} requiredForAudit options={dropdownOptions} />
+          </FbGridCell>
+        </FbGridRow>
+        <FbGridRow cols={3}>
+          <FbGridCell>
+            <FbNumberInput label="Number audit" value={number} onChange={setNumber} requiredForAudit />
+          </FbGridCell>
+          <FbGridCell>
+            <FbNumberInput label="Number with units audit" value={numberWithUnits} onChange={setNumberWithUnits} units="mg" requiredForAudit />
+          </FbGridCell>
+          <FbGridCell>
+            <FbBloodPressure label="Blood pressure audit" systolic={bloodPressure.systolic} diastolic={bloodPressure.diastolic} onChange={setBloodPressure} requiredForAudit />
+          </FbGridCell>
+        </FbGridRow>
+        <FbGridRow cols={3}>
+          <FbGridCell span={2}>
+            <FbTextArea label="Text area audit" value={textarea} onChange={setTextarea} requiredForAudit fullWidth />
+          </FbGridCell>
+          <FbGridCell>
+            <FbGroup label="Radio group audit" labelStyle={groupLabelStyle} requiredForAudit>
+              <FbRadio name="component-library-rfa-radio" value="yes" checked={radio === 'yes'} onChange={() => setRadio('yes')} label="Yes" />
+              <FbRadio name="component-library-rfa-radio" value="no" checked={radio === 'no'} onChange={() => setRadio('no')} label="No" />
+            </FbGroup>
+            <FbGroup label="Checkbox group audit" labelStyle={groupLabelStyle} requiredForAudit>
+              <FbCheck name="component-library-rfa-check" checked={check} onChange={(event) => setCheck(event.target.checked)} label="Checkbox option" />
+            </FbGroup>
+          </FbGridCell>
+        </FbGridRow>
+        <FbGridRow cols={3}>
+          <FbGridCell>
+            <FbQuestion label="Partial date audit" requiredForAudit>
+              <FbPartialDate name="component-library-rfa-partial-date" value={partialDate} onChange={setPartialDate} showRequiredMarkers={false} />
+            </FbQuestion>
+          </FbGridCell>
+          <FbGridCell>
+            <FbQuestion label="Exact date audit" requiredForAudit>
+              <FbExactDate name="component-library-rfa-exact-date" value={exactDate} onChange={setExactDate} showRequiredMarkers={false} />
+            </FbQuestion>
+          </FbGridCell>
+          <EmptyCell />
+        </FbGridRow>
+        <FbGridRow cols={3}>
+          <FbGridCell span={2}>
+            <FbMSISelector label="Staff selector audit" name="component-library-rfa-msi" value={msi} coded={msiCoded} requiredForAudit onChange={(value, coded) => { setMsi(value); setMsiCoded(coded); }} />
+          </FbGridCell>
+          <EmptyCell />
+        </FbGridRow>
+        <FbGridRow cols={3}>
+          <FbGridCell span={2}>
+            <FbSCTDiagnosis label="SNOMED CT diagnosis audit" name="component-library-rfa-diagnosis" value={diagnosis} coded={diagnosisCoded} requiredForAudit onChange={(value, coded) => { setDiagnosis(value); setDiagnosisCoded(coded); }} />
+          </FbGridCell>
+          <EmptyCell />
+        </FbGridRow>
+        <FbGridRow cols={3}>
+          <FbGridCell span={2}>
+            <FbSCTProcedure label="SNOMED CT procedure audit" name="component-library-rfa-procedure" value={procedure} coded={procedureCoded} requiredForAudit onChange={(value, coded) => { setProcedure(value); setProcedureCoded(coded); }} />
+          </FbGridCell>
+          <EmptyCell />
+        </FbGridRow>
+      </FbSection>
+
       <FbSection id="component-library-boxed-messages" title="Boxed messages">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          <FbBoxedWarning text="This is an fbBoxedWarning message for prominent non-blocking clinical warnings." />
-          <FbBoxedAlert text="This is an fbBoxedAlert message for high-priority clinical alerts." />
+          <FbBoxedWarning text="This is an fbBoxedWarning message for prominent non-blocking warnings." />
+          <FbBoxedAlert text="This is an fbBoxedAlert message for high-priority alerts." />
           <FbBoxedInfo text="This is an fbBoxedInfo message for supporting information." />
         </div>
       </FbSection>
@@ -245,8 +320,8 @@ export default function ComponentLibrary() {
       </FbSection>
       <FbSection id="component-library-rov-boxed-messages" title="Boxed messages">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          <FbBoxedWarning text="This is an fbBoxedWarning message for prominent non-blocking clinical warnings." />
-          <FbBoxedAlert text="This is an fbBoxedAlert message for high-priority clinical alerts." />
+          <FbBoxedWarning text="This is an fbBoxedWarning message for prominent non-blocking warnings." />
+          <FbBoxedAlert text="This is an fbBoxedAlert message for high-priority alerts." />
           <FbBoxedInfo text="This is an fbBoxedInfo message for supporting information." />
         </div>
       </FbSection>

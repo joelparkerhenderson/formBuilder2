@@ -1,5 +1,5 @@
 import React from 'react';
-import { fbQuestion as FbQuestion } from './fbQuestion';
+import { fbQuestion as FbQuestion, fbQuestionRequiredMarkerContext } from './fbQuestion';
 
 interface fbPasswordProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -29,6 +29,8 @@ export const fbPassword: React.FC<fbPasswordProps> = ({
   subfield = false,
   ...props
 }) => {
+  const questionOwnsRequiredMarkers = React.useContext(fbQuestionRequiredMarkerContext);
+  const renderRequiredMarkers = !questionOwnsRequiredMarkers;
   const renderInput = () => {
     return (
       <input
@@ -59,6 +61,7 @@ export const fbPassword: React.FC<fbPasswordProps> = ({
 
   if (!label) {
     if (required) {
+      if (!renderRequiredMarkers) return renderInput();
       return (
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.2rem', width: '100%', boxSizing: 'border-box' }}>
           <div style={{ flex: 1, width: '100%' }}>

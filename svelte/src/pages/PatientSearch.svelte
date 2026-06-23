@@ -55,7 +55,7 @@
     </header>
     <section class="patient-list-main" aria-label="Patient search results">
       {#if loading}
-        <div class="patient-list-muted">Querying clinical registry...</div>
+        <div class="patient-list-muted">Querying patient registry...</div>
       {:else if patients.length === 0}
         {#if searchQuery.trim()}<div class="patient-list-muted italic">No matches found</div>{/if}
       {:else}

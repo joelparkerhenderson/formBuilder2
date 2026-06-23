@@ -1,6 +1,6 @@
 /**
  * Utility functions for form state tracking, normalization, and comparison.
- * Standardizes complex clinical form comparison logic to determine if a form has changed.
+ * Standardises complex form comparison logic to determine if a form has changed.
  */
 
 /**

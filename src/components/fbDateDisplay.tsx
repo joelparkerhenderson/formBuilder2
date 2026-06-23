@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatClinicalDate } from '../utils/dateFormat';
+import { formatFormDate } from '../utils/dateFormat';
 
 interface fbDateDisplayProps extends React.HTMLAttributes<HTMLSpanElement> {
   value?: string | Date | null;
@@ -9,7 +9,7 @@ export function formatDisplayDate(value?: string | Date | null): string {
   if (!value) return '';
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) return '';
-    return formatClinicalDate(value);
+    return formatFormDate(value);
   }
   const trimmed = value.trim();
   if (!trimmed) return '';
@@ -17,11 +17,11 @@ export function formatDisplayDate(value?: string | Date | null): string {
   if (isoDateOnly) {
     const [, year, month, day] = isoDateOnly;
     const date = new Date(Number(year), Number(month) - 1, Number(day));
-    return formatClinicalDate(date);
+    return formatFormDate(date);
   }
   const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) return trimmed;
-  return formatClinicalDate(parsed);
+  return formatFormDate(parsed);
 }
 
 export const fbDateDisplay: React.FC<fbDateDisplayProps> = ({

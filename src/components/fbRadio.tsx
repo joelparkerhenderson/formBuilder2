@@ -1,4 +1,6 @@
 import React from 'react';
+import { fbGroupRequiredMarkerContext } from './fbGroup';
+import { fbQuestionRequiredMarkerContext } from './fbQuestion';
 
 interface fbRadioProps {
   id?: string;
@@ -8,6 +10,8 @@ interface fbRadioProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   label: string;
   required?: boolean;
+  requiredForAudit?: boolean;
+  showRequiredMarkers?: boolean;
   children?: React.ReactNode; // For subquestions or nested content
   style?: React.CSSProperties;
 }
@@ -20,9 +24,15 @@ export const fbRadio: React.FC<fbRadioProps> = ({
   onChange,
   label,
   required,
+  requiredForAudit,
+  showRequiredMarkers = true,
   children,
   style,
 }) => {
+  const groupOwnsRequiredMarkers = React.useContext(fbGroupRequiredMarkerContext);
+  const questionOwnsRequiredMarkers = React.useContext(fbQuestionRequiredMarkerContext);
+  const renderRequiredMarkers = showRequiredMarkers && !groupOwnsRequiredMarkers && !questionOwnsRequiredMarkers;
+
   return (
     <div className="fb-subquestion-wrapper" style={style}>
       <label
@@ -58,7 +68,11 @@ export const fbRadio: React.FC<fbRadioProps> = ({
             boxShadow: 'none'
           }}
         />
-        <span style={{ fontWeight: 300 }}>{label}</span>
+        <span style={{ fontWeight: 300 }}>
+          {label}
+          {renderRequiredMarkers && requiredForAudit && <span style={{ backgroundColor: '#fd8a10', color: 'white', fontSize: '0.8rem', fontWeight: 300, lineHeight: 1, marginLeft: '0.1rem', padding: '0.05rem 0.2rem', display: 'inline-block', whiteSpace: 'nowrap' }}>RfA</span>}
+          {renderRequiredMarkers && required && <span style={{ color: '#d50000', marginLeft: '0.1rem', fontWeight: 500 }}>*</span>}
+        </span>
       </label>
       {checked && children && (
         <div className="pl-6 pb-1">

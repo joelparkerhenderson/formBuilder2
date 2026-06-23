@@ -6,10 +6,11 @@ import { fbBloodPressure as FbBloodPressure } from './components/fbBloodPressure
 import { fbBoxedAlert as FbBoxedAlert, fbBoxedInfo as FbBoxedInfo, fbBoxedWarning as FbBoxedWarning } from './components/fbBoxedMessage';
 import { fbButton as FbButton } from './components/fbButton';
 import { fbDropdown as FbDropdown } from './components/fbDropdown';
-import { fbExactDate as FbExactDate } from './components/fbExactDate';
+import { fbDateExact as FbExactDate } from './components/fbDateExact';
 import { fbMSISelector as FbMSISelector } from './components/fbMSISelector';
 import { fbNumberInput as FbNumberInput } from './components/fbNumberInput';
-import { fbPartialDate as FbPartialDate } from './components/fbPartialDate';
+import { fbDatePartial as FbPartialDate } from './components/fbDatePartial';
+import { fbRequiredForAudit as FbRequiredForAudit } from './components/fbRequiredForAudit';
 import { fbGridRow as FbGridRow } from './components/fbGridRow';
 import { fbGridCell as FbGridCell } from './components/fbGridCell';
 import { fbLayoutNav as FbLayoutNav } from './components/fbLayoutNav';
@@ -67,8 +68,8 @@ type DesignerComponentType =
   | 'fbBloodPressure'
   | 'fbCheck'
   | 'fbRadio'
-  | 'fbPartialDate'
-  | 'fbExactDate'
+  | 'fbDatePartial'
+  | 'fbDateExact'
   | 'fbMSISelector'
   | 'fbSCTDiagnosis'
   | 'fbSCTProcedure';
@@ -84,6 +85,7 @@ interface DesignerComponentSpec {
   type: DesignerComponentType;
   label: string;
   required?: boolean;
+  requiredForAudit?: boolean;
   tooltip?: string;
   databaseColumn?: string;
   placeholder?: string;
@@ -198,8 +200,8 @@ const questionTypes: DesignerComponentType[] = [
   'fbCheck',
   'fbRadio',
   'fbGroup',
-  'fbPartialDate',
-  'fbExactDate',
+  'fbDatePartial',
+  'fbDateExact',
   'fbMSISelector',
   'fbSCTDiagnosis',
   'fbSCTProcedure',
@@ -226,8 +228,8 @@ const typeLabels: Record<DesignerComponentType, string> = {
   fbBloodPressure: 'Blood pressure',
   fbCheck: 'Checkbox',
   fbRadio: 'Radio button',
-  fbPartialDate: 'Partial date',
-  fbExactDate: 'Exact date',
+  fbDatePartial: 'Partial date',
+  fbDateExact: 'Exact date',
   fbMSISelector: 'Staff selector',
   fbSCTDiagnosis: 'SNOMED CT diagnosis',
   fbSCTProcedure: 'SNOMED CT procedure',
@@ -565,8 +567,9 @@ const nextUniqueComponentId = (type: DesignerComponentType, existing: DesignerCo
   return `${prefix}${index}`;
 };
 
-const cleanEditedLabel = (value: string, required?: boolean) => {
-  const label = value.replace(/\s+/g, ' ').trim();
+const cleanEditedLabel = (value: string, required?: boolean, requiredForAudit?: boolean) => {
+  let label = value.replace(/\s+/g, ' ').trim();
+  if (requiredForAudit) label = label.replace(/\s*RfA\s*$/g, '').trim();
   return required ? label.replace(/\s*\*+\s*$/g, '').trim() : label;
 };
 
@@ -841,6 +844,7 @@ const makeComponent = (type: DesignerComponentType, existing: DesignerComponentS
     type,
     label,
     required: false,
+    requiredForAudit: false,
     placeholder: ['fbTextInput', 'fbTime', 'fbTextArea'].includes(type) ? '' : undefined,
     options: ['fbDropdown', 'fbRadio', 'fbCheck'].includes(type)
       ? [{ value: 'option1', label: 'Option 1' }]
@@ -1643,12 +1647,15 @@ export default function Composer() {
     const hasLabel = Boolean(component.label.trim());
     if (!hasLabel) return null;
     const labelWeight = componentTextWeight(component, 500);
+    const renderMarkers = (
+      <>
+        {component.requiredForAudit && <FbRequiredForAudit />}
+        {component.required && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}
+      </>
+    );
     return (
       <label
         {...labelTooltipProps(component)}
-        contentEditable={!publicId && !readOnlyPreview}
-        suppressContentEditableWarning
-        onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
         style={{
           fontFamily: "'Roboto', sans-serif",
           fontSize: '1rem',
@@ -1658,8 +1665,15 @@ export default function Composer() {
           display: 'block',
         }}
       >
-        {component.label}
-        {component.required && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}
+        <span
+          contentEditable={!publicId && !readOnlyPreview}
+          suppressContentEditableWarning
+          onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required, component.requiredForAudit) })}
+          style={{ outline: 'none' }}
+        >
+          {component.label}
+        </span>
+        {renderMarkers}
       </label>
     );
   };
@@ -1905,7 +1919,7 @@ export default function Composer() {
         : undefined;
       return (
         <div className="fb-question-container" style={{ marginBottom: '0.4rem' }}>
-          {hasLabel && <label {...labelTooltipProps(component)} style={{ fontWeight: componentTextWeight(component, 300), fontSize: '0.8rem' }}>{component.label}{component.required && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}</label>}
+          {hasLabel && <label {...labelTooltipProps(component)} style={{ fontWeight: componentTextWeight(component, 300), fontSize: '0.8rem' }}>{component.label}{component.requiredForAudit && <FbRequiredForAudit />}{component.required && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}</label>}
           <div
             className={coded !== undefined ? 'fb-rov-field-value-inline' : undefined}
             style={{ fontWeight: componentTextWeight(component, 500), minHeight: '1.4rem', marginLeft: '0.4rem', whiteSpace: 'pre-line' }}
@@ -1918,16 +1932,16 @@ export default function Composer() {
       );
     }
     if (component.type === 'fbTextInput') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTextInput id={component.id} name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTextInput id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} showRequiredMarkers={!hasLabel} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbTime') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTime id={component.id} name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTime id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbTextArea') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTextArea id={component.id} name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || ''} fullWidth={!!component.fullWidth} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTextArea id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || ''} fullWidth={!!component.fullWidth} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     }
-    if (component.type === 'fbDropdown') return <div className="fb-question-container">{renderEditableLabel(component)}<FbDropdown id={component.id} name={component.id} required={inputRequired} value={value} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} options={component.options || []} {...controlTooltipProps(component)} /></div>;
-    if (component.type === 'fbNumberInput') return <div className="fb-question-container">{renderEditableLabel(component)}<FbNumberInput id={component.id} name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+    if (component.type === 'fbDropdown') return <div className="fb-question-container">{renderEditableLabel(component)}<FbDropdown id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} options={component.options || []} {...controlTooltipProps(component)} /></div>;
+    if (component.type === 'fbNumberInput') return <div className="fb-question-container">{renderEditableLabel(component)}<FbNumberInput id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     if (component.type === 'fbNumberInputWithUnits') {
       return (
         <div className="fb-question-container">
@@ -1936,6 +1950,7 @@ export default function Composer() {
             id={component.id}
             name={component.id}
             required={inputRequired}
+            requiredForAudit={!hasLabel && component.requiredForAudit}
             value={value}
             onChange={(nextValue) => setPreviewValue(component.id, nextValue)}
             units={component.units || 'units'}
@@ -1953,7 +1968,6 @@ export default function Composer() {
             }}
             {...controlTooltipProps(component)}
           />
-          {inputRequired && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}
         </div>
       );
     }
@@ -1966,6 +1980,7 @@ export default function Composer() {
             id={component.id}
             name={component.id}
             required={inputRequired}
+            requiredForAudit={!hasLabel && component.requiredForAudit}
             systolic={bpValue.systolic || ''}
             diastolic={bpValue.diastolic || ''}
             onChange={(nextValue) => setPreviewValue(component.id, nextValue)}
@@ -1979,7 +1994,7 @@ export default function Composer() {
           <span
             contentEditable={!publicId && !readOnlyPreview}
             suppressContentEditableWarning
-            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
+            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required, component.requiredForAudit) })}
             style={{ outline: 'none' }}
           >
             {cleanDisplayLabel(component.label)}
@@ -1993,7 +2008,7 @@ export default function Composer() {
           <span
             contentEditable={!publicId && !readOnlyPreview}
             suppressContentEditableWarning
-            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
+            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required, component.requiredForAudit) })}
             style={{ outline: 'none' }}
           >
             {cleanDisplayLabel(component.label)}
@@ -2007,7 +2022,7 @@ export default function Composer() {
           <span
             contentEditable={!publicId && !readOnlyPreview}
             suppressContentEditableWarning
-            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
+            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required, component.requiredForAudit) })}
             style={{ outline: 'none' }}
           >
             {cleanDisplayLabel(component.label)}
@@ -2015,11 +2030,11 @@ export default function Composer() {
         )} />
       );
     }
-    if (component.type === 'fbPartialDate') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbPartialDate name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+    if (component.type === 'fbDatePartial') {
+      return <div className="fb-question-container">{renderEditableLabel(component)}<FbPartialDate name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} showRequiredMarkers={!hasLabel} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     }
-    if (component.type === 'fbExactDate') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbExactDate name={component.id} required={inputRequired} value={value} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+    if (component.type === 'fbDateExact') {
+      return <div className="fb-question-container">{renderEditableLabel(component)}<FbExactDate name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} showRequiredMarkers={!hasLabel} value={value} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbRadio' || component.type === 'fbCheck') {
       const checked = component.type === 'fbRadio'
@@ -2061,10 +2076,11 @@ export default function Composer() {
                 onFocus={() => {
                   if (!publicId) setSelectedId(component.id);
                 }}
-                onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
+                onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required, component.requiredForAudit) })}
                 style={{ fontWeight: componentTextWeight(component, 300), outline: 'none' }}
               >
                 {component.label}
+                {component.requiredForAudit && <FbRequiredForAudit />}
                 {component.required && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}
               </span>
             </label>
@@ -2078,18 +2094,19 @@ export default function Composer() {
       );
     }
     if (component.type === 'fbMSISelector') {
-      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbMSISelector name={component.id} required={inputRequired} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} hasLabel={hasLabel} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbMSISelector name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} hasLabel={hasLabel} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbSCTDiagnosis') {
-      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbSCTDiagnosis name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} required={inputRequired} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbSCTDiagnosis name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbSCTProcedure') {
-      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbSCTProcedure name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} required={inputRequired} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbSCTProcedure name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} {...controlTooltipProps(component)} /></div>;
     }
     return (
       <div className="fb-question-container">
         {renderEditableLabel(component)}
         <input required={inputRequired} value={value} onChange={(event) => setPreviewValue(component.id, event.target.value)} placeholder={component.placeholder || component.type} style={{ width: '100%' }} {...controlTooltipProps(component)} />
+        {component.requiredForAudit && <FbRequiredForAudit />}
         {inputRequired && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}
       </div>
     );
@@ -2293,7 +2310,7 @@ export default function Composer() {
             onFocus={() => {
               if (!publicId) setSelectedId(component.id);
             }}
-            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
+            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required, component.requiredForAudit) })}
             style={{ fontWeight: componentTextWeight(component, 300), outline: 'none' }}
           >
             {component.label}
@@ -2320,7 +2337,7 @@ export default function Composer() {
             {...labelTooltipProps(component)}
             contentEditable={!publicId && !readOnlyPreview}
             suppressContentEditableWarning
-            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
+            onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required, component.requiredForAudit) })}
             style={{
               backgroundColor: 'rgb(27, 110, 194)',
               color: 'white',
@@ -2381,15 +2398,19 @@ export default function Composer() {
         : (component.children || []);
       return renderSelectionChrome(component, (
         <FbGroup
+          required={component.required}
+          requiredForAudit={component.requiredForAudit}
+          showRequiredMarkers={false}
           label={(
             <span
               {...labelTooltipProps(component)}
               contentEditable={!publicId && !readOnlyPreview}
               suppressContentEditableWarning
-              onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required) })}
+              onBlur={(event) => updateComponent(component.id, { label: cleanEditedLabel(event.currentTarget.textContent || component.label, component.required, component.requiredForAudit) })}
               style={{ fontWeight: componentTextWeight(component, 500), outline: 'none' }}
             >
               {component.label}
+              {component.requiredForAudit && <FbRequiredForAudit />}
               {component.required && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}
             </span>
           )}
@@ -2513,7 +2534,11 @@ export default function Composer() {
             <FbTableBody>
               {component.requireAtLeastOneRow && (
                 <FbTableRow>
-                  <FbTableCell colSpan={columns.length + (component.includeDragHandles ? 1 : 0) + (component.includeRowDeleteButtons ? 1 : 0) + (greenBoxesVisible ? columns.length + 1 : 0)} style={{ color: '#d50000', fontWeight: 500 }}>
+                  <FbTableCell
+                    className="fb-table-required-row"
+                    colSpan={columns.length + (component.includeDragHandles ? 1 : 0) + (component.includeRowDeleteButtons ? 1 : 0) + (greenBoxesVisible ? columns.length + 1 : 0)}
+                    style={{ color: '#d50000', fontSize: '0.8rem', fontStyle: 'italic', fontWeight: 500 }}
+                  >
                     {component.requireAtLeastOneRowText || 'Enter at least one row'}
                   </FbTableCell>
                 </FbTableRow>
@@ -2913,6 +2938,7 @@ export default function Composer() {
                 />
               ))}
               {row('Required', toggle(template.required, (checked) => updateSelectedTableCellTemplate({ required: checked })))}
+              {row('Required for audit', toggle(template.requiredForAudit, (checked) => updateSelectedTableCellTemplate({ requiredForAudit: checked })))}
               {row('Tooltip', (
                 <PropertyTextarea
                   value={template.tooltip || ''}
@@ -2978,6 +3004,7 @@ export default function Composer() {
               />
             ))}
             {row('Required', toggle(selectedComponent.required, (checked) => updateComponent(selectedComponent.id, { required: checked })))}
+            {row('Required for audit', toggle(selectedComponent.requiredForAudit, (checked) => updateComponent(selectedComponent.id, { requiredForAudit: checked })))}
             {colSpanCell && row('Col span', (
               <PropertyTextInput
                 type="number"

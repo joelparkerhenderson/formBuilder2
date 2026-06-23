@@ -1,7 +1,7 @@
 import React from 'react';
 import { fbRoVField as FbRoVField } from './components/fbRoVField';
 import { fbRoVFooter as FbRoVFooter, fbRoVHeader as FbRoVHeader } from './components/fbRoVShell';
-import { fbSmallAddButton as SmallAddButton } from './components/fbSmallAddButton';
+import { fbAddButtonSmall as SmallAddButton } from './components/fbAddButtonSmall';
 import { useFbTooltips } from './utils/useFbTooltips';
 
 interface Patient {

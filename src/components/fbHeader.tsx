@@ -1,6 +1,6 @@
 import React from 'react';
 import { fbAddressograph as Addressograph } from './fbAddressograph';
-import { fbDraftBadge as DraftBadge } from './fbDraftBadge';
+import { fbBadgeDraft as DraftBadge } from './fbBadgeDraft';
 
 interface fbHeaderProps {
   title: string;
@@ -38,7 +38,7 @@ export const fbHeader: React.FC<fbHeaderProps> = ({
               fontWeight: 700,
               color: '#333',
               margin: 0,
-              lineHeight: '2.2rem',
+              lineHeight: '2rem',
             }}
           >
             {title}

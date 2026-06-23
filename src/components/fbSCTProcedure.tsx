@@ -10,6 +10,7 @@ interface fbSCTProcedureProps {
   onBlur?: () => void;
   placeholder?: string;
   required?: boolean;
+  requiredForAudit?: boolean;
   coded?: boolean;
   valueError?: string;
   labelStyle?: React.CSSProperties;
@@ -24,6 +25,7 @@ export const fbSCTProcedure: React.FC<fbSCTProcedureProps> = ({
   onBlur,
   placeholder = 'Type to search SNOMED CT',
   required,
+  requiredForAudit,
   coded,
   valueError,
   labelStyle,
@@ -37,6 +39,7 @@ export const fbSCTProcedure: React.FC<fbSCTProcedureProps> = ({
     onBlur={onBlur}
     placeholder={placeholder}
     required={required}
+    requiredForAudit={requiredForAudit}
     coded={coded}
     valueError={valueError}
     labelStyle={labelStyle}

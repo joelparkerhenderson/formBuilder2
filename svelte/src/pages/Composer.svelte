@@ -34,6 +34,7 @@
     text?: string;
     value?: string;
     required?: boolean;
+    requiredForAudit?: boolean;
     placeholder?: string;
     defaultValue?: string;
     units?: string;
@@ -84,8 +85,8 @@
     'fbCheck',
     'fbNumberInput',
     'fbNumberInputWithUnits',
-    'fbExactDate',
-    'fbPartialDate',
+    'fbDateExact',
+    'fbDatePartial',
     'fbTime',
     'fbMSISelector',
     'fbSCTProcedure',
@@ -106,8 +107,8 @@
     'fbCheck',
     'fbRadio',
     'fbGroup',
-    'fbPartialDate',
-    'fbExactDate',
+    'fbDatePartial',
+    'fbDateExact',
     'fbMSISelector',
     'fbSCTDiagnosis',
     'fbSCTProcedure',
@@ -127,8 +128,8 @@
     fbCheck: 'Checkbox',
     fbNumberInput: 'Number input',
     fbNumberInputWithUnits: 'Number input with units',
-    fbExactDate: 'Exact date',
-    fbPartialDate: 'Partial date',
+    fbDateExact: 'Exact date',
+    fbDatePartial: 'Partial date',
     fbTime: 'Time',
     fbMSISelector: 'Staff selector',
     fbSCTProcedure: 'SNOMED CT procedure',
@@ -173,6 +174,7 @@
   let selectedTableTarget: TableTarget | null = null;
   let draggedId: string | null = null;
   let draggedTableColumn: { tableId: string; columnIndex: number } | null = null;
+  let draggedTableRow: { tableId: string; rowIndex: number } | null = null;
   let dragDropProblemVisible = false;
   let dragDropProblemTimer: number | null = null;
   let previewValues: Record<string, string> = {};
@@ -419,7 +421,7 @@
     };
     if (type === 'fbRadio') return { ...base, label: `Radio ${sameTypeCount}`, value: `option${sameTypeCount}` };
     if (type === 'fbCheck') return { ...base, label: `Check ${sameTypeCount}`, value: `option${sameTypeCount}` };
-    if (['fbTextInput', 'fbTime', 'fbTextArea', 'fbNumberInput', 'fbNumberInputWithUnits', 'fbExactDate', 'fbPartialDate', 'fbMSISelector', 'fbSCTProcedure', 'fbSCTDiagnosis', 'fbBloodPressure'].includes(type)) {
+    if (['fbTextInput', 'fbTime', 'fbTextArea', 'fbNumberInput', 'fbNumberInputWithUnits', 'fbDateExact', 'fbDatePartial', 'fbMSISelector', 'fbSCTProcedure', 'fbSCTDiagnosis', 'fbBloodPressure'].includes(type)) {
       return { ...base, label: `Question ${sameTypeCount}`, placeholder: ['fbTextInput', 'fbTime', 'fbTextArea'].includes(type) ? '' : undefined, fullWidth: type === 'fbTextArea' ? false : undefined, units: type === 'fbNumberInputWithUnits' ? 'units' : undefined };
     }
     if (type === 'fbNumberInputWithUnits') return { ...base, units: 'units' };
@@ -978,6 +980,20 @@
     });
   }
 
+  function moveTableRow(tableId: string, fromIndex: number, toIndex: number) {
+    let movedToIndex = fromIndex;
+    updateTable(tableId, (table) => {
+      const rows = tableRows(table);
+      if (fromIndex < 0 || fromIndex >= rows.length || toIndex < 0 || toIndex >= rows.length || fromIndex === toIndex) return table;
+      const nextRows = [...rows];
+      const [row] = nextRows.splice(fromIndex, 1);
+      nextRows.splice(toIndex, 0, row);
+      movedToIndex = toIndex;
+      return { ...table, tableRows: nextRows };
+    });
+    selectedTableTarget = { kind: 'row', tableId, rowIndex: movedToIndex };
+  }
+
   function moveTableColumnToSeparator(tableId: string, fromIndex: number, separatorIndex: number) {
     let movedToIndex = fromIndex;
     updateTable(tableId, (table) => {
@@ -1313,6 +1329,7 @@
 </script>
 
 {#snippet requiredMark(component: ComposerComponent)}
+  {#if component.requiredForAudit}<span class="required-for-audit">RfA</span>{/if}
   {#if component.required}<span class="required">*</span>{/if}
 {/snippet}
 
@@ -1386,9 +1403,9 @@
         onUnitClick={(event) => event.stopPropagation()}
         onUnitBlur={(value) => updateTableCellTemplate(tableId, columnIndex, { units: value })}
       />
-    {:else if template.type === 'fbExactDate' || template.type === 'fbPartialDate'}
+    {:else if template.type === 'fbDateExact' || template.type === 'fbDatePartial'}
       {@render tableTemplateLabel(template, tableId, columnIndex, rowIndex)}
-      <input type="text" placeholder={template.type === 'fbExactDate' ? 'dd-Mmm-yyyy' : 'Month yyyy'} value={previewValues[previewId] ?? template.defaultValue ?? ''} readonly={isReadOnlyPreview} oninput={(event) => setPreviewValue(previewId, event.currentTarget.value)} />
+      <input type="text" placeholder={template.type === 'fbDateExact' ? 'dd-Mmm-yyyy' : 'Month yyyy'} value={previewValues[previewId] ?? template.defaultValue ?? ''} readonly={isReadOnlyPreview} oninput={(event) => setPreviewValue(previewId, event.currentTarget.value)} />
     {:else if template.type === 'fbTime'}
       {@render tableTemplateLabel(template, tableId, columnIndex, rowIndex)}
       <input type="time" value={previewValues[previewId] ?? template.defaultValue ?? ''} readonly={isReadOnlyPreview} oninput={(event) => setPreviewValue(previewId, event.currentTarget.value)} />
@@ -1653,12 +1670,32 @@
           </FbTableHeader>
           <FbTableBody>
           {#if component.requireAtLeastOneRow}
-            <FbTableRow><FbTableCell style="color: #d50000; font-weight: 500;" colspan={columns.length + (component.includeDragHandles ? 1 : 0) + (component.includeRowDeleteButtons ? 1 : 0) + (greenBarsVisible ? columns.length + 1 : 0)}>{component.requireAtLeastOneRowText || 'Enter at least one row'}</FbTableCell></FbTableRow>
+            <FbTableRow><FbTableCell className="fb-table-required-row" style="color: #d50000; font-size: 0.8rem; font-style: italic; font-weight: 500;" colspan={columns.length + (component.includeDragHandles ? 1 : 0) + (component.includeRowDeleteButtons ? 1 : 0) + (greenBarsVisible ? columns.length + 1 : 0)}>{component.requireAtLeastOneRowText || 'Enter at least one row'}</FbTableCell></FbTableRow>
           {/if}
           {#each rows as row, rowIndex (row.id || rowIndex)}
             <FbTableRow
               className={selectedRowIndex === rowIndex ? 'fb-composer-table-row-selected' : ''}
+              draggable={!!component.includeDragHandles}
               onclick={(event) => { event.stopPropagation(); selectTableRow(component.id, rowIndex); }}
+              ondragstart={(event) => {
+                if (!component.includeDragHandles) return;
+                draggedTableRow = { tableId: component.id, rowIndex };
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/composer-table-row', `${component.id}:${rowIndex}`);
+              }}
+              ondragover={(event) => {
+                if (draggedTableRow?.tableId === component.id) {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'move';
+                }
+              }}
+              ondrop={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (draggedTableRow?.tableId === component.id) moveTableRow(component.id, draggedTableRow.rowIndex, rowIndex);
+                draggedTableRow = null;
+              }}
+              ondragend={() => (draggedTableRow = null)}
             >
               {#if component.includeDragHandles}<FbTableCell width="2rem" style="text-align: center;"><span class="material-icons table-drag-icon" aria-hidden="true" title="Drag up or down to order list">swap_vertical_circle</span></FbTableCell>{/if}
               {#if greenBarsVisible}
@@ -1788,9 +1825,9 @@
         }}
         onUnitBlur={(value) => updateComponent(component.id, { units: value })}
       />
-    {:else if component.type === 'fbExactDate' || component.type === 'fbPartialDate'}
+    {:else if component.type === 'fbDateExact' || component.type === 'fbDatePartial'}
       {@render editableLabel(component)}
-      <input type="text" placeholder={component.type === 'fbExactDate' ? 'dd-Mmm-yyyy' : 'Month yyyy'} value={previewValues[component.id] ?? component.defaultValue ?? ''} readonly={isReadOnlyPreview} oninput={(event) => setPreviewValue(component.id, event.currentTarget.value)} />
+      <input type="text" placeholder={component.type === 'fbDateExact' ? 'dd-Mmm-yyyy' : 'Month yyyy'} value={previewValues[component.id] ?? component.defaultValue ?? ''} readonly={isReadOnlyPreview} oninput={(event) => setPreviewValue(component.id, event.currentTarget.value)} />
     {:else if component.type === 'fbTime'}
       {@render editableLabel(component)}
       <input type="time" value={previewValues[component.id] ?? component.defaultValue ?? ''} readonly={isReadOnlyPreview} oninput={(event) => setPreviewValue(component.id, event.currentTarget.value)} />
@@ -2021,6 +2058,7 @@
                       <tr><th scope="row">Units</th><td><FbcpTextInput value={propertyComponent.units || ''} onInput={(value) => updatePropertyComponent({ units: value })} /></td></tr>
                     {/if}
                     <tr><th scope="row">Required</th><td><FbcpCheck checked={!!propertyComponent.required} onChange={(checked) => updatePropertyComponent({ required: checked })} /></td></tr>
+                    <tr><th scope="row">Required for audit</th><td><FbcpCheck checked={!!propertyComponent.requiredForAudit} onChange={(checked) => updatePropertyComponent({ requiredForAudit: checked })} /></td></tr>
                     {#if selectedColSpanCell && !selectedTableTemplate}
                       <tr><th scope="row">Col span</th><td><FbcpTextInput type="number" min="1" max="12" value={String(selectedColSpanCell.colSpan || 1)} onInput={(value) => updateComponent(selectedColSpanCell!.id, { colSpan: Math.min(12, Math.max(1, Number(value) || 1)) })} /></td></tr>
                     {/if}
@@ -2799,6 +2837,19 @@
   .required {
     color: var(--fb-red);
     font-weight: 500;
+  }
+
+  .required-for-audit {
+    display: inline-block;
+    margin-left: 0.1rem;
+    padding: 0.05rem 0.2rem;
+    background: var(--fb-orange);
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1;
+    vertical-align: baseline;
+    white-space: nowrap;
   }
 
   .preview-group {

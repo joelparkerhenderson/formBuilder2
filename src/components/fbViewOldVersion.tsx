@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { fbSmallerButton as FbSmallerButton } from './fbSmallerButton';
+import { fbButtonSmaller as FbSmallerButton } from './fbButtonSmaller';
 
 interface fbViewOldVersionProps {
   onClick: () => void;

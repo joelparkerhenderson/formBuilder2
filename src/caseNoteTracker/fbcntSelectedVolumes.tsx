@@ -1,30 +1,39 @@
 import React from 'react';
 import type { CntPickListEntry, CntStore, CntVolume } from './cntStore';
 import { fbGreen } from './cntStyles';
-import { locationLabelForVolume } from './cntStore';
+import { locationDisplayText, FbcntLocationDisplay } from './fbcntLocationDisplay';
+import { FbcntBadgeRequested } from './fbcntBadge';
+import { FbcntTag } from './fbcntTag';
 
 type LocationVolumeTree = Record<string, Record<string, Record<string, Record<string, CntVolume[]>>>>;
 
-export function FbcntSelectedVolumes({ volumes }: { volumes: CntVolume[] }) {
-  return <VolumeGroups volumes={volumes} />;
+export function FbcntSelectedVolumes({ store, volumes }: { store?: CntStore; volumes: CntVolume[] }) {
+  return <VolumeGroups store={store} volumes={volumes} />;
 }
 
 export function FbcntSelectedVolumesLocation({
   store,
   volumes,
   pickListEntries,
+  requestedLocationUuid = '',
 }: {
   store: CntStore;
   volumes: CntVolume[];
   pickListEntries: CntPickListEntry[];
+  requestedLocationUuid?: string;
 }) {
   const received = new Set(pickListEntries.filter((entry) => entry.received).map((entry) => entry.volumeUuid));
+  const requested = new Set(
+    store.requests
+      .filter((request) => request.status === 'open' && (!requestedLocationUuid || request.toLocationUuid === requestedLocationUuid))
+      .map((request) => request.volumeUuid),
+  );
   if (!volumes.length) return <span style={styles.empty}>No volumes selected</span>;
   const tree = volumes.reduce<LocationVolumeTree>((acc, volume) => {
     acc[volume.healthBoard] ||= {};
     acc[volume.healthBoard][volume.locality] ||= {};
     acc[volume.healthBoard][volume.locality][volume.type] ||= {};
-    const location = locationLabelForVolume(store, volume);
+    const location = locationDisplayText(store, undefined, volume);
     acc[volume.healthBoard][volume.locality][volume.type][location] ||= [];
     acc[volume.healthBoard][volume.locality][volume.type][location].push(volume);
     return acc;
@@ -42,19 +51,24 @@ export function FbcntSelectedVolumesLocation({
                   <div>{type}</div>
                   {Object.entries(locations).map(([location, items]) => {
                     const sortedItems = sortVolumes(items);
-                    const receivedClass = sortedItems.every((volume) => received.has(volume.uuid)) ? 'visible' : 'hidden';
+                    const allReceived = sortedItems.every((volume) => received.has(volume.uuid));
+                    const anyRequested = sortedItems.some((volume) => requested.has(volume.uuid) && !received.has(volume.uuid));
                     return (
                       <HighlightLevel key={location} level={3} style={styles.volumeLocationGroup} tabIndex={0}>
                         <div>{volumeRangeLabel(sortedItems)}</div>
                         <div style={styles.locationUnderVolume}>
-                          <span
-                            className="material-icons"
-                            style={{ ...styles.tick, visibility: receivedClass }}
-                            aria-hidden="true"
-                          >
-                            check_circle
-                          </span>
-                          <span>{location}</span>
+                          {anyRequested ? (
+                            <FbcntBadgeRequested />
+                          ) : (
+                            <span
+                              className="material-icons"
+                              style={{ ...styles.tick, visibility: allReceived ? 'visible' : 'hidden' }}
+                              aria-hidden="true"
+                            >
+                              check_circle
+                            </span>
+                          )}
+                          <FbcntLocationDisplay store={store} volume={sortedItems[0]} withIcon compact />
                         </div>
                       </HighlightLevel>
                     );
@@ -71,9 +85,11 @@ export function FbcntSelectedVolumesLocation({
 
 function VolumeGroups({
   volumes,
+  store,
   renderVolumeDetail,
 }: {
   volumes: CntVolume[];
+  store?: CntStore;
   renderVolumeDetail?: (volume: CntVolume) => React.ReactNode;
 }) {
   const tree = volumes.reduce<Record<string, Record<string, Record<string, CntVolume[]>>>>((acc, volume) => {
@@ -102,7 +118,10 @@ function VolumeGroups({
                       style={renderVolumeDetail ? styles.volumeDetailWithAction : styles.volumeDetail}
                       tabIndex={0}
                     >
-                      <span>{volumeLabel(volume)}</span>
+                      <span style={styles.volumeNameWithTag}>
+                        {store && hasActiveTag(store, volume) && <FbcntTag />}
+                        <span>{volumeLabel(volume)}</span>
+                      </span>
                       {renderVolumeDetail?.(volume)}
                     </HighlightLevel>
                   ))}
@@ -114,6 +133,10 @@ function VolumeGroups({
       ))}
     </div>
   );
+}
+
+function hasActiveTag(store: CntStore, volume: CntVolume) {
+  return store.tags.some((tag) => tag.volumeUuid === volume.uuid && tag.status === 'active');
 }
 
 function HighlightLevel({
@@ -204,6 +227,11 @@ const styles = {
     gap: '0.5rem',
     alignItems: 'start',
   } as React.CSSProperties,
+  volumeNameWithTag: {
+    display: 'inline-flex',
+    gap: '0.25rem',
+    alignItems: 'center',
+  } as React.CSSProperties,
   level1: {
     marginLeft: '1rem',
   } as React.CSSProperties,
@@ -233,7 +261,7 @@ const styles = {
   locationUnderVolume: {
     marginLeft: '1rem',
     display: 'grid',
-    gridTemplateColumns: '1.1rem 1fr',
+    gridTemplateColumns: '1.1rem minmax(0, 1fr)',
     columnGap: '0.25rem',
     alignItems: 'start',
   } as React.CSSProperties,

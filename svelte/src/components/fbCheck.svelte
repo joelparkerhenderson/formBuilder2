@@ -4,6 +4,8 @@
   export let name = '';
   export let checked = false;
   export let label = '';
+  export let required = false;
+  export let requiredForAudit = false;
   export let tooltip = '';
   export let disabled = false;
   export let onChange: (checked: boolean) => void = () => {};
@@ -23,10 +25,11 @@
       type="checkbox"
       {name}
       {disabled}
+      {required}
       checked={checked}
       onchange={(event) => emitValue((event.currentTarget as HTMLInputElement).checked)}
     />
-    <span>{label}</span>
+    <span class="choice-label">{label}{#if requiredForAudit}<span class="fb-required-for-audit">RfA</span>{/if}{#if required}<span class="required">*</span>{/if}</span>
   </FbToolTip>
   {#if checked}
     <div class="fb-subquestion-wrapper"><slot /></div>
@@ -56,6 +59,28 @@
 
   input {
     margin: 0;
+  }
+
+  .choice-label {
+    font-weight: 300;
+  }
+
+  .fb-required-for-audit {
+    display: inline-block;
+    margin-left: 0.1rem;
+    padding: 0.05rem 0.2rem;
+    background: var(--fb-orange);
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .required {
+    margin-left: 0.1rem;
+    color: var(--fb-red);
+    font-weight: 500;
   }
 
   .fb-subquestion-wrapper .fb-subquestion-wrapper {

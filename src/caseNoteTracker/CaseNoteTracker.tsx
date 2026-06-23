@@ -4,16 +4,18 @@ import { fbBoxedInfo as FbBoxedInfo } from '../components/fbBoxedMessage';
 import { fbButton as FbButton } from '../components/fbButton';
 import { fbAddButtonForPage as FbAddButtonForPage } from '../components/fbAddButtonForPage';
 import { fbDropdown as FbDropdown } from '../components/fbDropdown';
-import { fbExactDate as FbExactDate } from '../components/fbExactDate';
+import { fbDateExact as FbExactDate } from '../components/fbDateExact';
+import { fbDateDisplay as FbDateDisplay } from '../components/fbDateDisplay';
 import { fbGridCell as FbGridCell } from '../components/fbGridCell';
 import { fbGridRow as FbGridRow } from '../components/fbGridRow';
 import { fbGroup as FbGroup } from '../components/fbGroup';
 import { fbNumberInput as FbNumberInput } from '../components/fbNumberInput';
-import { fbPopup as FbPopup } from '../components/fbPopup';
+import { fbModal as FbModal } from '../components/fbModal';
 import { fbQuestion as FbQuestion } from '../components/fbQuestion';
 import { fbRadio as FbRadio } from '../components/fbRadio';
 import { fbTextArea as FbTextArea } from '../components/fbTextArea';
 import { fbTextInput as FbTextInput } from '../components/fbTextInput';
+import { fbTimeDisplay as FbTimeDisplay } from '../components/fbTimeDisplay';
 import {
   fbTable as FbTable,
   fbTableBody as FbTableBody,
@@ -23,7 +25,7 @@ import {
 } from '../components/fbTable';
 import { fbTableCell as FbTableCell } from '../components/fbTableCell';
 import { fbUserName as FbUserName } from '../components/fbUserName';
-import { clinicalDateToIsoDate, formatClinicalDate as formatClinicalInputDate } from '../utils/dateFormat';
+import { formDateToIsoDate, formatFormDate as formatFormInputDate } from '../utils/dateFormat';
 import {
   clearSessionUserUuid,
   CntBatch,
@@ -36,7 +38,6 @@ import {
   getSessionUserUuid,
   loadCntStore,
   locationLabel,
-  locationLabelForVolume,
   loginMaintenance,
   patientName,
   resolveIdentifier,
@@ -51,37 +52,52 @@ import { FbcntHeaderForUser } from './fbcntHeaderForUser';
 import { FbcntFromLocation, FbcntLocation, FbcntToLocation } from './fbcntLocation';
 import { FbcntScan } from './fbcntScan';
 import { FbcntSelectedVolumes, FbcntSelectedVolumesLocation } from './fbcntSelectedVolumes';
-import { FbcntPicklistReceivedPopup } from './fbcntPicklistReceivedPopup';
-import { FbcntReturnListSendPopup } from './fbcntReturnListSendPopup';
+import { FbcntModalPicklistReceived } from './fbcntModalPicklistReceived';
+import { FbcntModalReturnListSend } from './fbcntModalReturnListSend';
 import { FbcntSmallButton } from './fbcntSmallButton';
-import { FbcntAdminPage } from './fbcntAdminPage';
-import { FbcntBatchPage } from './fbcntBatchPage';
-import { FbcntBatchSelectedPopup } from './fbcntBatchSelectedPopup';
-import { FbcntCreateBatchPage } from './fbcntCreateBatchPage';
-import { FbcntFindBatchPage } from './fbcntFindBatchPage';
-import { FbcntHistoryPage } from './fbcntHistoryPage';
-import { FbcntHomePage } from './fbcntHomePage';
-import { FbcntLibrariesPage } from './fbcntLibrariesPage';
-import { FbcntLocatorPage } from './fbcntLocatorPage';
-import { FbcntMovementPopup } from './fbcntMovementPopup';
-import { FbcntMyBatchesPage } from './fbcntMyBatchesPage';
-import { FbcntMyClinicsPage } from './fbcntMyClinicsPage';
-import { FbcntPicklistPage } from './fbcntPicklistPage';
-import { FbcntPreferencesPage } from './fbcntPreferencesPage';
-import { FbcntRegisterVolumePage } from './fbcntRegisterVolumePage';
-import { FbcntRequestPage } from './fbcntRequestPage';
-import { FbcntRequestPatientPage } from './fbcntRequestPatientPage';
-import { FbcntRequestsPage } from './fbcntRequestsPage';
-import { FbcntReturnListPage } from './fbcntReturnListPage';
-import { FbcntSelectClinicsPage } from './fbcntSelectClinicsPage';
-import { FbcntSelectorPage } from './fbcntSelectorPage';
-import { FbcntTagsPage } from './fbcntTagsPage';
+import { FbcntPageAdmin } from './fbcntPageAdmin';
+import { FbcntPageBatch } from './fbcntPageBatch';
+import { FbcntModalBatchSelected } from './fbcntModalBatchSelected';
+import { FbcntPageCreateBatch } from './fbcntPageCreateBatch';
+import { FbcntPageFindBatch } from './fbcntPageFindBatch';
+import { FbcntPageHistory } from './fbcntPageHistory';
+import { FbcntPageHome } from './fbcntPageHome';
+import { FbcntPageLibraries } from './fbcntPageLibraries';
+import { FbcntPageLocator } from './fbcntPageLocator';
+import { FbcntModalMovement } from './fbcntModalMovement';
+import { FbcntPageManageVolume } from './fbcntPageManageVolume';
+import { FbcntPageMyBatches } from './fbcntPageMyBatches';
+import { FbcntPageMyClinics } from './fbcntPageMyClinics';
+import { FbcntPagePicklist } from './fbcntPagePicklist';
+import { FbcntPagePreferences } from './fbcntPagePreferences';
+import { FbcntPageRegisterVolume } from './fbcntPageRegisterVolume';
+import {
+  fbcntVolumePatchFromValue,
+  fbcntVolumeValueFromVolume,
+  validateFbcntManageVolumeValue,
+  type FbcntManageVolumeValue,
+} from './fbcntManageVolume';
+import { FbcntPageRequest } from './fbcntPageRequest';
+import { FbcntPageRequestPatient } from './fbcntPageRequestPatient';
+import { FbcntPageRequests } from './fbcntPageRequests';
+import { FbcntPageReturnList } from './fbcntPageReturnList';
+import { FbcntPageSelectClinics } from './fbcntPageSelectClinics';
+import { FbcntPageSelector } from './fbcntPageSelector';
+import { FbcntPageTags } from './fbcntPageTags';
+import { FbcntPageClinicDates } from './fbcntPageClinicDates';
+import { FbcntPageAllClinics } from './fbcntPageAllClinics';
+import { FbcntPageClinicList } from './fbcntPageClinicList';
+import { FbcntPageClinicSchedule } from './fbcntPageClinicSchedule';
+import { FbcntPageLocations } from './fbcntPageLocations';
+import { FbcntLocationDisplay } from './fbcntLocationDisplay';
 import {
   clearCntNavigationStack,
+  consumeCntNavigationPopState,
   cntHomeEntry,
   formBuilderHomeEntry,
   popCntNavigation,
   pushCntNavigation,
+  readCntNavigationStack,
   writeCntNavigationStack,
 } from './cntNavigation';
 
@@ -102,11 +118,17 @@ type View =
   | 'clinics'
   | 'myClinics'
   | 'selectClinics'
+  | 'clinicSchedule'
+  | 'clinicDates'
+  | 'allClinics'
+  | 'clinicList'
+  | 'allLocations'
   | 'locations'
   | 'admin'
   | 'preferences'
   | 'selector'
   | 'addVolume'
+  | 'manageVolume'
   | 'batchDetail'
   | 'findBatch'
   | 'createBatch';
@@ -115,11 +137,39 @@ type TitleSpec = {
   kicker: string;
   title: string;
   details?: React.ReactNode;
+  titleStyle?: React.CSSProperties;
+  detailsStyle?: React.CSSProperties;
 };
 
 const patientSearchUrl = () => {
   return '/formBuilder2/index.html#/patient-search';
 };
+
+type CntBookmarkRoute =
+  | { kind: 'home'; clearHash: boolean }
+  | { kind: 'locator'; patientUuid: string; clearHash: false };
+
+function readCntBookmarkRoute(): CntBookmarkRoute | null {
+  if (typeof window === 'undefined') return null;
+  const rawHash = window.location.hash.replace(/^#\/?/, '');
+  if (!rawHash) return null;
+  const [rawPath, queryText = ''] = rawHash.split('?');
+  const parts = rawPath.split('/').filter(Boolean);
+  if (parts[0] !== 'cnt') return null;
+  const route = parts[1] || 'home';
+  const params = new URLSearchParams(queryText);
+  if (route === 'home') return { kind: 'home', clearHash: false };
+  if (route === 'locator') {
+    const patientUuid = params.get('patientUuid') || '';
+    if (patientUuid) return { kind: 'locator', patientUuid, clearHash: false };
+  }
+  return { kind: 'home', clearHash: true };
+}
+
+function clearCntBookmarkHash() {
+  const href = `${window.location.pathname}${window.location.search}`;
+  window.history.replaceState(window.history.state, '', href);
+}
 
 type CaseNoteTrackerProps = {
   inline?: boolean;
@@ -138,7 +188,10 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
   const [identifier, setIdentifier] = React.useState('');
   const [selectedPatientUuid, setSelectedPatientUuid] = React.useState('');
   const [selectedVolumeUuids, setSelectedVolumeUuids] = React.useState<string[]>([]);
+  const [managedVolumeUuid, setManagedVolumeUuid] = React.useState('');
+  const [managedVolumeDraft, setManagedVolumeDraft] = React.useState<FbcntManageVolumeValue | null>(null);
   const [selectedClinicInstanceUuid, setSelectedClinicInstanceUuid] = React.useState('');
+  const [selectedClinicUuid, setSelectedClinicUuid] = React.useState('');
   const [receivePickListVolumeUuids, setReceivePickListVolumeUuids] = React.useState<string[]>([]);
   const [returnListSendVolumeUuids, setReturnListSendVolumeUuids] = React.useState<string[]>([]);
   const [preferencesReturnView, setPreferencesReturnView] = React.useState<View>('home');
@@ -149,15 +202,20 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
   const [sendDestinationUuid, setSendDestinationUuid] = React.useState('');
   const [receiveSourceUuid, setReceiveSourceUuid] = React.useState('');
   const [receiveDestinationUuid, setReceiveDestinationUuid] = React.useState('');
-  const [addVolumeCreatedDate, setAddVolumeCreatedDate] = React.useState(() => formatClinicalInputDate(new Date()));
+  const [addVolumeCreatedDate, setAddVolumeCreatedDate] = React.useState(() => formatFormInputDate(new Date()));
   const [addVolumeHealthBoard, setAddVolumeHealthBoard] = React.useState('');
   const [addVolumeLocality, setAddVolumeLocality] = React.useState('');
   const [addVolumeType, setAddVolumeType] = React.useState('General');
   const [addVolumeStatus, setAddVolumeStatus] = React.useState<'Permanent' | 'Temporary'>('Permanent');
+  const [addVolumeRecordStatus, setAddVolumeRecordStatus] = React.useState<'active' | 'closed' | 'destroyed'>('active');
   const [addVolumeNumber, setAddVolumeNumber] = React.useState('');
+  const [addVolumeDateClosed, setAddVolumeDateClosed] = React.useState('');
+  const [addVolumeDateDestroyed, setAddVolumeDateDestroyed] = React.useState('');
+  const [addVolumeReasonDestroyed, setAddVolumeReasonDestroyed] = React.useState('');
   const [addVolumeLocationUuid, setAddVolumeLocationUuid] = React.useState('');
   const [addVolumeBarcode, setAddVolumeBarcode] = React.useState('');
   const [addVolumeRfid, setAddVolumeRfid] = React.useState('');
+  const [addVolumeBatchUuid, setAddVolumeBatchUuid] = React.useState('');
   const [createBatchPurpose, setCreateBatchPurpose] = React.useState('Clinic preparation');
   const [createBatchCurrentLocationUuid, setCreateBatchCurrentLocationUuid] = React.useState('');
   const [createBatchDestinationUuid, setCreateBatchDestinationUuid] = React.useState('');
@@ -194,8 +252,23 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
     facility: '',
     speciality: '',
   });
+  const [systemClinicFilter, setSystemClinicFilter] = React.useState({
+    healthBoard: '',
+    locality: '',
+    facility: '',
+    speciality: '',
+  });
+  const [systemLocationFilter, setSystemLocationFilter] = React.useState({
+    healthBoard: '',
+    locality: '',
+    facility: '',
+  });
+  const [includeRetrievedPicklistPatients, setIncludeRetrievedPicklistPatients] = React.useState(false);
+  const [showRescheduledClinicAppointments, setShowRescheduledClinicAppointments] = React.useState(false);
+  const [showCancelledClinicAppointments, setShowCancelledClinicAppointments] = React.useState(false);
   const mainRef = React.useRef<HTMLElement | null>(null);
   const scrollPositions = React.useRef<Partial<Record<View, number>>>({});
+  const bookmarkRouteAppliedRef = React.useRef(false);
 
   const user = store.users.find((item) => item.uuid === userUuid) || null;
   const selectedPatient = store.patients.find((patient) => patient.uuid === selectedPatientUuid) || null;
@@ -219,6 +292,43 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
     if (loginAs && getSessionUserUuid() !== loginAs) {
       handleLogin(loginAs, false);
     }
+    const restoreJson = sessionStorage.getItem('fbcntRestoreState');
+    if (restoreJson) {
+      sessionStorage.removeItem('fbcntRestoreState');
+      try {
+        const restore = JSON.parse(restoreJson) as { view?: View; selectedClinicInstanceUuid?: string };
+        if (restore.selectedClinicInstanceUuid) {
+          setSelectedClinicInstanceUuid(restore.selectedClinicInstanceUuid);
+        }
+        if (restore.view) {
+          setView(restore.view);
+          return;
+        }
+      } catch {
+        // Ignore stale restore payloads.
+      }
+    }
+    if (!bookmarkRouteAppliedRef.current) {
+      bookmarkRouteAppliedRef.current = true;
+      const bookmarkRoute = readCntBookmarkRoute();
+      if (bookmarkRoute?.clearHash) clearCntBookmarkHash();
+      if (bookmarkRoute?.kind === 'home') {
+        setView('home');
+        return;
+      }
+      if (bookmarkRoute?.kind === 'locator') {
+        const patientExists = store.patients.some((patient) => patient.uuid === bookmarkRoute.patientUuid);
+        if (patientExists) {
+          setSelectedPatientUuid(bookmarkRoute.patientUuid);
+          setSelectedVolumeUuids([]);
+          setView('locator');
+          return;
+        }
+        clearCntBookmarkHash();
+        setView('home');
+        return;
+      }
+    }
     const patientUuid = initialPatient?.uuid || initialPatientUuid || query.get('patientUuid');
     if (patientUuid && !store.patients.some((patient) => patient.uuid === patientUuid)) {
       const next = ensurePatientInStore(store, initialPatient || fallbackPatient(patientUuid));
@@ -241,6 +351,28 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
       window.removeEventListener('offline', updateOnline);
     };
   }, []);
+
+  React.useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      scrollPositions.current[view] = mainRef.current?.scrollTop || 0;
+      const entry = consumeCntNavigationPopState(event.state);
+      if (entry?.kind === 'cnt-view' && entry.view) {
+        setView(entry.view as View);
+        return;
+      }
+      if (inline && onBack && (!entry || entry.kind === 'inline-patient-search' || entry.kind === 'inline-patient-registry')) {
+        onBack();
+        return;
+      }
+      if (entry?.kind === 'url' && entry.url) {
+        window.location.href = entry.url;
+        return;
+      }
+      if (!inline) setView('home');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [inline, onBack, view]);
 
   React.useLayoutEffect(() => {
     const main = mainRef.current;
@@ -269,6 +401,47 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
     setPreferenceHealthBoard(selection.healthBoard);
     setPreferenceLocality(selection.locality);
     setPreferenceFacility(selection.facility);
+    setSystemClinicFilter({ ...selection, speciality: '' });
+    setSystemLocationFilter(selection);
+  };
+
+  const updatePreferredFilter = (nextFilter: { healthBoard: string; locality: string; facility: string }) => {
+    if (!user) return;
+    persist({
+      ...store,
+      preferences: {
+        ...store.preferences,
+        [user.uuid]: {
+          ...(store.preferences[user.uuid] || {}),
+          healthBoard: nextFilter.healthBoard,
+          locality: nextFilter.locality,
+          facility: nextFilter.facility,
+        },
+      },
+    });
+  };
+
+  const setSystemClinicFilterAndPreferences = (nextFilter: typeof systemClinicFilter) => {
+    setSystemClinicFilter(nextFilter);
+    setSystemLocationFilter({
+      healthBoard: nextFilter.healthBoard,
+      locality: nextFilter.locality,
+      facility: nextFilter.facility,
+    });
+    updatePreferredFilter(nextFilter);
+  };
+
+  const setSystemLocationFilterAndPreferences = (nextFilter: typeof systemLocationFilter) => {
+    setSystemLocationFilter(nextFilter);
+    setSystemClinicFilter((current) => ({ ...current, ...nextFilter }));
+    updatePreferredFilter(nextFilter);
+  };
+
+  const initialiseSystemFilters = () => {
+    if (!user) return;
+    const selection = preferenceSelectionForUser(store, user.uuid);
+    setSystemClinicFilter((current) => ({ ...selection, speciality: current.speciality || '' }));
+    setSystemLocationFilter(selection);
   };
 
   const handleLogin = (uuidValue: string, switchToHome = true) => {
@@ -321,6 +494,10 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
 
   const goBack = () => {
     scrollPositions.current[view] = mainRef.current?.scrollTop || 0;
+    if (readCntNavigationStack().length > 0) {
+      window.history.back();
+      return;
+    }
     const entry = popCntNavigation();
     if (entry?.kind === 'cnt-view' && entry.view) {
       setView(entry.view as View);
@@ -344,6 +521,9 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
   const navigateToView = (nextView: View) => {
     scrollPositions.current[view] = mainRef.current?.scrollTop || 0;
     pushCntNavigation({ kind: 'cnt-view', label: titleForView(view, store, selectedVolumes, selectedBatchUuid).title, view });
+    if (nextView === 'clinicSchedule' || nextView === 'allClinics' || nextView === 'allLocations') {
+      initialiseSystemFilters();
+    }
     setView(nextView);
   };
 
@@ -443,11 +623,90 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
   };
 
   const toggleVolume = (volumeUuid: string) => {
+    const volume = store.volumes.find((item) => item.uuid === volumeUuid);
+    if (volume?.status === 'destroyed') {
+      setSelectedVolumeUuids((current) => current.filter((item) => item !== volumeUuid));
+      return;
+    }
     setSelectedVolumeUuids((current) =>
       current.includes(volumeUuid)
         ? current.filter((item) => item !== volumeUuid)
         : [...current, volumeUuid]
     );
+  };
+
+  const openManageVolume = (volumeUuid: string) => {
+    const volume = store.volumes.find((item) => item.uuid === volumeUuid);
+    if (!volume) return;
+    pushCntNavigation({ kind: 'cnt-view', label: 'Case notes locator', view: 'locator' });
+    setManagedVolumeUuid(volumeUuid);
+    setManagedVolumeDraft(fbcntVolumeValueFromVolume(volume));
+    setView('manageVolume');
+  };
+
+  const updateManagedVolume = (volumeUuid: string, patch: Partial<CntVolume>) => {
+    persist({
+      ...store,
+      volumes: store.volumes.map((volume) => volume.uuid === volumeUuid ? { ...volume, ...patch } : volume),
+    });
+    if (patch.status === 'destroyed') {
+      setSelectedVolumeUuids((current) => current.filter((uuidValue) => uuidValue !== volumeUuid));
+    }
+  };
+
+  const saveManagedVolume = () => {
+    if (!managedVolumeUuid || !managedVolumeDraft) return;
+    const validationMessage = validateFbcntManageVolumeValue(managedVolumeDraft);
+    if (validationMessage) {
+      showError(validationMessage);
+      return;
+    }
+    const volume = store.volumes.find((item) => item.uuid === managedVolumeUuid);
+    if (!volume) return;
+    const patch = fbcntVolumePatchFromValue(managedVolumeDraft, volume);
+    const shouldRecordUnclosed = volume.status === 'closed' && patch.status === 'active';
+    const shouldRecordUndestroyed = volume.status === 'destroyed' && patch.status === 'active';
+    const shouldRecordMerged = volume.status !== 'closed' && patch.status === 'closed';
+    const mergeTargetVolume = managedVolumeDraft.mergedIntoVolumeUuid
+      ? store.volumes.find((item) => item.uuid === managedVolumeDraft.mergedIntoVolumeUuid)
+      : undefined;
+    const mergeTargetLabel = mergeTargetVolume
+      ? `${mergeTargetVolume.temporary ? 'Temporary volume' : 'Volume'} ${mergeTargetVolume.volumeNumber} - ${mergeTargetVolume.healthBoard} / ${mergeTargetVolume.locality} / ${mergeTargetVolume.type}`
+      : managedVolumeDraft.mergedIntoVolumeUuid;
+    const historyPatch: Partial<CntVolume> = shouldRecordMerged
+      ? {
+        events: [
+          ...volume.events,
+          {
+            uuid: uuid(`${volume.uuid}-merged-${Date.now()}`),
+            kind: 'merged',
+            datetime: new Date().toISOString(),
+            fromLocationUuid: volume.currentLocationUuid,
+            toLocationUuid: patch.currentLocationUuid || volume.currentLocationUuid,
+            targetVolumeUuid: managedVolumeDraft.mergedIntoVolumeUuid,
+            userUuid,
+            note: `Merged into ${mergeTargetLabel}`,
+          },
+        ],
+      }
+      : shouldRecordUnclosed || shouldRecordUndestroyed
+      ? {
+        events: [
+          ...volume.events,
+          {
+            uuid: uuid(`${volume.uuid}-${shouldRecordUnclosed ? 'unclosed' : 'undestroyed'}-${Date.now()}`),
+            kind: shouldRecordUnclosed ? 'unclosed' : 'undestroyed',
+            datetime: new Date().toISOString(),
+            fromLocationUuid: volume.currentLocationUuid,
+            toLocationUuid: patch.currentLocationUuid || volume.currentLocationUuid,
+            userUuid,
+            note: shouldRecordUnclosed ? 'Volume un-closed in Manage volume' : 'Volume undestroyed in Manage volume',
+          },
+        ],
+      }
+      : {};
+    updateManagedVolume(managedVolumeUuid, { ...patch, ...historyPatch });
+    goBack();
   };
 
   const sendSelected = () => {
@@ -529,6 +788,27 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
       showError('Select a patient and location before registering a volume.');
       return;
     }
+    const validationMessage = validateFbcntManageVolumeValue({
+      healthBoard: addVolumeHealthBoard,
+      locality: addVolumeLocality,
+      volumeType: addVolumeType,
+      permanentTemporary: addVolumeStatus,
+      recordStatus: addVolumeRecordStatus,
+      volumeNumber: addVolumeNumber,
+      dateCreated: addVolumeCreatedDate,
+      dateClosed: addVolumeDateClosed,
+      dateDestroyed: addVolumeDateDestroyed,
+      reasonDestroyed: addVolumeReasonDestroyed,
+      mergedIntoVolumeUuid: '',
+      locationUuid: addVolumeLocationUuid,
+      barcode: addVolumeBarcode,
+      rfid: addVolumeRfid,
+      batchUuid: addVolumeBatchUuid,
+    });
+    if (validationMessage) {
+      showError(validationMessage);
+      return;
+    }
     const location = store.locations.find((item) => item.uuid === addVolumeLocationUuid) || store.locations[0];
     const patient = store.patients.find((item) => item.uuid === selectedPatientUuid);
     if (!location || !patient) return;
@@ -546,7 +826,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
     const volumeNumber = !temporary && Number.isFinite(requestedVolumeNumber) && requestedVolumeNumber > 0
       ? requestedVolumeNumber
       : nextNumber;
-    const createdIsoDate = clinicalDateToIsoDate(addVolumeCreatedDate);
+    const createdIsoDate = formDateToIsoDate(addVolumeCreatedDate);
     const eventDatetime = createdIsoDate ? `${createdIsoDate}T12:00:00.000Z` : new Date().toISOString();
     const operationStamp = new Date().toISOString();
     const newVolumeUuid = uuid(`volume-${selectedPatientUuid}-${operationStamp}-${addVolumeType}-${Math.random()}`);
@@ -563,7 +843,13 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
       type: addVolumeType,
       volumeNumber,
       temporary,
+      status: addVolumeRecordStatus,
+      dateCreated: createdIsoDate || undefined,
+      dateClosed: addVolumeDateClosed || undefined,
+      dateDestroyed: addVolumeDateDestroyed || undefined,
+      reasonDestroyed: addVolumeReasonDestroyed.trim() || undefined,
       currentLocationUuid: location.uuid,
+      batchUuid: addVolumeBatchUuid.trim() || undefined,
       events: [{
         uuid: uuid(`${newVolumeUuid}-created-${operationStamp}`),
         kind: 'created',
@@ -591,7 +877,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
         },
       },
     });
-    setSelectedVolumeUuids([newVolumeUuid]);
+    setSelectedVolumeUuids(addVolumeRecordStatus === 'destroyed' ? [] : [newVolumeUuid]);
     setView('locator');
   };
 
@@ -608,15 +894,20 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
     const preferredLocality = userPreferences.addVolumeLocality?.[0] || preferredLocation?.locality || '';
     const preferredType = userPreferences.addVolumeType?.[0] || 'General';
     const nextNumber = nextVolumeNumber(store, selectedPatientUuid, preferredHealthBoard, preferredLocality, preferredType);
-    setAddVolumeCreatedDate(formatClinicalInputDate(new Date()));
+    setAddVolumeCreatedDate(formatFormInputDate(new Date()));
     setAddVolumeHealthBoard(preferredHealthBoard);
     setAddVolumeLocality(preferredLocality);
     setAddVolumeType(preferredType);
     setAddVolumeStatus('Permanent');
+    setAddVolumeRecordStatus('active');
     setAddVolumeNumber(String(nextNumber));
+    setAddVolumeDateClosed('');
+    setAddVolumeDateDestroyed('');
+    setAddVolumeReasonDestroyed('');
     setAddVolumeLocationUuid(preferredLocationUuid);
     setAddVolumeBarcode('');
     setAddVolumeRfid('');
+    setAddVolumeBatchUuid('');
     pushCntNavigation({ kind: 'cnt-view', label: 'Case notes locator', view: 'locator' });
     setView('addVolume');
   };
@@ -839,8 +1130,30 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
     setSelectedVolumeUuids(current.filter((volumeUuid) =>
       store.volumes.some((volume) => volume.uuid === volumeUuid && volume.patientUuid === patientUuid)
     ));
-    pushCntNavigation({ kind: 'cnt-view', label: 'Picklist', view: 'clinics' });
+    pushCntNavigation({ kind: 'cnt-view', label: titleForView(view, store, selectedVolumes, selectedBatchUuid, selectedClinicInstanceUuid, managedVolumeUuid).title, view });
     setView('selector');
+  };
+
+  const openClinicDates = (clinicUuid: string) => {
+    pushCntNavigation({ kind: 'cnt-view', label: titleForView(view, store, selectedVolumes).title, view });
+    setSelectedClinicUuid(clinicUuid);
+    setView('clinicDates');
+  };
+
+  const openClinicList = (clinicInstanceUuid: string) => {
+    pushCntNavigation({ kind: 'cnt-view', label: titleForView(view, store, selectedVolumes).title, view });
+    setSelectedClinicInstanceUuid(clinicInstanceUuid);
+    setView('clinicList');
+  };
+
+  const openPatientRecord = (patientUuid: string) => {
+    sessionStorage.setItem('fbcntPatientRecordPatientUuid', patientUuid);
+    sessionStorage.setItem('fbcntReturnState', JSON.stringify({
+      view,
+      selectedClinicInstanceUuid,
+    }));
+    pushCntNavigation({ kind: 'cnt-view', label: titleForView(view, store, selectedVolumes).title, view });
+    window.location.href = `/formBuilder2/index.html#/patient-record?patientUuid=${encodeURIComponent(patientUuid)}`;
   };
 
   const savePickListSelection = () => {
@@ -864,7 +1177,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
         })),
       ],
     });
-    setView('clinics');
+    goBack();
   };
 
   const openPickListReceive = (clinicInstanceUuid: string, patientUuid: string) => {
@@ -944,8 +1257,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
     if (!user || !selectedPatientUuid || !selectedVolumeUuids.length) return;
     const selected = store.volumes.filter((volume) => selectedVolumeUuids.includes(volume.uuid));
     const missingCustodian = selected.find((volume) => {
-      const location = store.locations.find((item) => item.uuid === volume.currentLocationUuid);
-      return !location?.custodianUserUuids.length;
+      return !custodianUuidsForLocation(store, volume.currentLocationUuid).length;
     });
     if (missingCustodian) {
       showError('Requesting is only allowed for volumes in a location with a custodian.');
@@ -1149,8 +1461,44 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
     );
   }
 
-  const title = titleForView(view, store, selectedVolumes, selectedBatchUuid);
+  const title = titleForView(view, store, selectedVolumes, selectedBatchUuid, selectedClinicInstanceUuid, managedVolumeUuid);
+  const shellTitle = view === 'clinics'
+    ? {
+      ...title,
+      details: (
+        <label style={styles.headerCheckboxLabel}>
+          <input
+            type="checkbox"
+            checked={includeRetrievedPicklistPatients}
+            onChange={(event) => setIncludeRetrievedPicklistPatients(event.currentTarget.checked)}
+          />
+          Include patients whose case notes have been retrieved
+        </label>
+      ),
+    }
+    : title;
+  const clinicListHeaderControls = view === 'clinicList' ? (
+    <div style={styles.headerCheckboxStack}>
+      <label style={styles.headerCheckboxLabel}>
+        <input
+          type="checkbox"
+          checked={showRescheduledClinicAppointments}
+          onChange={(event) => setShowRescheduledClinicAppointments(event.currentTarget.checked)}
+        />
+        Show rescheduled appointments
+      </label>
+      <label style={styles.headerCheckboxLabel}>
+        <input
+          type="checkbox"
+          checked={showCancelledClinicAppointments}
+          onChange={(event) => setShowCancelledClinicAppointments(event.currentTarget.checked)}
+        />
+        Show cancelled appointments
+      </label>
+    </div>
+  ) : null;
   const patientHeader = selectedPatient && isPatientView(view) ? <PatientAddressograph patient={selectedPatient} /> : null;
+  const headerRight = clinicListHeaderControls || patientHeader;
   const showScanBar = view === 'home';
   const footerLeft = view === 'locator'
     ? (
@@ -1188,64 +1536,73 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
 
   return (
     <Shell
-      title={title}
+      title={shellTitle}
       user={isUserSpecificView(view) ? user : undefined}
-      right={patientHeader}
+      right={headerRight}
+      headerOverride={view === 'home' ? <CntHomeHeaderTile /> : undefined}
       footerLeft={footerLeft}
       footer={
         view === 'selectClinics'
           ? (
             <>
               <FbUserName value={user.nadexId} onChange={() => {}} id="cnt-username" />
-              <button type="button" style={styles.sendButton} onClick={addSelectedClinics}>Ok</button>
-              <button type="button" style={styles.cancelButton} onClick={goBack}>Cancel</button>
+              <FbButton variant="success" onClick={addSelectedClinics}>Ok</FbButton>
+              <FbButton variant="danger" onClick={goBack}>Cancel</FbButton>
             </>
           )
           : view === 'preferences'
             ? (
               <>
                 <FbUserName value={user.nadexId} onChange={() => {}} id="cnt-username" />
-                <button type="button" style={styles.sendButton} onClick={savePreferences}>Ok</button>
+                <FbButton variant="success" onClick={savePreferences}>Ok</FbButton>
+              </>
+            )
+          : view === 'manageVolume'
+            ? (
+              <>
+                <FbUserName value={user.nadexId} onChange={() => {}} id="cnt-username" />
+                <FbButton variant="success" onClick={saveManagedVolume}>Ok</FbButton>
+                <FbButton variant="danger" onClick={goBack}>Cancel</FbButton>
               </>
             )
           : view === 'addVolume'
             ? (
               <>
                 <FbUserName value={user.nadexId} onChange={() => {}} id="cnt-username" />
-                <button type="button" style={styles.sendButton} onClick={addVolume}>Register</button>
-                <button type="button" style={styles.cancelButton} onClick={goBack}>Cancel</button>
+                <FbButton variant="success" onClick={addVolume}>Register</FbButton>
+                <FbButton variant="danger" onClick={goBack}>Cancel</FbButton>
               </>
             )
           : view === 'createBatch'
             ? (
               <>
                 <FbUserName value={user.nadexId} onChange={() => {}} id="cnt-username" />
-                <button type="button" style={styles.sendButton} onClick={createBatch}>Create</button>
-                <button type="button" style={styles.cancelButton} onClick={goBack}>Cancel</button>
+                <FbButton variant="success" onClick={createBatch}>Create</FbButton>
+                <FbButton variant="danger" onClick={goBack}>Cancel</FbButton>
               </>
             )
           : view === 'request'
             ? (
               <>
                 <FbUserName value={user.nadexId} onChange={() => {}} id="cnt-username" />
-                <button type="button" style={styles.sendButton} onClick={submitRequest}>Request</button>
-                <button type="button" style={styles.cancelButton} onClick={goBack}>Cancel</button>
+                <FbButton variant="success" onClick={submitRequest}>Request</FbButton>
+                <FbButton variant="danger" onClick={goBack}>Cancel</FbButton>
               </>
             )
           : view === 'requestSelector'
             ? (
               <>
                 <FbUserName value={user.nadexId} onChange={() => {}} id="cnt-username" />
-                <button type="button" style={styles.sendButton} onClick={saveRequestVolumeSelection}>Ok</button>
-                <button type="button" style={styles.cancelButton} onClick={goBack}>Cancel</button>
+                <FbButton variant="success" onClick={saveRequestVolumeSelection}>Ok</FbButton>
+                <FbButton variant="danger" onClick={goBack}>Cancel</FbButton>
               </>
             )
           : view === 'selector'
             ? (
               <>
                 <FbUserName value={user.nadexId} onChange={() => {}} id="cnt-username" />
-                <button type="button" style={styles.sendButton} onClick={savePickListSelection}>Ok</button>
-                <button type="button" style={styles.cancelButton} onClick={goBack}>Cancel</button>
+                <FbButton variant="success" onClick={savePickListSelection}>Ok</FbButton>
+                <FbButton variant="danger" onClick={goBack}>Cancel</FbButton>
               </>
             )
           : (
@@ -1258,7 +1615,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
       }
     >
       {offlineModalOpen && (
-        <FbPopup
+        <FbModal
           title="No network connection"
           footer={
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
@@ -1267,7 +1624,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           }
         >
           <p>Case note tracker does not work without a network connection.</p>
-        </FbPopup>
+        </FbModal>
       )}
       <main ref={mainRef} style={view === 'locator' ? styles.locatorMain : ['addVolume', 'createBatch'].includes(view) ? styles.formMain : styles.main}>
         {showScanBar && (
@@ -1280,7 +1637,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {scannerMessage && <p style={styles.note}>{scannerMessage}</p>}
-        {view === 'home' && <FbcntHomePage setView={navigateToView} openPreferences={() => {
+        {view === 'home' && <FbcntPageHome setView={navigateToView} openPreferences={() => {
           setPreferencesReturnView('home');
           loadPreferenceFields(store, user.uuid);
           setView('preferences');
@@ -1289,9 +1646,10 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           simulateHospitalNumberScan={openRandomPatientLocator}
           simulateVolumeNumberScan={openRandomVolumeLocator}
           simulateBatchNumberScan={openRandomBatch}
+          userDisplayName={`${user.firstNames} ${user.surname} (${user.nadexId})`}
         />}
         {view === 'preferences' && (
-          <FbcntPreferencesPage
+          <FbcntPagePreferences
             store={store}
             healthBoard={preferenceHealthBoard}
             setHealthBoard={setPreferenceHealthBoard}
@@ -1302,7 +1660,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {view === 'locator' && (
-          <FbcntLocatorPage
+          <FbcntPageLocator
             store={store}
             selectedPatientUuid={selectedPatientUuid}
             selectedVolumeUuids={selectedVolumeUuids}
@@ -1312,10 +1670,11 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
               setSelectedVolumeUuids([volumeUuid]);
               setView('history');
             }}
+            openManageVolume={openManageVolume}
           />
         )}
         {view === 'selector' && (
-          <FbcntSelectorPage
+          <FbcntPageSelector
             store={store}
             selectedPatientUuid={selectedPatientUuid}
             selectedVolumeUuids={selectedVolumeUuids}
@@ -1323,16 +1682,24 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {view === 'requestSelector' && (
-          <FbcntSelectorPage
+          <FbcntPageSelector
             store={store}
             selectedPatientUuid={requestPatientUuid}
             selectedVolumeUuids={selectedVolumeUuids}
             toggleVolume={toggleVolume}
           />
         )}
-        {view === 'history' && <FbcntHistoryPage store={store} volumes={selectedVolumes} />}
+        {view === 'history' && <FbcntPageHistory store={store} volumes={selectedVolumes} />}
+        {view === 'manageVolume' && (
+          <FbcntPageManageVolume
+            store={store}
+            volumeUuid={managedVolumeUuid}
+            value={managedVolumeDraft}
+            setValue={setManagedVolumeDraft}
+          />
+        )}
         {view === 'addVolume' && (
-          <FbcntRegisterVolumePage
+          <FbcntPageRegisterVolume
             store={store}
             createdDate={addVolumeCreatedDate}
             setCreatedDate={setAddVolumeCreatedDate}
@@ -1344,18 +1711,28 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
             setVolumeType={setAddVolumeType}
             status={addVolumeStatus}
             setStatus={setAddVolumeStatus}
+            recordStatus={addVolumeRecordStatus}
+            setRecordStatus={setAddVolumeRecordStatus}
             volumeNumber={addVolumeNumber}
             setVolumeNumber={setAddVolumeNumber}
+            dateClosed={addVolumeDateClosed}
+            setDateClosed={setAddVolumeDateClosed}
+            dateDestroyed={addVolumeDateDestroyed}
+            setDateDestroyed={setAddVolumeDateDestroyed}
+            reasonDestroyed={addVolumeReasonDestroyed}
+            setReasonDestroyed={setAddVolumeReasonDestroyed}
             initialLocationUuid={addVolumeLocationUuid}
             setInitialLocationUuid={setAddVolumeLocationUuid}
             barcode={addVolumeBarcode}
             setBarcode={setAddVolumeBarcode}
             rfid={addVolumeRfid}
             setRfid={setAddVolumeRfid}
+            batchUuid={addVolumeBatchUuid}
+            setBatchUuid={setAddVolumeBatchUuid}
           />
         )}
         {view === 'createBatch' && (
-          <FbcntCreateBatchPage
+          <FbcntPageCreateBatch
             store={store}
             purpose={createBatchPurpose}
             setPurpose={setCreateBatchPurpose}
@@ -1368,7 +1745,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {movementPopup === 'send' && (
-          <FbcntMovementPopup
+          <FbcntModalMovement
             title="Send selected volumes"
             store={store}
             fromLocationUuid={sendSourceUuid}
@@ -1381,7 +1758,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {movementPopup === 'receive' && (
-          <FbcntMovementPopup
+          <FbcntModalMovement
             title="Receive selected volumes"
             store={store}
             fromLocationUuid={receiveSourceUuid}
@@ -1394,7 +1771,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {batchSelectedPopupOpen && user && (
-          <FbcntBatchSelectedPopup
+          <FbcntModalBatchSelected
             store={store}
             userUuid={user.uuid}
             onSelectBatch={addSelectedVolumesToBatch}
@@ -1402,7 +1779,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {view === 'batch' && user && (
-          <FbcntMyBatchesPage
+          <FbcntPageMyBatches
             store={store}
             userUuid={user.uuid}
             openBatch={openBatch}
@@ -1410,7 +1787,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {view === 'findBatch' && user && (
-          <FbcntFindBatchPage
+          <FbcntPageFindBatch
             store={store}
             userUuid={user.uuid}
             filter={findBatchFilter}
@@ -1418,10 +1795,10 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
             addBatchFavourite={addBatchFavourite}
           />
         )}
-        {view === 'batchDetail' && <FbcntBatchPage store={store} batchUuid={selectedBatchUuid} removeVolumeFromBatch={removeVolumeFromBatch} />}
-        {view === 'tags' && <FbcntTagsPage store={store} />}
+        {view === 'batchDetail' && <FbcntPageBatch store={store} batchUuid={selectedBatchUuid} removeVolumeFromBatch={removeVolumeFromBatch} />}
+        {view === 'tags' && <FbcntPageTags store={store} />}
         {view === 'requests' && (
-          <FbcntRequestsPage
+          <FbcntPageRequests
             store={store}
             userUuid={user.uuid}
             mode="outbox"
@@ -1430,7 +1807,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {view === 'inbox' && (
-          <FbcntRequestsPage
+          <FbcntPageRequests
             store={store}
             userUuid={user.uuid}
             mode="inbox"
@@ -1439,7 +1816,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {view === 'request' && (
-          <FbcntRequestPage
+          <FbcntPageRequest
             store={store}
             patientUuid={requestPatientUuid}
             openPatientSelector={openRequestPatientSelector}
@@ -1453,9 +1830,9 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
             setToLocationUuid={setRequestToLocationUuid}
           />
         )}
-        {view === 'requestPatient' && <FbcntRequestPatientPage store={store} selectPatient={selectRequestPatient} />}
+        {view === 'requestPatient' && <FbcntPageRequestPatient store={store} selectPatient={selectRequestPatient} />}
         {view === 'returnList' && (
-          <FbcntReturnListPage
+          <FbcntPageReturnList
             store={store}
             removedPatientUuids={removedReturnPatientUuids}
             sendReturnRow={sendReturnRow}
@@ -1463,22 +1840,23 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
           />
         )}
         {view === 'clinics' && (
-          <FbcntPicklistPage
+          <FbcntPagePicklist
             store={store}
             userUuid={user.uuid}
+            includeRetrieved={includeRetrievedPicklistPatients}
             openPickListSelector={openPickListSelector}
             openPickListReceive={openPickListReceive}
           />
         )}
         {view === 'myClinics' && (
-          <FbcntMyClinicsPage
+          <FbcntPageMyClinics
             store={store}
             userUuid={user.uuid}
             confirmStopClinic={(instanceUuid) => setConfirmStopClinicInstanceUuid(instanceUuid)}
           />
         )}
         {view === 'selectClinics' && (
-          <FbcntSelectClinicsPage
+          <FbcntPageSelectClinics
             store={store}
             currentUserUuid={user.uuid}
             filter={clinicFilter}
@@ -1487,54 +1865,89 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
             toggleSelectedInstance={toggleSelectedClinicInstance}
           />
         )}
-        {view === 'locations' && <FbcntLibrariesPage store={store} userUuid={user.uuid} removeLibrary={removeLibrary} />}
-        {view === 'admin' && <FbcntAdminPage store={store} />}
+        {view === 'clinicSchedule' && (
+          <FbcntPageClinicSchedule
+            store={store}
+            filter={systemClinicFilter}
+            setFilter={setSystemClinicFilterAndPreferences}
+            openClinicDates={openClinicDates}
+          />
+        )}
+        {view === 'clinicDates' && <FbcntPageClinicDates store={store} clinicUuid={selectedClinicUuid} openClinicList={openClinicList} />}
+        {view === 'allClinics' && (
+          <FbcntPageAllClinics
+            store={store}
+            filter={systemClinicFilter}
+            setFilter={setSystemClinicFilterAndPreferences}
+            openClinicList={openClinicList}
+          />
+        )}
+        {view === 'clinicList' && (
+          <FbcntPageClinicList
+            store={store}
+            clinicInstanceUuid={selectedClinicInstanceUuid}
+            showRescheduled={showRescheduledClinicAppointments}
+            showCancelled={showCancelledClinicAppointments}
+            openPatientRecord={openPatientRecord}
+            openPickListSelector={openPickListSelector}
+            openPickListReceive={openPickListReceive}
+          />
+        )}
+        {view === 'allLocations' && (
+          <FbcntPageLocations
+            store={store}
+            filter={systemLocationFilter}
+            setFilter={setSystemLocationFilterAndPreferences}
+          />
+        )}
+        {view === 'locations' && <FbcntPageLibraries store={store} userUuid={user.uuid} removeLibrary={removeLibrary} />}
+        {view === 'admin' && <FbcntPageAdmin store={store} />}
       </main>
       {addLibraryPopupOpen && (
-        <FbPopup
+        <FbModal
           title="Add library"
           footer={
             <div style={styles.popupFooter}>
-              <button type="button" style={styles.sendButton} onClick={addLibrary}>Add</button>
-              <button type="button" style={styles.cancelButton} onClick={() => setAddLibraryPopupOpen(false)}>Cancel</button>
+              <FbButton variant="success" onClick={addLibrary}>Add</FbButton>
+              <FbButton variant="danger" onClick={() => setAddLibraryPopupOpen(false)}>Cancel</FbButton>
             </div>
           }
         >
           <FbcntLocation label="Library" store={store} value={addLibraryLocationUuid} onChange={setAddLibraryLocationUuid} />
-        </FbPopup>
+        </FbModal>
       )}
       {errorMessage && (
-        <FbPopup
+        <FbModal
           title="Error"
           footer={
             <div style={styles.popupFooter}>
-              <button type="button" style={styles.sendButton} onClick={() => setErrorMessage('')}>Ok</button>
+              <FbButton variant="success" onClick={() => setErrorMessage('')}>Ok</FbButton>
             </div>
           }
         >
           <p>{errorMessage}</p>
-        </FbPopup>
+        </FbModal>
       )}
       {batchDetailAddPopupOpen && (
-        <FbPopup
+        <FbModal
           title="Not implemented yet"
           footer={
             <div style={styles.popupFooter}>
-              <button type="button" style={styles.cancelButton} onClick={() => setBatchDetailAddPopupOpen(false)}>Close</button>
+              <FbButton variant="danger" onClick={() => setBatchDetailAddPopupOpen(false)}>Close</FbButton>
             </div>
           }
         >
           <p>Adding volumes directly from the batch page is not implemented yet.</p>
-        </FbPopup>
+        </FbModal>
       )}
       {tagSelectedPopupOpen && (
-        <FbPopup
+        <FbModal
           title="Tag selected"
           maxWidth="80vw"
           footer={
             <div style={styles.popupFooter}>
-              <button type="button" style={styles.sendButton} onClick={createTagForSelected}>Create tag</button>
-              <button type="button" style={styles.cancelButton} onClick={() => setTagSelectedPopupOpen(false)}>Cancel</button>
+              <FbButton variant="success" onClick={createTagForSelected}>Create tag</FbButton>
+              <FbButton variant="danger" onClick={() => setTagSelectedPopupOpen(false)}>Cancel</FbButton>
             </div>
           }
         >
@@ -1542,23 +1955,23 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
             <FbTextArea label="Purpose" value={tagPurpose} onChange={setTagPurpose} fullWidth />
             <FbcntLocation label="Location" store={store} value={tagLocationUuid} onChange={setTagLocationUuid} />
           </div>
-        </FbPopup>
+        </FbModal>
       )}
       {confirmStopClinicInstanceUuid && (
-        <FbPopup
+        <FbModal
           title="Stop retrieving"
           footer={
             <div style={styles.popupFooter}>
-              <button type="button" style={styles.sendButton} onClick={stopRetrievingClinic}>Stop retrieving</button>
-              <button type="button" style={styles.cancelButton} onClick={() => setConfirmStopClinicInstanceUuid('')}>Cancel</button>
+              <FbButton variant="danger" onClick={stopRetrievingClinic}>Stop retrieving</FbButton>
+              <FbButton variant="success" onClick={() => setConfirmStopClinicInstanceUuid('')}>Cancel</FbButton>
             </div>
           }
         >
           <p>Stop retrieving for this clinic instance?</p>
-        </FbPopup>
+        </FbModal>
       )}
       {pickListReceivePopupOpen && (
-        <FbcntPicklistReceivedPopup
+        <FbcntModalPicklistReceived
           volumes={store.volumes.filter((volume) =>
             volume.patientUuid === selectedPatientUuid
             && store.cntPickList.some((entry) => entry.clinicInstanceUuid === selectedClinicInstanceUuid && entry.volumeUuid === volume.uuid)
@@ -1572,7 +1985,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
         />
       )}
       {returnListSendPopup && (
-        <FbcntReturnListSendPopup
+        <FbcntModalReturnListSend
           volumes={store.volumes.filter((volume) => returnListSendPopup.volumeUuids.includes(volume.uuid)).sort(volumeSort)}
           checkedVolumeUuids={returnListSendVolumeUuids}
           toggleVolume={(volumeUuid) => setReturnListSendVolumeUuids((current) =>
@@ -1586,7 +1999,7 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
   );
 }
 
-function titleForView(view: View, store: CntStore, selectedVolumes: CntVolume[], selectedBatchUuid = ''): TitleSpec {
+function titleForView(view: View, store: CntStore, selectedVolumes: CntVolume[], selectedBatchUuid = '', selectedClinicInstanceUuid = '', managedVolumeUuid = ''): TitleSpec {
   if (view === 'history' && selectedVolumes[0]) {
     const volume = selectedVolumes[0];
     return {
@@ -1601,6 +2014,32 @@ function titleForView(view: View, store: CntStore, selectedVolumes: CntVolume[],
     };
   }
   if (view === 'locator') return { kicker: 'NHS Wales - Case note tracker', title: 'Case notes locator' };
+  if (view === 'manageVolume') {
+    const volume = store.volumes.find((item) => item.uuid === managedVolumeUuid);
+    return {
+      kicker: 'NHS Wales - Case note tracker',
+      title: 'Manage volume',
+      details: volumeIdentityText(volume),
+      titleStyle: { fontSize: '1rem', fontWeight: 500 },
+      detailsStyle: { fontSize: '2rem', fontWeight: 500, color: '#333' },
+    };
+  }
+  if (view === 'clinicList') {
+    const instance = store.clinicInstances.find((item) => item.uuid === selectedClinicInstanceUuid);
+    const clinic = store.clinics.find((item) => item.uuid === instance?.clinicUuid);
+    if (instance && clinic) {
+      return {
+        kicker: 'NHS Wales - Case note tracker',
+        title: 'Clinic list',
+        details: (
+          <div>
+            <div><FbDateDisplay value={instance.date} /> <FbTimeDisplay value={instance.startTime} />-{<FbTimeDisplay value={instance.endTime} />}</div>
+            <div>{clinic.clinicName} - {clinic.speciality} - {clinic.clinician}</div>
+          </div>
+        ),
+      };
+    }
+  }
   const titles: Record<View, string> = {
     home: 'Case note tracker',
     locator: 'Case notes locator',
@@ -1618,11 +2057,17 @@ function titleForView(view: View, store: CntStore, selectedVolumes: CntVolume[],
     clinics: 'Picklist',
     myClinics: 'Clinics',
     selectClinics: 'Select clinic(s)',
+    clinicSchedule: 'Clinic schedule',
+    clinicDates: 'Clinic dates',
+    allClinics: 'All clinics',
+    clinicList: 'Clinic list',
+    allLocations: 'Locations',
     locations: 'Libraries',
     admin: 'Admin',
     preferences: 'Preferences',
     selector: 'Case notes selector',
     addVolume: 'Register volume',
+    manageVolume: 'Manage volume',
     batchDetail: '',
     findBatch: 'Find batch',
     createBatch: 'Create batch',
@@ -1636,8 +2081,8 @@ function titleForView(view: View, store: CntStore, selectedVolumes: CntVolume[],
         details: (
           <div>
             <div>Purpose: {batch.intendedPurpose}</div>
-            <div>Current location: {locationLabel(store, batch.currentLocationUuid)}</div>
-            <div>Destination: {locationLabel(store, batch.intendedDestinationUuid)}</div>
+            <div>Current location: <FbcntLocationDisplay store={store} locationUuid={batch.currentLocationUuid} compact /></div>
+            <div>Destination: <FbcntLocationDisplay store={store} locationUuid={batch.intendedDestinationUuid} compact /></div>
             <div>Volumes: {batch.volumeUuids.length}</div>
           </div>
         ),
@@ -1647,8 +2092,13 @@ function titleForView(view: View, store: CntStore, selectedVolumes: CntVolume[],
   return { kicker: view === 'home' ? 'NHS Wales' : 'NHS Wales - Case note tracker', title: titles[view] || 'Case note tracker' };
 }
 
+function volumeIdentityText(volume?: CntVolume) {
+  if (!volume) return 'Unknown volume';
+  return `${volume.healthBoard} - ${volume.locality} - ${volume.type} - ${volume.temporary ? 'temporary volume' : 'volume'} ${volume.volumeNumber}`;
+}
+
 function isPatientView(view: View) {
-  return ['locator', 'history', 'send', 'receive', 'tags', 'selector', 'addVolume'].includes(view);
+  return ['locator', 'history', 'send', 'receive', 'tags', 'selector', 'addVolume', 'manageVolume'].includes(view);
 }
 
 function clinicHoldingLocationUuid(store: CntStore, clinicInstanceUuid: string) {
@@ -1680,10 +2130,19 @@ function isUserSpecificView(view: View) {
   return ['batch', 'requests', 'request', 'inbox', 'returnList', 'clinics', 'myClinics', 'locations', 'preferences'].includes(view);
 }
 
-function Shell({ title, user, right, footerLeft, footer, children }: { title: TitleSpec; user?: CntUser; right?: React.ReactNode; footerLeft?: React.ReactNode; footer?: React.ReactNode; children: React.ReactNode }) {
+function CntHomeHeaderTile() {
+  return (
+    <header style={styles.homeHeaderTile}>
+      <div style={styles.homeHeaderKicker}>NHS Wales</div>
+      <div style={styles.homeHeaderTitle}>Case note tracker</div>
+    </header>
+  );
+}
+
+function Shell({ title, user, right, footerLeft, footer, children, headerOverride }: { title: TitleSpec; user?: CntUser; right?: React.ReactNode; footerLeft?: React.ReactNode; footer?: React.ReactNode; children: React.ReactNode; headerOverride?: React.ReactNode }) {
   return (
     <div style={styles.shell}>
-      {user ? <FbcntHeaderForUser title={title} user={user} right={right} /> : <FbcntHeader title={title} right={right} />}
+      {headerOverride || (user ? <FbcntHeaderForUser title={title} user={user} right={right} /> : <FbcntHeader title={title} right={right} />)}
       {children}
       <footer style={styles.footer}>
         <div style={styles.footerLeft}>{footerLeft}</div>
@@ -1716,7 +2175,7 @@ function SelectedVolumeList({ store, volumes, ariaLabel = 'Selected volumes' }: 
             <FbTableCell><strong>Volume {volume.volumeNumber}</strong></FbTableCell>
             <FbTableCell>{volume.healthBoard} / {volume.locality} / {volume.type}</FbTableCell>
             <FbTableCell>{patientName(store, volume.patientUuid)}</FbTableCell>
-            <FbTableCell>{locationLabel(store, volume.currentLocationUuid)}</FbTableCell>
+            <FbTableCell><FbcntLocationDisplay store={store} locationUuid={volume.currentLocationUuid} compact /></FbTableCell>
           </FbTableRow>
         ))}
       </FbTableBody>
@@ -1846,7 +2305,7 @@ function userBatchUuids(store: CntStore, userUuid: string) {
 function defaultLibraryUuids(store: CntStore, userUuid: string) {
   const user = store.users.find((item) => item.uuid === userUuid);
   const matching = store.locations.filter((location) =>
-    location.facility === user?.facility || location.custodianUserUuids.includes(userUuid)
+    location.facility === user?.facility || custodianUuidsForLocation(store, location.uuid).includes(userUuid)
   );
   return (matching.length ? matching : store.locations.slice(0, 1)).map((location) => location.uuid);
 }
@@ -1860,9 +2319,22 @@ function userLibraryUuids(store: CntStore, userUuid: string) {
 function locationHyphenLabel(store: CntStore, locationUuid: string) {
   const location = store.locations.find((item) => item.uuid === locationUuid);
   if (!location) return '';
-  return [location.healthBoard, location.locality, location.facility, location.department, location.extra]
+  return [location.extra, location.department, location.facility, location.healthBoard]
     .filter(Boolean)
     .join('-');
+}
+
+function custodianUuidsForLocation(store: CntStore, locationUuid: string) {
+  const location = store.locations.find((item) => item.uuid === locationUuid);
+  if (!location) return [];
+  return uniqueValues(store.locations
+    .filter((candidate) =>
+      candidate.healthBoard === location.healthBoard
+      && candidate.locality === location.locality
+      && candidate.facility === location.facility
+      && candidate.department === location.department
+    )
+    .flatMap((candidate) => candidate.custodianUserUuids));
 }
 
 function volumeLocationCounts(store: CntStore, volumes: CntVolume[]) {
@@ -1991,9 +2463,41 @@ const styles = {
     fontWeight: 300,
     color: '#333',
   } as React.CSSProperties,
+  headerCheckboxLabel: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.35rem',
+    fontSize: '1rem',
+    fontWeight: 300,
+  } as React.CSSProperties,
+  headerCheckboxStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.25rem',
+    alignItems: 'flex-start',
+  } as React.CSSProperties,
   headerRight: {
     fontWeight: 500,
     color: '#333',
+  } as React.CSSProperties,
+  homeHeaderTile: {
+    boxSizing: 'border-box',
+    backgroundColor: fbBlue,
+    color: 'white',
+    borderRadius: '0.4rem',
+    padding: '1rem',
+    margin: '1.5rem 1.5rem 0.8rem 1.5rem',
+    fontFamily: "'Roboto', sans-serif",
+  } as React.CSSProperties,
+  homeHeaderKicker: {
+    fontSize: '1rem',
+    fontWeight: 300,
+    lineHeight: 1.1,
+  } as React.CSSProperties,
+  homeHeaderTitle: {
+    fontSize: '2.1rem',
+    fontWeight: 500,
+    lineHeight: 1.1,
   } as React.CSSProperties,
   footer: {
     minHeight: '2.8rem',
@@ -2454,25 +2958,5 @@ const styles = {
     fontSize: '1rem',
     fontWeight: 500,
     padding: '0 0.3rem',
-  } as React.CSSProperties,
-  sendButton: {
-    border: `0.1rem solid ${fbGreen}`,
-    borderRadius: '0.4rem',
-    backgroundColor: fbGreen,
-    color: 'white',
-    padding: '0.35rem 0.8rem',
-    fontFamily: "'Roboto', sans-serif",
-    fontWeight: 500,
-    cursor: 'pointer',
-  } as React.CSSProperties,
-  cancelButton: {
-    border: `0.1rem solid ${fbRed}`,
-    borderRadius: '0.4rem',
-    backgroundColor: fbRed,
-    color: 'white',
-    padding: '0.35rem 0.8rem',
-    fontFamily: "'Roboto', sans-serif",
-    fontWeight: 500,
-    cursor: 'pointer',
   } as React.CSSProperties,
 };

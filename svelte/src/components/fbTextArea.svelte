@@ -10,6 +10,7 @@
   export let value = '';
   export let placeholder = '';
   export let required = false;
+  export let requiredForAudit = false;
   export let subfield = false;
   export let rows = 2;
   export let fullWidth = false;
@@ -58,15 +59,18 @@
 {/snippet}
 
 {#if label}
-  <FbQuestion {label} {required} {subfield} {valueError} {tooltip}>
+  <FbQuestion {label} {required} {requiredForAudit} {subfield} {valueError} {tooltip}>
     {@render textareaControl()}
   </FbQuestion>
 {:else}
   <FbValueError message={valueError} />
-  {#if required}
+  {#if required || requiredForAudit}
     <div class="fb-unlabelled-textarea-required">
       <div class="fb-unlabelled-textarea-control">{@render textareaControl()}</div>
-      <span class="required no-label-required-star" style="color: {fbRed};">*</span>
+      <span class="no-label-required-markers">
+        {#if requiredForAudit}<span class="fb-required-for-audit">RfA</span>{/if}
+        {#if required}<span class="required no-label-required-star" style="color: {fbRed};">*</span>{/if}
+      </span>
     </div>
   {:else}
     {@render textareaControl()}
@@ -105,9 +109,26 @@
   }
 
   .no-label-required-star {
-    flex: 0 0 auto;
     line-height: 1.2rem;
-    margin-top: 0.15rem;
     user-select: none;
+  }
+
+  .no-label-required-markers {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.1rem;
+    flex: 0 0 auto;
+    margin-top: 0.15rem;
+  }
+
+  .fb-required-for-audit {
+    display: inline-block;
+    padding: 0.05rem 0.2rem;
+    background: var(--fb-orange);
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
   }
 </style>

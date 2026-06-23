@@ -3,13 +3,13 @@ import { useNavigate, useLocation } from "react-router";
 import { specialities } from "./data/specialities";
 import { fbAddressograph as Addressograph } from "./components/fbAddressograph";
 import { fbAuthControls as AuthControls } from "./components/fbAuthControls";
-import { fbExactDate as ExactDate } from "./components/fbExactDate";
-import { fbPartialDate as PartialDate } from "./components/fbPartialDate";
+import { fbDateExact as ExactDate } from "./components/fbDateExact";
+import { fbDatePartial as PartialDate } from "./components/fbDatePartial";
 import { fbSCTProcedure as FbSCTProcedure } from "./components/fbSCTProcedure";
 import { fbMSISelector as MSISelector } from "./components/fbMSISelector";
-import { fbDraftPopup as DraftPopup } from "./components/fbDraftPopup";
-import { fbPasswordPopup as PasswordPopup } from "./components/fbPasswordPopup";
-import { fbCancelPopup as CancelPopup } from "./components/fbCancelPopup";
+import { fbModalDraft as DraftPopup } from "./components/fbModalDraft";
+import { fbModalPassword as PasswordPopup } from "./components/fbModalPassword";
+import { fbModalCancel as CancelPopup } from "./components/fbModalCancel";
 import { fbFinalControl as FinalControl } from "./components/fbFinalControl";
 import { WaitingListCardRoV } from "./WaitingListCardRoV";
 import { fbSaveCancelButtons as SaveCancelButtons } from "./components/fbSaveCancelButtons";
@@ -39,7 +39,7 @@ import { fbLayout as FbLayout, SectionSpec, areAllSectionsComplete, getSectionSt
 import { createClient } from './restClient';
 import { compareFormStatesObj, cleanArrayOfObjects } from "./utils/formStateUtils";
 import { generateUUID } from "./utils/formUtils";
-import { clinicalDateToIsoDate, formatClinicalDate } from "./utils/dateFormat";
+import { formDateToIsoDate, formatFormDate } from "./utils/dateFormat";
 import { useEditFormAutoExpandTextareas, useEditFormLabelEqualization } from "./utils/formLayoutEffects";
 import { appendRow, removeRowIfMultiple, updateRowById } from "./utils/rowState";
 import { useFormSaveFeedback } from "./utils/useFormSaveFeedback";
@@ -49,7 +49,7 @@ import { assertFormVersionIsLatest } from "./utils/formVersion";
 // Create REST client
 const restClient = createClient();
 
-const formatDate = formatClinicalDate;
+const formatDate = formatFormDate;
 type SaveStatus = "final" | "draft";
 
 interface Patient {
@@ -120,7 +120,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
     outsourcing: "unknown",
     risks: [],
     namedClinicianName: "",
-    clinicalNotes: "",
+    additionalNotes: "",
   });
 
   const [procedures, setProcedures] = React.useState<
@@ -162,7 +162,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
     outsourcing: "unknown",
     risks: [],
     namedClinicianName: "",
-    clinicalNotes: "",
+    additionalNotes: "",
   }), []);
 
   const [initialSnapshot, setInitialSnapshot] = React.useState<{
@@ -184,6 +184,16 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
     highlySensitive: false,
     finalChecked: false,
   }));
+
+  const normaliseWaitingListFormState = (state: Record<string, any>) => {
+    const oldNotesKey = 'clinical' + 'Notes';
+    const next = { ...state };
+    if (next.additionalNotes === undefined && next[oldNotesKey] !== undefined) {
+      next.additionalNotes = next[oldNotesKey];
+    }
+    delete next[oldNotesKey];
+    return next;
+  };
 
   const isStateEqual = (stateA: any, stateB: any) => {
     if (!stateA || !stateB) return false;
@@ -375,11 +385,11 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
     }
 
     const applyNewFormDefaults = () => {
-      const fState = {
+      const fState = normaliseWaitingListFormState({
         ...defaultFormStateValues,
         dateListed: formatDate(new Date()),
         ...(inlineProps?.initialFormState || {}),
-      };
+      });
       const procs = inlineProps?.initialProcedures || [{ id: 1, side: "", procedure: "", additionalInfo: "" }];
       const anticoag = {
         doac: false,
@@ -463,7 +473,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
             setLatestFormVersion(historyState.latestVersion);
             setFormHistory(historyState.history);
 
-            const fState = { ...formData.form_data };
+            const fState = normaliseWaitingListFormState({ ...formData.form_data });
             const procs = (formData.form_data.procedures || [
               { id: 1, side: "", procedure: "", additionalInfo: "" },
             ]).map((p: any) => ({
@@ -568,7 +578,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
       }
 
       const formDataToSave = {
-        ...formState,
+        ...normaliseWaitingListFormState(formState),
         uuid: formUuid,
         procedures,
         anticoagChecked,
@@ -579,7 +589,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
       };
 
       const eventDate =
-        clinicalDateToIsoDate(formState.dateListed) || new Date().toISOString();
+        formDateToIsoDate(formState.dateListed) || new Date().toISOString();
 
       const patientUuidForSave =
         patient?.uuid ||
@@ -1009,6 +1019,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                             handleFieldChange("seniorClinician", value, coded)
                           }
                           required
+                          showRequiredMarkers={false}
                         />
                       </FbQuestion>
                     </FbGridRow>
@@ -1195,7 +1206,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
                         <FbTableBody>
                           {(procedures.length === 0 || procedures.every(p => !p.procedure || String(p.procedure).trim() === '')) && (
                             <FbTableRow>
-                              <td colSpan={4} className="p-2" style={{fontSize: '0.8rem', fontWeight: 500, fontStyle: 'italic', color: '#d50000', borderBottom: '1px solid silver'}}>
+                              <td colSpan={4} className="fb-table-required-row p-2" style={{fontSize: '0.8rem', fontWeight: 500, fontStyle: 'italic', color: '#d50000', borderBottom: '1px solid silver'}}>
                                 Enter at least one procedure
                               </td>
                             </FbTableRow>

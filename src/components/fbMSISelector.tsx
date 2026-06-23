@@ -1,6 +1,6 @@
 import React from 'react';
 import { parseServerResponse } from '../utils/shadesOfPaleParser';
-import { fbQuestion as FbQuestion } from './fbQuestion';
+import { fbQuestion as FbQuestion, fbQuestionRequiredMarkerContext } from './fbQuestion';
 import { fbValueError as FbValueError } from './fbValueError';
 
 interface MSISelectorProps {
@@ -11,6 +11,7 @@ interface MSISelectorProps {
   onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
   onBlur?: () => void;
   required?: boolean;
+  requiredForAudit?: boolean;
   coded?: boolean;
   placeholder?: string;
   hasLabel?: boolean;
@@ -26,12 +27,15 @@ export const fbMSISelector: React.FC<MSISelectorProps> = ({
   onFocus, 
   onBlur, 
   required, 
+  requiredForAudit,
   coded,
   placeholder = "Type to search staff index",
   hasLabel = true,
   valueError,
   labelStyle
 }) => {
+  const questionOwnsRequiredMarkers = React.useContext(fbQuestionRequiredMarkerContext);
+  const renderRequiredMarkers = !questionOwnsRequiredMarkers;
   const [searchTerm, setSearchTerm] = React.useState<string>(value);
   const [results, setResults] = React.useState<Array<{score: number, ie: {line: string}}>>([]);
   const [showDropdown, setShowDropdown] = React.useState<boolean>(false);
@@ -380,19 +384,23 @@ export const fbMSISelector: React.FC<MSISelectorProps> = ({
 
   if (label) {
     return (
-      <FbQuestion label={label} required={required} valueError={valueError} labelStyle={labelStyle}>
+      <FbQuestion label={label} required={required} requiredForAudit={requiredForAudit} valueError={valueError} labelStyle={labelStyle}>
         {renderContent()}
       </FbQuestion>
     );
   }
 
-  if (required && !hasLabel) {
+  if ((required || requiredForAudit) && !hasLabel) {
+    if (!renderRequiredMarkers) return renderWithStandaloneValueError(renderContent());
     return renderWithStandaloneValueError(
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.2rem', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ flex: 1, width: '100%' }}>
           {renderContent()}
         </div>
-        <span style={{ color: '#d50000', fontSize: '1rem', fontWeight: 'bold', lineHeight: '1.2rem', marginTop: '0.15rem', display: 'inline-block', userSelect: 'none' }}>*</span>
+        <span style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '0.1rem', marginTop: '0.15rem' }}>
+          {requiredForAudit && <span style={{ backgroundColor: '#fd8a10', color: 'white', fontSize: '0.8rem', fontWeight: 300, lineHeight: 1, padding: '0.05rem 0.2rem', display: 'inline-block', whiteSpace: 'nowrap' }}>RfA</span>}
+          {required && <span style={{ color: '#d50000', fontSize: '1rem', fontWeight: 'bold', lineHeight: '1.2rem', display: 'inline-block', userSelect: 'none' }}>*</span>}
+        </span>
       </div>
     );
   }

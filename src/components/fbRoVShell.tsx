@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { fbAddressograph as Addressograph } from './fbAddressograph';
 import { fbButton as FbButton } from './fbButton';
-import { fbDraftBadge as DraftBadge } from './fbDraftBadge';
-import { fbSupersededBadge as SupersededBadge } from './fbSupersededBadge';
+import { fbBadgeDraft as DraftBadge } from './fbBadgeDraft';
+import { fbBadgeSupperseded as SupersededBadge } from './fbBadgeSupperseded';
 
 interface fbRoVPatient {
   nhs_number: string;

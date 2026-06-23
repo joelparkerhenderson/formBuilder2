@@ -6,6 +6,7 @@
   export let label = '';
   export let value = '';
   export let required = false;
+  export let requiredForAudit = false;
   export let coded: boolean | undefined = undefined;
   export let valueError = '';
   export let tooltip = '';
@@ -13,4 +14,4 @@
   export let change: (value: string, coded: boolean) => void = () => {};
 </script>
 
-<FbSCTProcedure searchCommand="findDisorder" {id} {name} {label} {value} {required} {coded} {valueError} {tooltip} {onChange} {change} on:change />
+<FbSCTProcedure searchCommand="findDisorder" {id} {name} {label} {value} {required} {requiredForAudit} {coded} {valueError} {tooltip} {onChange} {change} on:change />

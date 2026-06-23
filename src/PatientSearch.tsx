@@ -172,7 +172,7 @@ export default function PatientSearch() {
         }}>
 
           {!searchQuery.trim() ? null : loading ? (
-            <div style={{ fontSize: '1.1rem', color: '#666' }}>Querying clinical registry...</div>
+            <div style={{ fontSize: '1.1rem', color: '#666' }}>Querying patient registry...</div>
           ) : patients.length === 0 ? (
             <div style={{
               fontFamily: "'Roboto', sans-serif",

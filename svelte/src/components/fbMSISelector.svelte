@@ -8,6 +8,7 @@
   export let label = '';
   export let value = '';
   export let required = false;
+  export let requiredForAudit = false;
   export let coded: boolean | undefined = undefined;
   export let valueError = '';
   export let tooltip = '';
@@ -116,7 +117,7 @@
 </script>
 
 {#if label}
-  <FbQuestion {label} {required} {valueError} {tooltip}>
+  <FbQuestion {label} {required} {requiredForAudit} {valueError} {tooltip}>
     <div class="fb-selector">
       <div class="fb-selector-input-wrap">
         <input
@@ -160,6 +161,7 @@
     </div>
   </FbQuestion>
 {:else}
+  <FbQuestion label="" {required} {requiredForAudit}>
   <div class="fb-selector">
     <div class="fb-selector-input-wrap">
       <input
@@ -201,6 +203,7 @@
       </div>
     {/if}
   </div>
+  </FbQuestion>
 {/if}
 
 <style>

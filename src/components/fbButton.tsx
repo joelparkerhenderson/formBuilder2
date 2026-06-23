@@ -50,6 +50,7 @@ export const fbButton: React.FC<fbButtonProps> = ({
         display: 'inline-block',
         height: '2.0rem',
         lineHeight: '1.8rem',
+        minWidth: '8rem',
         padding: '0 0.8rem',
         fontFamily: "'Roboto', sans-serif",
         fontSize: '1rem',

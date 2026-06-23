@@ -3,10 +3,10 @@
 - Aim: consistency of design and user experience across all WCP forms.
 ## Demo
 There is a working demo at https://www.shadesOfPale.net/formBuilder2/index.html. Use the usual userName and password.
-## Roll your own
+## Roll your own forms
 Try the WYSIWYG app at https://www.shadesOfPale.net/formBuilder2/composer.html.
 ## Case note tracker
-This repo also contains the source for case note tracker, mostly in src/caseNoteTracker. For this week, it's React only. Working demo at [www.shadesOfPale.net/formBuilder2/caseNoteTracker.html](https://www.shadesOfPale.net/formBuilder2/caseNoteTracker.html)
+This repo also contains the source for case note tracker in src/caseNoteTracker and svelte/src/caseNoteTracker. Working demo at [www.shadesOfPale.net/formBuilder2/caseNoteTracker.html](https://www.shadesOfPale.net/formBuilder2/caseNoteTracker.html)
 ## Intended audience
 Any persons (clinicians, PMs, BAs, devs) interested in experimenting or working with WCP form design.
 ## Specifcations and documentation

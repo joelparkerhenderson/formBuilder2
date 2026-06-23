@@ -210,6 +210,14 @@ select:focus-visible {
   white-space: pre-line;
 }
 
+.fb-table-required-row {
+  color: #d50000 !important;
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 0.8rem !important;
+  font-style: italic !important;
+  font-weight: 500 !important;
+}
+
 .fb-rov-field-value-inline {
   display: flex;
   align-items: flex-start;
@@ -218,6 +226,19 @@ select:focus-visible {
 
 .fb-rov-field-units {
   font-weight: 500;
+}
+
+.fbcnt-manage-volume-summary .fb-rov-field {
+  padding: 0.1rem 0.4rem;
+  gap: 0;
+}
+
+.fbcnt-manage-volume-summary .fb-rov-field > * + * {
+  margin-top: 0 !important;
+}
+
+.fbcnt-manage-volume-summary .fb-rov-field-label {
+  margin-bottom: 0 !important;
 }
 
 .fb-rov-coded-icon {

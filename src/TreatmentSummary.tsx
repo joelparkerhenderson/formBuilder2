@@ -2,15 +2,15 @@ import * as React from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbBottomControlsRow as BottomControlsRow } from './components/fbBottomControlsRow';
-import { fbCancelPopup as CancelPopup } from './components/fbCancelPopup';
-import { fbDraftPopup as DraftPopup } from './components/fbDraftPopup';
+import { fbModalCancel as CancelPopup } from './components/fbModalCancel';
+import { fbModalDraft as DraftPopup } from './components/fbModalDraft';
 import { fbLayout as FbLayout, areAllSectionsComplete } from './components/fbLayout';
-import { fbPasswordPopup as PasswordPopup } from './components/fbPasswordPopup';
+import { fbModalPassword as PasswordPopup } from './components/fbModalPassword';
 import { fbRoVFooter as FbRoVFooter, fbRoVHeader as FbRoVHeader } from './components/fbRoVShell';
 import { GeneratedEditForm, GeneratedReadOnlyForm, defaultFormState, designerSections } from './GeneratedFormRenderer';
 import { createClient } from './restClient';
 import { treatmentSummarySpec } from './treatmentSummarySpec';
-import { formatClinicalDate } from './utils/dateFormat';
+import { formatFormDate } from './utils/dateFormat';
 import { loadFormHistory } from './utils/formHistory';
 import { assertFormVersionIsLatest } from './utils/formVersion';
 import { generateUUID } from './utils/formUtils';
@@ -51,7 +51,7 @@ export default function TreatmentSummary({ inlineProps }: { inlineProps?: Inline
   const sectionsConfig = React.useMemo(() => designerSections(treatmentSummarySpec), []);
 
   const [patient, setPatient] = React.useState<Patient | null>(null);
-  const [formState, setFormState] = React.useState<Record<string, any>>({ ...defaultState, dateCreated: formatClinicalDate(new Date()) });
+  const [formState, setFormState] = React.useState<Record<string, any>>({ ...defaultState, dateCreated: formatFormDate(new Date()) });
   const [initialSnapshot, setInitialSnapshot] = React.useState<Record<string, any>>({ ...defaultState });
   const [formChanged, setFormChanged] = React.useState(false);
   const [finalChecked, setFinalChecked] = React.useState(false);
@@ -203,7 +203,7 @@ export default function TreatmentSummary({ inlineProps }: { inlineProps?: Inline
             setOpenedFromPatientRecord(!!inlineProps || !!(state && typeof state.openInRoV !== 'undefined'));
           }
         } else if (!cancelled) {
-          const freshState = { ...defaultState, dateCreated: formatClinicalDate(new Date()) };
+          const freshState = { ...defaultState, dateCreated: formatFormDate(new Date()) };
           setFormState(freshState);
           setInitialSnapshot(freshState);
           setCurrentFormVersion(null);

@@ -2,11 +2,11 @@ import * as React from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbAuthControls as AuthControls } from './components/fbAuthControls';
-import { fbPartialDate as PartialDate } from './components/fbPartialDate';
+import { fbDatePartial as PartialDate } from './components/fbDatePartial';
 import { fbSCTDiagnosis as SCTDiagnosis } from './components/fbSCTDiagnosis';
-import { fbDraftPopup as DraftPopup } from './components/fbDraftPopup';
-import { fbPasswordPopup as PasswordPopup } from './components/fbPasswordPopup';
-import { fbCancelPopup as CancelPopup } from './components/fbCancelPopup';
+import { fbModalDraft as DraftPopup } from './components/fbModalDraft';
+import { fbModalPassword as PasswordPopup } from './components/fbModalPassword';
+import { fbModalCancel as CancelPopup } from './components/fbModalCancel';
 import { fbFinalControl as FinalControl } from './components/fbFinalControl';
 import { OutpatientOutcomeRoV } from './OutpatientOutcomeRoV';
 import { fbSaveCancelButtons as SaveCancelButtons } from './components/fbSaveCancelButtons';
@@ -16,13 +16,13 @@ import { fbTextInput as FbTextInput } from './components/fbTextInput';
 import { fbTextArea as FbTextArea } from './components/fbTextArea';
 import { fbNumberInput as FbNumberInput } from './components/fbNumberInput';
 import { fbCheck as FbCheck } from './components/fbCheck';
-import { fbSmallAddButton as SmallAddButton } from './components/fbSmallAddButton';
+import { fbAddButtonSmall as SmallAddButton } from './components/fbAddButtonSmall';
 import { fbLayout as FbLayout } from './components/fbLayout';
 import { fbFormHistoryMenu as FbFormHistoryMenu, fbFormHistoryItem } from './components/fbFormHistoryMenu';
 import WaitingListCard from './WaitingListCard';
 import { compareFormStatesObj } from './utils/formStateUtils';
 import { generateUUID } from './utils/formUtils';
-import { formatClinicalDate } from './utils/dateFormat';
+import { formatFormDate } from './utils/dateFormat';
 import { hospitalLabels, organisationLabels, specialityLabels } from './data/formLabels';
 import { resizeTextareaToContent, useEditFormAutoExpandTextareas, useEditFormLabelEqualization } from './utils/formLayoutEffects';
 import { useFbTooltips } from './utils/useFbTooltips';
@@ -34,7 +34,7 @@ import { createClient } from './restClient';
 // Create REST client
 const restClient = createClient();
 
-const formatDate = formatClinicalDate;
+const formatDate = formatFormDate;
 type SaveStatus = 'final' | 'draft';
 
 interface Patient {

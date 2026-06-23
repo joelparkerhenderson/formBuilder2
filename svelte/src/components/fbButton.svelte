@@ -27,6 +27,7 @@
 <style>
   button {
     min-height: 2rem;
+    min-width: 8rem;
     padding: 0 1rem;
     border-radius: 0.4rem;
     font-size: 1rem;

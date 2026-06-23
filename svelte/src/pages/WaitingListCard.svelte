@@ -13,8 +13,8 @@
   import FbRadio from '../components/fbRadio.svelte';
   import FbCheck from '../components/fbCheck.svelte';
   import FbGroup from '../components/fbGroup.svelte';
-  import FbExactDate from '../components/fbExactDate.svelte';
-  import FbPartialDate from '../components/fbPartialDate.svelte';
+  import FbExactDate from '../components/fbDateExact.svelte';
+  import FbPartialDate from '../components/fbDatePartial.svelte';
   import FbMSISelector from '../components/fbMSISelector.svelte';
   import FbSCTProcedure from '../components/fbSCTProcedure.svelte';
   import FbTable from '../components/fbTable.svelte';
@@ -28,13 +28,14 @@
   import FbSaveCancelButtons from '../components/fbSaveCancelButtons.svelte';
   import FbButton from '../components/fbButton.svelte';
   import FbAddButton from '../components/fbAddButton.svelte';
-  import FbDraftPopup from '../components/fbDraftPopup.svelte';
-  import FbPasswordPopup from '../components/fbPasswordPopup.svelte';
-  import FbCancelPopup from '../components/fbCancelPopup.svelte';
-  import FbSavingPopup from '../components/fbSavingPopup.svelte';
-  import FbSavedPopup from '../components/fbSavedPopup.svelte';
-  import FbSaveErrorPopup from '../components/fbSaveErrorPopup.svelte';
+  import FbDraftPopup from '../components/fbModalDraft.svelte';
+  import FbModalPassword from '../components/fbModalPassword.svelte';
+  import FbCancelPopup from '../components/fbModalCancel.svelte';
+  import FbSavingPopup from '../components/fbModalSaving.svelte';
+  import FbSavedPopup from '../components/fbModalSaved.svelte';
+  import FbSaveErrorPopup from '../components/fbModalSaveError.svelte';
   import FbRoVField from '../components/fbRoVField.svelte';
+  import FbFormHistoryMenu, { type FbFormHistoryItem } from '../components/fbFormHistoryMenu.svelte';
   import type { Patient, ProcedureRow, SectionSpec } from '../lib/types';
   import {
     hospitalLabels,
@@ -46,18 +47,23 @@
     specialityLabels,
     yesNoUnknownLabels,
   } from '../lib/constants';
-  import { clinicalDateToIsoDate, formatClinicalDate, generateUUID } from '../lib/dateFormat';
-  import { getForm, getLatestVersion, getPatient, insertForm, insertFormsIndex } from '../lib/api';
+  import { formDateToIsoDate, formatFormDate, generateUUID } from '../lib/dateFormat';
+  import { getForm, getFormHistory, getFormVersion, getLatestVersion, getPatient, insertForm, insertFormsIndex } from '../lib/api';
   import { cleanArrayOfObjects, compareFormStatesObj } from '../lib/formStateUtils';
 
   type SaveStatus = 'final' | 'draft';
 
   const params = new URLSearchParams(window.location.search);
-  const patientUuid = params.get('patientUuid') || 'fd55880a-7ada-47a8-adbb-65850af6f7e2';
-  const formUuidParam = params.get('formUuid') || '';
-  const fromOutpatientOutcome = params.get('fromOutpatientOutcome') === '1';
-  const openedFromOutpatientOutcomeButton = params.get('openedFromOutpatientOutcomeButton') === '1';
-  const outpatientReturnReadOnly = params.get('openInRoV') === 'true' || openedFromOutpatientOutcomeButton;
+  export let patientUuid = params.get('patientUuid') || 'fd55880a-7ada-47a8-adbb-65850af6f7e2';
+  export let formUuid = params.get('formUuid') || '';
+  export let formVersion = Number(params.get('formVersion') || '') || null;
+  export let openInRoV = params.get('openInRoV') === 'true';
+  export let inline = false;
+  export let onClose: () => void = () => {};
+  export let fromOutpatientOutcome = params.get('fromOutpatientOutcome') === '1';
+  export let openedFromOutpatientOutcomeButton = params.get('openedFromOutpatientOutcomeButton') === '1';
+  export let onReturnToOutpatientOutcome: (savedWaitingListCard?: { uuid: string; formState: Record<string, any>; procedures: ProcedureRow[] }) => void = () => {};
+  $: outpatientReturnReadOnly = openInRoV || openedFromOutpatientOutcomeButton;
   const outpatientWlcBridgeKey = `fb_svelte_oo_wlc_bridge_${patientUuid}`;
 
   let patient: Patient | null = null;
@@ -77,11 +83,13 @@
   let showSavedPopup = false;
   let saveError = '';
   let cleanSnapshot: FormSnapshot | null = null;
+  let formHistory: FbFormHistoryItem[] = [];
+  let showHistoryMenu = false;
 
   let formState: Record<string, any> = {
     organisation: 'cwm-taf',
     hospital: 'princess-wales',
-    dateListed: formatClinicalDate(new Date()),
+    dateListed: formatFormDate(new Date()),
     urgency: '',
     operatingSurgeon: '',
     shortNotice: 'unknown',
@@ -94,8 +102,18 @@
     outsourcing: 'unknown',
     risks: [],
     namedClinicianName: '',
-    clinicalNotes: '',
+    additionalNotes: '',
   };
+
+  function normaliseWaitingListFormState(state: Record<string, any>) {
+    const oldNotesKey = 'clinical' + 'Notes';
+    const next = { ...state };
+    if (next.additionalNotes === undefined && next[oldNotesKey] !== undefined) {
+      next.additionalNotes = next[oldNotesKey];
+    }
+    delete next[oldNotesKey];
+    return next;
+  }
 
   let procedures: ProcedureRow[] = [{ id: 1, side: '', procedure: '', additionalInfo: '' }];
   let anticoagChecked = {
@@ -189,6 +207,10 @@
   }
 
   function returnToOutpatientOutcome(savedWaitingListCard?: { uuid: string; formState: Record<string, any>; procedures: ProcedureRow[] }) {
+    if (inline) {
+      onReturnToOutpatientOutcome(savedWaitingListCard);
+      return;
+    }
     if (savedWaitingListCard) {
       try {
         const raw = sessionStorage.getItem(outpatientWlcBridgeKey);
@@ -312,9 +334,9 @@
       const formUuid = formState.uuid || generateUUID();
       const latest = formState.uuid ? await getLatestVersion('waiting_list_cards', formUuid) : { version: null };
       const version = latest.version === null ? 0 : latest.version + 1;
-      const eventDate = clinicalDateToIsoDate(formState.dateListed) || new Date().toISOString();
+      const eventDate = formDateToIsoDate(formState.dateListed) || new Date().toISOString();
       const formData = {
-        ...formState,
+        ...normaliseWaitingListFormState(formState),
         uuid: formUuid,
         procedures,
         anticoagChecked,
@@ -345,13 +367,15 @@
         details: username,
       });
 
-      formState = { ...formData };
+      formState = normaliseWaitingListFormState({ ...formData });
       cleanSnapshot = createFormSnapshot(formState, procedures, anticoagChecked, finalChecked, highlySensitive);
       showSavedPopup = true;
       window.setTimeout(() => {
         showSavedPopup = false;
         if (fromOutpatientOutcome) {
           returnToOutpatientOutcome({ uuid: formUuid, formState: formData, procedures });
+        } else if (inline) {
+          onClose();
         } else {
           window.location.href = 'index.html';
         }
@@ -382,6 +406,8 @@
     } else {
       if (fromOutpatientOutcome) {
         returnToOutpatientOutcome();
+      } else if (inline) {
+        onClose();
       } else {
         window.location.href = 'index.html';
       }
@@ -391,10 +417,10 @@
   onMount(async () => {
     try {
       patient = await getPatient(patientUuid);
-      if (formUuidParam) {
-        const saved = await getForm('waiting_list_card', formUuidParam);
+      if (formUuid) {
+        const saved = formVersion ? await getFormVersion('waiting_list_card', formUuid, formVersion) : await getForm('waiting_list_card', formUuid);
         const savedData = saved?.form_data || {};
-        formState = { ...savedData, uuid: formUuidParam };
+        formState = normaliseWaitingListFormState({ ...savedData, uuid: formUuid });
         procedures = Array.isArray(savedData.procedures) && savedData.procedures.length
           ? savedData.procedures.map((procedure: any, index: number) => ({ id: procedure.id || index + 1, ...procedure }))
           : procedures;
@@ -402,12 +428,13 @@
         highlySensitive = Boolean(savedData.highlySensitive);
         finalChecked = saved.form_status === 'final' || Boolean(savedData.finalChecked);
         isReadOnlyView = outpatientReturnReadOnly;
+        formHistory = await getFormHistory(formUuid);
       } else if (fromOutpatientOutcome) {
         const raw = sessionStorage.getItem(`${outpatientWlcBridgeKey}_initial_wlc`);
         if (raw) {
           sessionStorage.removeItem(`${outpatientWlcBridgeKey}_initial_wlc`);
           const initial = JSON.parse(raw);
-          formState = { ...formState, ...(initial.formState || {}) };
+          formState = normaliseWaitingListFormState({ ...formState, ...(initial.formState || {}) });
           procedures = Array.isArray(initial.procedures) && initial.procedures.length ? initial.procedures : procedures;
         }
       }
@@ -416,6 +443,22 @@
       cleanSnapshot = createFormSnapshot(formState, procedures, anticoagChecked, finalChecked, highlySensitive);
     }
   });
+
+  async function viewHistoryVersion(version: number) {
+    if (!formUuid) return;
+    const saved = await getFormVersion('waiting_list_card', formUuid, version);
+    const savedData = saved?.form_data || {};
+    formState = normaliseWaitingListFormState({ ...savedData, uuid: formUuid });
+    procedures = Array.isArray(savedData.procedures) && savedData.procedures.length
+      ? savedData.procedures.map((procedure: any, index: number) => ({ id: procedure.id || index + 1, ...procedure }))
+      : [{ id: 1, side: '', procedure: '', additionalInfo: '' }];
+    anticoagChecked = savedData.anticoagChecked || { warfarin: false, doac: false, antiplatelet: false, heparin: false };
+    highlySensitive = Boolean(savedData.highlySensitive);
+    finalChecked = saved.form_status === 'final' || Boolean(savedData.finalChecked);
+    isReadOnlyView = true;
+    showHistoryMenu = false;
+    cleanSnapshot = createFormSnapshot(formState, procedures, anticoagChecked, finalChecked, highlySensitive);
+  }
 </script>
 
 {#if loadingData}
@@ -465,8 +508,11 @@
           <FbButton type="button" onClick={returnToOutpatientOutcome}>Close</FbButton>
         {:else}
           <FbButton type="button" onClick={() => (isReadOnlyView = false)}>EV</FbButton>
+          {#if formUuid}
+            <FbButton type="button" onClick={() => (showHistoryMenu = true)}>History</FbButton>
+          {/if}
           <div style="flex: 1;"></div>
-          <FbButton type="button" onClick={() => fromOutpatientOutcome ? returnToOutpatientOutcome() : (window.location.href = 'index.html')}>Back</FbButton>
+          <FbButton type="button" onClick={() => fromOutpatientOutcome ? returnToOutpatientOutcome() : (inline ? onClose() : (window.location.href = 'index.html'))}>Back</FbButton>
         {/if}
       </FbBottomControlsRow>
     </svelte:fragment>
@@ -486,7 +532,7 @@
 
     <FbSection id="section-listing" title="Listing and priority">
       <FbGridRow cols={4}>
-        <FbQuestion label="Date listed" required><FbExactDate name="dateListed" value={formState.dateListed || ''} change={(value) => setField('dateListed', value)} /></FbQuestion>
+        <FbQuestion label="Date listed" required><FbExactDate name="dateListed" value={formState.dateListed || ''} showRequiredMarkers={false} change={(value) => setField('dateListed', value)} /></FbQuestion>
         <FbGridCell span={2}><FbMSISelector id="listedBy" name="listedBy" label="Listed by" value={formState.listedBy || ''} coded={formState.listedBy_coded} change={(value, coded) => setField('listedBy', value, coded)} /></FbGridCell>
         <div></div>
         <FbQuestion label="Urgency" required>
@@ -723,11 +769,11 @@
 {/if}
 
 {#if showPasswordPopup}
-  <FbPasswordPopup on:confirm={(event) => { password = event.detail; showPasswordPopup = false; saveWaitingListCard(pendingSaveStatus); }} on:cancel={() => (showPasswordPopup = false)} />
+  <FbModalPassword on:confirm={(event) => { password = event.detail; showPasswordPopup = false; saveWaitingListCard(pendingSaveStatus); }} on:cancel={() => (showPasswordPopup = false)} />
 {/if}
 
 {#if showCancelPopup}
-  <FbCancelPopup onDiscard={() => fromOutpatientOutcome ? returnToOutpatientOutcome() : (window.location.href = 'index.html')} onReturnToForm={() => (showCancelPopup = false)} />
+  <FbCancelPopup onDiscard={() => fromOutpatientOutcome ? returnToOutpatientOutcome() : (inline ? onClose() : (window.location.href = 'index.html'))} onReturnToForm={() => (showCancelPopup = false)} />
 {/if}
 
 {#if isSaving}
@@ -740,6 +786,10 @@
 
 {#if saveError}
   <FbSaveErrorPopup error={saveError} onReturnToForm={() => (saveError = '')} />
+{/if}
+
+{#if showHistoryMenu}
+  <FbFormHistoryMenu history={formHistory} onViewVersion={viewHistoryVersion} onClose={() => (showHistoryMenu = false)} />
 {/if}
 
 <style>

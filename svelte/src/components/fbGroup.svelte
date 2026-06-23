@@ -1,4 +1,5 @@
 <script lang="ts">
+  import FbRequiredForAudit from './fbRequiredForAudit.svelte';
   import FbToolTip from './fbToolTip.svelte';
 
   export let label = '';
@@ -6,11 +7,12 @@
   export let valueError = '';
   export let subfield = false;
   export let required = false;
+  export let requiredForAudit = false;
   export let tooltip = '';
 
   function renderLabelParts(text: string) {
     const trimmed = text.trim().replace(/\s+/g, ' ');
-    if (!required) return { text: trimmed, prefix: '', lastWord: '', single: true };
+    if (!required && !requiredForAudit) return { text: trimmed, prefix: '', lastWord: '', single: true };
     const lastSpace = trimmed.lastIndexOf(' ');
     if (lastSpace === -1) return { text: trimmed, prefix: '', lastWord: trimmed, single: true };
     return {
@@ -43,11 +45,11 @@
   {/if}
   {#if label}
     <div class="fb-group-label">
-      {#if required}
+      {#if required || requiredForAudit}
         {#if labelParts.single}
-          <span class="required-word">{labelParts.lastWord}<span class="required">*</span></span>
+          <span class="required-word">{labelParts.lastWord}{#if requiredForAudit}<FbRequiredForAudit />{/if}{#if required}<span class="required">*</span>{/if}</span>
         {:else}
-          {labelParts.prefix} <span class="required-word">{labelParts.lastWord}<span class="required">*</span></span>
+          {labelParts.prefix} <span class="required-word">{labelParts.lastWord}{#if requiredForAudit}<FbRequiredForAudit />{/if}{#if required}<span class="required">*</span>{/if}</span>
         {/if}
       {:else}
         {labelParts.text}

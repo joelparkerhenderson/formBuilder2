@@ -19,7 +19,7 @@ export function FbcntLocation({ label, store, value, onChange, allowBlank = fals
   const [showDropdown, setShowDropdown] = React.useState(false);
   const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const [dropdownPosition, setDropdownPosition] = React.useState({ left: 0, top: 0, maxHeight: 300 });
+  const [dropdownPlacement, setDropdownPlacement] = React.useState({ openAbove: false, maxHeight: 300 });
 
   React.useEffect(() => {
     setSearchTerm(selectedLabel);
@@ -43,12 +43,23 @@ export function FbcntLocation({ label, store, value, onChange, allowBlank = fals
     const spaceBelow = window.innerHeight - rect.bottom - 20;
     const spaceAbove = rect.top - 20;
     const maxHeight = Math.min(preferredHeight, Math.max(120, spaceBelow >= spaceAbove ? spaceBelow : spaceAbove));
-    setDropdownPosition({
-      left: Math.min(rect.left, Math.max(20, window.innerWidth - Math.min(720, window.innerWidth - 40) - 20)),
-      top: spaceBelow >= preferredHeight || spaceBelow >= spaceAbove ? rect.bottom + 2 : rect.top - maxHeight - 2,
+    setDropdownPlacement({
+      openAbove: !(spaceBelow >= preferredHeight || spaceBelow >= spaceAbove),
       maxHeight,
     });
   }, []);
+
+  React.useEffect(() => {
+    if (!showDropdown) return;
+    updateDropdownPosition();
+    const update = () => updateDropdownPosition();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [showDropdown, updateDropdownPosition]);
 
   const selectLocation = (location: CntLocation) => {
     setSearchTerm(locationLabel(store, location.uuid));
@@ -94,6 +105,7 @@ export function FbcntLocation({ label, store, value, onChange, allowBlank = fals
           onChange={(event) => {
             setSearchTerm(event.target.value);
             onChange('');
+            updateDropdownPosition();
             setShowDropdown(true);
             setHighlightedIndex(-1);
           }}
@@ -127,9 +139,10 @@ export function FbcntLocation({ label, store, value, onChange, allowBlank = fals
           <div
             style={{
               ...styles.dropdown,
-              left: dropdownPosition.left,
-              top: dropdownPosition.top,
-              maxHeight: dropdownPosition.maxHeight,
+              maxHeight: dropdownPlacement.maxHeight,
+              ...(dropdownPlacement.openAbove
+                ? { bottom: 'calc(100% + 0.2rem)' }
+                : { top: 'calc(100% + 0.2rem)' }),
             }}
           >
             {results.map((result, index) => (
@@ -246,7 +259,8 @@ const styles = {
     lineHeight: 1,
   } as React.CSSProperties,
   dropdown: {
-    position: 'fixed',
+    position: 'absolute',
+    left: 0,
     width: '45rem',
     maxWidth: 'calc(100vw - 40px)',
     overflowY: 'auto',
@@ -258,10 +272,10 @@ const styles = {
     boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
   } as React.CSSProperties,
   result: {
-    padding: '0.25rem 0.5rem',
+    padding: '0.125rem 0.5rem',
     cursor: 'pointer',
     fontSize: '0.9rem',
-    lineHeight: 1.2,
+    lineHeight: 1.1,
     whiteSpace: 'nowrap',
   } as React.CSSProperties,
   resultCode: {

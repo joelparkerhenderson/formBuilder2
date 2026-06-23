@@ -18,7 +18,7 @@
 </head>
 <body>
   <h1>WCP eForms design system specification</h1>
-  <p class="note">The WCP eForms design system defines a high-contrast clinical form language made from reusable <code>fbXxx</code> components, fixed form shells, patient context, editable and read-only views, and consistent save/versioning behaviour. This public specification is implementation-aware but form-agnostic: it describes the intended visual and behavioural contract rather than local development recipes.</p>
+  <p class="note">The WCP eForms design system defines a high-contrast form language made from reusable <code>fbXxx</code> components, fixed form shells, patient context, editable and read-only views, and consistent save/versioning behaviour. This public specification is implementation-aware but form-agnostic: it describes the intended visual and behavioural contract rather than local development recipes.</p>
 
   <h2 id="contents">Contents</h2>
   <ul>
@@ -47,15 +47,15 @@
 
   <h2 id="overview">Design and functionality overview</h2>
   <ul>
-    <li><strong>Addressograph:</strong> any page or form that is about a specific patient shows an <code>fbAddressograph</code> at the top right unless there is a page-specific clinical safety reason to omit it. The addressograph uses an NHS card style and preserves Arial/Helvetica typography rather than global Roboto.</li>
-    <li><strong>Date controls:</strong> <code>fbExactDate</code> requires complete dates; <code>fbPartialDate</code> accepts exact, month-only, or year-only dates. Dropdown button rows fill the dropdown width.</li>
+    <li><strong>Addressograph:</strong> any page or form that is about a specific patient shows an <code>fbAddressograph</code> at the top right unless there is a page-specific safety reason to omit it. The addressograph uses an NHS card style and preserves Arial/Helvetica typography rather than global Roboto.</li>
+    <li><strong>Date controls:</strong> <code>fbDateExact</code> requires complete dates; <code>fbDatePartial</code> accepts exact, month-only, or year-only dates. Dropdown button rows fill the dropdown width.</li>
     <li><strong>Fixed header and footer:</strong> patient forms use <code>fbLayout</code>, with a fixed white header, fixed white bottom controls/footer, and a scrolling central workspace. Header and footer are separated from the body by <code>0.2rem solid fbBlue</code>.</li>
     <li><strong>formState:</strong> editable forms store a normalised form-state object. Save is enabled only when normalised content differs from the clean snapshot; undoing all edits disables save again.</li>
     <li><strong>Highlighting:</strong> question-like containers, groups, subquestions, radios, and checks join a hierarchy of hover/focus highlights. Outer levels use <code>fbActiveLighterYellow</code>; nested/inner levels use <code>fbActiveDarkerYellow</code>. Radio/check highlighting is attached to the visible option row.</li>
     <li><strong>Nav panel:</strong> sectioned forms show a left <code>fbLayoutNav</code> panel on desktop. Section-name buttons are white on blue, active sections show paired triangles, editable views show required counters, and RoVs hide the counters.</li>
     <li><strong>Required fields:</strong> required labels show a red <code>*</code> grouped with the final label word so the star cannot wrap to a line by itself.</li>
     <li><strong>RoVs:</strong> read-only views show current saved content without editable controls. Sectioned RoVs keep navigation panels without counters and do not show Save/Save and close. Form-specific RoV launch rules control whether Edit, Close, Back, or EV buttons appear.</li>
-    <li><strong>Save as draft:</strong> draft/final controls and save popups use shared components. Where password confirmation is required, saving includes a second-stage password popup.</li>
+    <li><strong>Save as draft:</strong> draft/final controls and save popups use shared components. Where password confirmation is required, saving includes a second-stage password popup. Password fields are cleared if the user enters a password but leaves the save flow without clicking Save and close.</li>
     <li><strong>SNOMED and MSI selectors:</strong> <code>fbSCTProcedure</code>, <code>fbSCTDiagnosis</code>, and <code>fbMSISelector</code> use searchable dropdowns, coded/not-coded indicators, clear buttons, and stable dropdown visibility while typing.</li>
     <li><strong>Structure:</strong> forms are nested as <code>fbSection</code> &gt; <code>fbGridRow</code> &gt; <code>fbGridCell</code> &gt; question components. Conditional subquestions are emitted by <code>fbRadio</code> and <code>fbCheck</code> and are indented beneath the selected option.</li>
     <li><strong>Tooltips:</strong> <code>fbToolTip</code> opens when the visible control container, label, or actual control is hovered or focused. Clicking anywhere inside an open tooltip closes it.</li>
@@ -63,7 +63,7 @@
   </ul>
 
   <h2 id="accessibility">Accessibility</h2>
-  <p>The design uses native HTML controls wherever possible, semantic landmarks for form shells, real buttons for actions, real tables for tabular clinical data, visible focus/hover affordances, labelled controls, ARIA group/alert/note roles where custom grouping or status messaging needs them, and decorative icons marked as hidden from assistive technology. The intended target is WCAG 2.2 AA, but final conformance requires keyboard, screen-reader, zoom/reflow, and clinical workflow testing for each deployed form.</p>
+  <p>The design uses native HTML controls wherever possible, semantic landmarks for form shells, real buttons for actions, real tables for tabular form data, visible focus/hover affordances, labelled controls, ARIA group/alert/note roles where custom grouping or status messaging needs them, and decorative icons marked as hidden from assistive technology. The intended target is WCAG 2.2 AA, but final conformance requires keyboard, screen-reader, zoom/reflow, and workflow testing for each deployed form.</p>
 
   <h2 id="colours">Colours</h2>
   <table><thead><tr><th>Key</th><th>Code</th><th>Purpose</th></tr></thead><tbody>
@@ -96,7 +96,7 @@
     <tr><td><code>error</code></td><td>Material Icons, <a href="https://fonts.google.com/icons">fonts.google.com/icons</a></td><td>Alert boxes and fbValueError.</td></tr>
     <tr><td><code>highlight_off</code></td><td>Material Icons, <a href="https://fonts.google.com/icons">fonts.google.com/icons</a></td><td>Delete/remove row actions.</td></tr>
     <tr><td><code>info</code></td><td>Material Icons, <a href="https://fonts.google.com/icons">fonts.google.com/icons</a></td><td>Information boxes.</td></tr>
-    <tr><td><code>swap_vertical_circle</code></td><td>Material Icons, <a href="https://fonts.google.com/icons">fonts.google.com/icons</a></td><td>Clinical-table drag handles.</td></tr>
+    <tr><td><code>swap_vertical_circle</code></td><td>Material Icons, <a href="https://fonts.google.com/icons">fonts.google.com/icons</a></td><td>Form-table drag handles.</td></tr>
     <tr><td><code>visibility</code></td><td>Material Icons, <a href="https://fonts.google.com/icons">fonts.google.com/icons</a></td><td>Password show control.</td></tr>
     <tr><td><code>visibility_off</code></td><td>Material Icons, <a href="https://fonts.google.com/icons">fonts.google.com/icons</a></td><td>Password hide control.</td></tr>
     <tr><td><code>warning</code></td><td>Material Icons, <a href="https://fonts.google.com/icons">fonts.google.com/icons</a></td><td>Warning boxes and not-coded indicators.</td></tr>
@@ -104,25 +104,26 @@
 
   <h2 id="patient-components">Components for specifying patient forms</h2>
   <table><thead><tr><th>Component</th><th>Purpose</th></tr></thead><tbody>
-    <tr><td><code>fbAddButton</code></td><td>Inline add control for adding rows/items to clinical tables and repeatable lists.</td></tr>
+    <tr><td><code>fbAddButton</code></td><td>Inline add control for adding rows/items to form tables and repeatable lists.</td></tr>
     <tr><td><code>fbBloodPressure</code></td><td>Two-part systolic/diastolic blood-pressure input.</td></tr>
-    <tr><td><code>fbBoxedAlert</code></td><td>Full-width red boxed clinical alert.</td></tr>
+    <tr><td><code>fbBoxedAlert</code></td><td>Full-width red alert.</td></tr>
     <tr><td><code>fbBoxedInfo</code></td><td>Full-width blue boxed information message.</td></tr>
     <tr><td><code>fbBoxedWarning</code></td><td>Full-width orange boxed warning message.</td></tr>
     <tr><td><code>fbCheck</code></td><td>Checkbox option with optional conditional subquestions.</td></tr>
+    <tr><td><code>fbDateExact</code></td><td>Complete-date control with picker dropdown.</td></tr>
+    <tr><td><code>fbDatePartial</code></td><td>Partial date control accepting exact, month-only, or year-only dates.</td></tr>
     <tr><td><code>fbDropdown</code></td><td>Fixed-option selector.</td></tr>
-    <tr><td><code>fbExactDate</code></td><td>Complete-date control with picker dropdown.</td></tr>
     <tr><td><code>fbGridCell</code></td><td>Grid cell inside a row.</td></tr>
     <tr><td><code>fbGridRow</code></td><td>Responsive horizontal row of grid cells.</td></tr>
     <tr><td><code>fbGroup</code></td><td>Labelled group for radio/check options and subquestions.</td></tr>
     <tr><td><code>fbMSISelector</code></td><td>Clinician autocomplete selector with coded/not-coded indicator.</td></tr>
     <tr><td><code>fbNumberInput</code></td><td>Numeric input without units.</td></tr>
     <tr><td><code>fbNumberInputWithUnits</code></td><td>Numeric input with a fixed or editable units label.</td></tr>
-    <tr><td><code>fbPartialDate</code></td><td>Partial date control accepting exact, month-only, or year-only dates.</td></tr>
     <tr><td><code>fbRadio</code></td><td>Radio option with optional conditional subquestions.</td></tr>
+    <tr><td><code>fbRequiredForAudit</code></td><td>Inline required-for-audit marker.</td></tr>
     <tr><td><code>fbSCTDiagnosis</code></td><td>SNOMED CT diagnosis selector.</td></tr>
     <tr><td><code>fbSCTProcedure</code></td><td>SNOMED CT procedure selector.</td></tr>
-    <tr><td><code>fbTable</code></td><td>Clinical table shell.</td></tr>
+    <tr><td><code>fbTable</code></td><td>Form table shell.</td></tr>
     <tr><td><code>fbTextArea</code></td><td>Auto-expanding multi-line text input.</td></tr>
     <tr><td><code>fbTextInput</code></td><td>Standard one-line text input.</td></tr>
     <tr><td><code>fbTime</code></td><td>Native time input.</td></tr>
@@ -136,33 +137,31 @@
     <tr><td><code>fbAuthControls</code></td><td>Footer authentication controls.</td></tr>
     <tr><td><code>fbBottomControlsRow</code></td><td>Fixed footer content row.</td></tr>
     <tr><td><code>fbButton</code></td><td>Standard patient-form command button.</td></tr>
-    <tr><td><code>fbCancelPopup</code></td><td>Cancel confirmation popup.</td></tr>
-    <tr><td><code>fbDateDisplay</code></td><td>Read-only date display using dd-Mmm-yyyy.</td></tr>
-    <tr><td><code>fbDraftPopup</code></td><td>Save-as-draft confirmation popup.</td></tr>
     <tr><td><code>fbFinalControl</code></td><td>Final/draft state selector.</td></tr>
     <tr><td><code>fbFormHistoryMenu</code></td><td>Version-history menu for existing forms.</td></tr>
     <tr><td><code>fbFormTile</code></td><td>Patient-record form summary tile.</td></tr>
     <tr><td><code>fbHeader</code></td><td>Fixed form header container.</td></tr>
     <tr><td><code>fbLayout</code></td><td>Standard fixed header/footer and scrolling form shell.</td></tr>
     <tr><td><code>fbLayoutNav</code></td><td>Left section navigation panel.</td></tr>
-    <tr><td><code>fbPasswordPopup</code></td><td>Second-stage save password popup.</td></tr>
+    <tr><td><code>fbModalCancel</code></td><td>Cancel confirmation popup.</td></tr>
+    <tr><td><code>fbModalDraft</code></td><td>Save-as-draft confirmation popup.</td></tr>
+    <tr><td><code>fbModalPassword</code></td><td>Second-stage save password popup.</td></tr>
+    <tr><td><code>fbModalSaved</code></td><td>Saved confirmation popup.</td></tr>
+    <tr><td><code>fbModalSaveError</code></td><td>Save-error popup.</td></tr>
+    <tr><td><code>fbModalSaving</code></td><td>Saving progress popup.</td></tr>
     <tr><td><code>fbPopup</code></td><td>Generic modal/popup shell.</td></tr>
     <tr><td><code>fbQuestion</code></td><td>Question label/value wrapper and highlight participant.</td></tr>
     <tr><td><code>fbRoVField</code></td><td>Read-only view field display.</td></tr>
     <tr><td><code>fbSaveCancelButtons</code></td><td>Footer save/cancel/save-and-close controls.</td></tr>
-    <tr><td><code>fbSavedPopup</code></td><td>Saved confirmation popup.</td></tr>
-    <tr><td><code>fbSaveErrorPopup</code></td><td>Save-error popup.</td></tr>
-    <tr><td><code>fbSavingPopup</code></td><td>Saving progress popup.</td></tr>
     <tr><td><code>fbSearchInput</code></td><td>Reusable search input with clear/search affordances.</td></tr>
     <tr><td><code>fbSection</code></td><td>Section block with blue title bar and content body.</td></tr>
-    <tr><td><code>fbTimeDisplay</code></td><td>Read-only local time display using a 24-hour hh:mm clock.</td></tr>
     <tr><td><code>fbToolTip</code></td><td>Tooltip popup and trigger wrapper.</td></tr>
     <tr><td><code>fbUserName</code></td><td>Logged-in user display.</td></tr>
   </tbody></table>
 
   <h2 id="component-specs">Component specifications detail</h2>
   <h3 id="component-fbaddbutton">fbAddButton</h3>
-  <p>Inline add control for adding rows/items to clinical tables and repeatable lists.</p>
+  <p>Inline add control for adding rows/items to form tables and repeatable lists.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbAddButton.tsx</code>; Svelte <code>svelte/src/components/fbAddButton.svelte</code>.</p>
   <p><strong>Parameters:</strong> `label`, `onClick`, optional disabled state.</p>
   <p><code>&lt;button type=&quot;button&quot; class=&quot;fb-add-button&quot;&gt;...</code></p>
@@ -178,7 +177,7 @@
   <h3 id="component-fbbloodpressure">fbBloodPressure</h3>
   <p>Two-part systolic/diastolic blood-pressure input.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbBloodPressure.tsx</code>; Svelte <code>svelte/src/components/fbBloodPressure.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `systolic`, `diastolic`, `onChange`, `required`, `valueError`, `tooltip`.</p>
+  <p><strong>Parameters:</strong> `label`, `systolic`, `diastolic`, `onChange`, `required`, `requiredForAudit`, `valueError`, `tooltip`.</p>
   <p><code>&lt;span class=&quot;fb-blood-pressure-control&quot;&gt;&lt;input class=&quot;fb-blood-pressure-input&quot;&gt;...&lt;/span&gt;</code></p>
   <pre><code>.fb-blood-pressure-control {
   border: 0.1rem solid silver;
@@ -195,7 +194,7 @@
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> Label handled by fbQuestion; inner numeric inputs use standard input semantics.</p>
   <h3 id="component-fbboxedalert">fbBoxedAlert</h3>
-  <p>Full-width red boxed clinical alert.</p>
+  <p>Full-width red alert.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbBoxedMessage.tsx</code>; Svelte <code>svelte/src/components/fbBoxedAlert.svelte</code>.</p>
   <p><strong>Parameters:</strong> `text` or children.</p>
   <p><code>&lt;div class=&quot;fb-boxed-message&quot; role=&quot;alert&quot;&gt;&lt;span class=&quot;material-icons&quot; aria-hidden=&quot;true&quot;&gt;error&lt;/span&gt;...&lt;/div&gt;</code></p>
@@ -236,7 +235,7 @@
   <h3 id="component-fbcheck">fbCheck</h3>
   <p>Checkbox option with optional conditional subquestions.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbCheck.tsx</code>; Svelte <code>svelte/src/components/fbCheck.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `checked`, `onChange`, `required`, `children`, `tooltip`.</p>
+  <p><strong>Parameters:</strong> `label`, `checked`, `onChange`, `required`, `requiredForAudit`, `children`, `tooltip`.</p>
   <p><code>&lt;label class=&quot;fb-radio-checkbox-item&quot;&gt;&lt;input type=&quot;checkbox&quot;&gt;...&lt;/label&gt;</code></p>
   <pre><code>.fb-radio-checkbox-item {
   display: block;
@@ -247,23 +246,10 @@
   background: var(--fb-active-lighter-yellow);
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> Native checkbox; wrapper label provides accessible name.</p>
-  <h3 id="component-fbdropdown">fbDropdown</h3>
-  <p>Fixed-option selector.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbDropdown.tsx</code>; Svelte <code>svelte/src/components/fbDropdown.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `value`, `options`, `onChange`, `required`, `tooltip`.</p>
-  <p><code>&lt;select class=&quot;fb-dropdown&quot;&gt;...&lt;/select&gt;</code></p>
-  <pre><code>.fb-dropdown {
-  border: 0.1rem solid silver;
-  border-radius: 0.4rem;
-  height: 2rem;
-  font-family: &quot;Roboto&quot;, sans-serif;
-  font-size: 1rem;
-}</code></pre>
-  <p><strong>ARIA/semantics:</strong> Native select; label is supplied by fbQuestion.</p>
-  <h3 id="component-fbexactdate">fbExactDate</h3>
+  <h3 id="component-fbdateexact">fbDateExact</h3>
   <p>Complete-date control with picker dropdown.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbExactDate.tsx</code>; Svelte <code>svelte/src/components/fbExactDate.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `required`, `tooltip`.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbDateExact.tsx</code>; Svelte <code>svelte/src/components/fbDateExact.svelte</code>.</p>
+  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `required`, `requiredForAudit`, `showRequiredMarkers`, `tooltip`.</p>
   <p><code>&lt;div class=&quot;fb-date-control&quot;&gt;&lt;input class=&quot;fb-date-control-input&quot;&gt;...&lt;/div&gt;</code></p>
   <pre><code>.fb-date-control-input {
   border: 0.1rem solid silver;
@@ -277,6 +263,36 @@
   flex: 1 1 0;
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> Input remains keyboard editable; picker buttons are native buttons.</p>
+  <h3 id="component-fbdatepartial">fbDatePartial</h3>
+  <p>Partial date control accepting exact, month-only, or year-only dates.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbDatePartial.tsx</code>; Svelte <code>svelte/src/components/fbDatePartial.svelte</code>.</p>
+  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `required`, `requiredForAudit`, `showRequiredMarkers`, `tooltip`.</p>
+  <p><code>&lt;div class=&quot;fb-date-control&quot;&gt;&lt;input class=&quot;fb-date-control-input&quot;&gt;...&lt;/div&gt;</code></p>
+  <pre><code>.fb-date-control-input {
+  border: 0.1rem solid silver;
+  border-radius: 0.4rem;
+}
+.fb-date-mode-buttons {
+  display: flex;
+  width: 100%;
+}
+.fb-date-mode-buttons button {
+  flex: 1 1 0;
+}</code></pre>
+  <p><strong>ARIA/semantics:</strong> Input plus native button picker controls.</p>
+  <h3 id="component-fbdropdown">fbDropdown</h3>
+  <p>Fixed-option selector.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbDropdown.tsx</code>; Svelte <code>svelte/src/components/fbDropdown.svelte</code>.</p>
+  <p><strong>Parameters:</strong> `label`, `value`, `options`, `onChange`, `required`, `requiredForAudit`, `tooltip`.</p>
+  <p><code>&lt;select class=&quot;fb-dropdown&quot;&gt;...&lt;/select&gt;</code></p>
+  <pre><code>.fb-dropdown {
+  border: 0.1rem solid silver;
+  border-radius: 0.4rem;
+  height: 2rem;
+  font-family: &quot;Roboto&quot;, sans-serif;
+  font-size: 1rem;
+}</code></pre>
+  <p><strong>ARIA/semantics:</strong> Native select; label is supplied by fbQuestion.</p>
   <h3 id="component-fbgridcell">fbGridCell</h3>
   <p>Grid cell inside a row.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbGridCell.tsx</code>; Svelte <code>svelte/src/components/fbGridCell.svelte</code>.</p>
@@ -304,7 +320,7 @@
   <h3 id="component-fbgroup">fbGroup</h3>
   <p>Labelled group for radio/check options and subquestions.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbGroup.tsx</code>; Svelte <code>svelte/src/components/fbGroup.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `required`, `valueError`, `tooltip`, children.</p>
+  <p><strong>Parameters:</strong> `label`, `required`, `requiredForAudit`, `valueError`, `tooltip`, children.</p>
   <p><code>&lt;div class=&quot;fb-radio-checkbox-group-container&quot; role=&quot;group&quot;&gt;...&lt;/div&gt;</code></p>
   <pre><code>.fb-radio-checkbox-group-container {
   border-radius: 0.4rem;
@@ -335,7 +351,7 @@
   <h3 id="component-fbnumberinput">fbNumberInput</h3>
   <p>Numeric input without units.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbNumberInput.tsx</code>; Svelte <code>svelte/src/components/fbNumberInput.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `min`, `max`, `required`, `valueError`, `tooltip`.</p>
+  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `min`, `max`, `required`, `requiredForAudit`, `valueError`, `tooltip`.</p>
   <p><code>&lt;input type=&quot;number&quot;&gt;</code></p>
   <pre><code>input[type=&quot;number&quot;].fb-number-input {
   max-width: 10ch;
@@ -364,27 +380,10 @@
   border-left: 0.1rem solid silver;
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> Native number input; units span may be `role="textbox"` only when editable.</p>
-  <h3 id="component-fbpartialdate">fbPartialDate</h3>
-  <p>Partial date control accepting exact, month-only, or year-only dates.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbPartialDate.tsx</code>; Svelte <code>svelte/src/components/fbPartialDate.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `required`, `tooltip`.</p>
-  <p><code>&lt;div class=&quot;fb-date-control&quot;&gt;&lt;input class=&quot;fb-date-control-input&quot;&gt;...&lt;/div&gt;</code></p>
-  <pre><code>.fb-date-control-input {
-  border: 0.1rem solid silver;
-  border-radius: 0.4rem;
-}
-.fb-date-mode-buttons {
-  display: flex;
-  width: 100%;
-}
-.fb-date-mode-buttons button {
-  flex: 1 1 0;
-}</code></pre>
-  <p><strong>ARIA/semantics:</strong> Input plus native button picker controls.</p>
   <h3 id="component-fbradio">fbRadio</h3>
   <p>Radio option with optional conditional subquestions.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbRadio.tsx</code>; Svelte <code>svelte/src/components/fbRadio.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `checked`, `name`, `onChange`, `children`, `tooltip`.</p>
+  <p><strong>Parameters:</strong> `label`, `checked`, `name`, `onChange`, `required`, `requiredForAudit`, `children`, `tooltip`.</p>
   <p><code>&lt;label class=&quot;fb-radio-checkbox-item&quot;&gt;&lt;input type=&quot;radio&quot;&gt;...&lt;/label&gt;</code></p>
   <pre><code>.fb-radio-checkbox-item {
   display: block;
@@ -395,6 +394,18 @@
   background: var(--fb-active-lighter-yellow);
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> Native radio; wrapper label provides accessible name.</p>
+  <h3 id="component-fbrequiredforaudit">fbRequiredForAudit</h3>
+  <p>Inline required-for-audit marker.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbRequiredForAudit.tsx</code>; Svelte <code>svelte/src/components/fbRequiredForAudit.svelte</code>.</p>
+  <p><strong>Parameters:</strong> None.</p>
+  <p><code>&lt;span class=&quot;fb-required-for-audit&quot;&gt;RfA&lt;/span&gt;</code></p>
+  <pre><code>.fb-required-for-audit {
+  background: var(--fb-orange);
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+}</code></pre>
+  <p><strong>ARIA/semantics:</strong> Uses fbToolTip text "Required for audit"; visible label text remains present.</p>
   <h3 id="component-fbsctdiagnosis">fbSCTDiagnosis</h3>
   <p>SNOMED CT diagnosis selector.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbSCTDiagnosis.tsx</code>; Svelte <code>svelte/src/components/fbSCTDiagnosis.svelte</code>.</p>
@@ -434,7 +445,7 @@
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> Search input plus buttons/links for selection and navigation.</p>
   <h3 id="component-fbtable">fbTable</h3>
-  <p>Clinical table shell.</p>
+  <p>Form table shell.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbTable.tsx</code>; Svelte <code>svelte/src/components/fbTable.svelte</code>.</p>
   <p><strong>Parameters:</strong> `children`, optional `className`, `style`.</p>
   <p><code>&lt;table class=&quot;fb-table&quot;&gt;...&lt;/table&gt;</code></p>
@@ -451,7 +462,7 @@
   <h3 id="component-fbtextarea">fbTextArea</h3>
   <p>Auto-expanding multi-line text input.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbTextArea.tsx</code>; Svelte <code>svelte/src/components/fbTextArea.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `rows`, `fullWidth`, `required`, `tooltip`.</p>
+  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `rows`, `fullWidth`, `required`, `requiredForAudit`, `tooltip`.</p>
   <p><code>&lt;textarea class=&quot;fb-textarea&quot;&gt;...&lt;/textarea&gt;</code></p>
   <pre><code>.fb-textarea {
   border: 0.1rem solid silver;
@@ -465,7 +476,7 @@
   <h3 id="component-fbtextinput">fbTextInput</h3>
   <p>Standard one-line text input.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbTextInput.tsx</code>; Svelte <code>svelte/src/components/fbTextInput.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `placeholder`, `required`, `tooltip`.</p>
+  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `placeholder`, `required`, `requiredForAudit`, `tooltip`.</p>
   <p><code>&lt;input type=&quot;text&quot; class=&quot;fb-text-input&quot;&gt;</code></p>
   <pre><code>.fb-text-input {
   border: 0.1rem solid silver;
@@ -477,7 +488,7 @@
   <h3 id="component-fbtime">fbTime</h3>
   <p>Native time input.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbTime.tsx</code>; Svelte <code>svelte/src/components/fbTime.svelte</code>.</p>
-  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `required`, `tooltip`.</p>
+  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `required`, `requiredForAudit`, `tooltip`.</p>
   <p><code>&lt;input type=&quot;time&quot; class=&quot;fb-time-input&quot;&gt;</code></p>
   <pre><code>.fb-time-input {
   border: 0.1rem solid silver;
@@ -517,18 +528,6 @@
   <p>Standard patient-form command button.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbButton.tsx</code>; Svelte <code>svelte/src/components/fbButton.svelte</code>.</p>
   <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
-  <h3 id="component-fbcancelpopup">fbCancelPopup</h3>
-  <p>Cancel confirmation popup.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbCancelPopup.tsx</code>; Svelte <code>svelte/src/components/fbCancelPopup.svelte</code>.</p>
-  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
-  <h3 id="component-fbdatedisplay">fbDateDisplay</h3>
-  <p>Read-only date display using dd-Mmm-yyyy.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbDateDisplay.tsx</code>; Svelte <code>No Svelte equivalent yet</code>.</p>
-  <p><strong>Parameters:</strong> `value` as a Date, ISO date/date-time string, or empty value.</p>
-  <h3 id="component-fbdraftpopup">fbDraftPopup</h3>
-  <p>Save-as-draft confirmation popup.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbDraftPopup.tsx</code>; Svelte <code>svelte/src/components/fbDraftPopup.svelte</code>.</p>
-  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
   <h3 id="component-fbfinalcontrol">fbFinalControl</h3>
   <p>Final/draft state selector.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbFinalControl.tsx</code>; Svelte <code>svelte/src/components/fbFinalControl.svelte</code>.</p>
@@ -553,9 +552,29 @@
   <p>Left section navigation panel.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbLayoutNav.tsx</code>; Svelte <code>svelte/src/components/fbLayoutNav.svelte</code>.</p>
   <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
-  <h3 id="component-fbpasswordpopup">fbPasswordPopup</h3>
+  <h3 id="component-fbmodalcancel">fbModalCancel</h3>
+  <p>Cancel confirmation popup.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbModalCancel.tsx</code>; Svelte <code>svelte/src/components/fbModalCancel.svelte</code>.</p>
+  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
+  <h3 id="component-fbmodaldraft">fbModalDraft</h3>
+  <p>Save-as-draft confirmation popup.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbModalDraft.tsx</code>; Svelte <code>svelte/src/components/fbModalDraft.svelte</code>.</p>
+  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
+  <h3 id="component-fbmodalpassword">fbModalPassword</h3>
   <p>Second-stage save password popup.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbPasswordPopup.tsx</code>; Svelte <code>svelte/src/components/fbPasswordPopup.svelte</code>.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbModalPassword.tsx</code>; Svelte <code>svelte/src/components/fbModalPassword.svelte</code>.</p>
+  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
+  <h3 id="component-fbmodalsaved">fbModalSaved</h3>
+  <p>Saved confirmation popup.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbModalSaved.tsx</code>; Svelte <code>svelte/src/components/fbModalSaved.svelte</code>.</p>
+  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
+  <h3 id="component-fbmodalsaveerror">fbModalSaveError</h3>
+  <p>Save-error popup.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbModalSaveError.tsx</code>; Svelte <code>svelte/src/components/fbModalSaveError.svelte</code>.</p>
+  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
+  <h3 id="component-fbmodalsaving">fbModalSaving</h3>
+  <p>Saving progress popup.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbModalSaving.tsx</code>; Svelte <code>svelte/src/components/fbModalSaving.svelte</code>.</p>
   <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
   <h3 id="component-fbpopup">fbPopup</h3>
   <p>Generic modal/popup shell.</p>
@@ -573,18 +592,6 @@
   <p>Footer save/cancel/save-and-close controls.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbSaveCancelButtons.tsx</code>; Svelte <code>svelte/src/components/fbSaveCancelButtons.svelte</code>.</p>
   <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
-  <h3 id="component-fbsavedpopup">fbSavedPopup</h3>
-  <p>Saved confirmation popup.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbSavedPopup.tsx</code>; Svelte <code>svelte/src/components/fbSavedPopup.svelte</code>.</p>
-  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
-  <h3 id="component-fbsaveerrorpopup">fbSaveErrorPopup</h3>
-  <p>Save-error popup.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbSaveErrorPopup.tsx</code>; Svelte <code>svelte/src/components/fbSaveErrorPopup.svelte</code>.</p>
-  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
-  <h3 id="component-fbsavingpopup">fbSavingPopup</h3>
-  <p>Saving progress popup.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbSavingPopup.tsx</code>; Svelte <code>svelte/src/components/fbSavingPopup.svelte</code>.</p>
-  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
   <h3 id="component-fbsearchinput">fbSearchInput</h3>
   <p>Reusable search input with clear/search affordances.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbSearchInput.tsx</code>; Svelte <code>svelte/src/components/fbSearchInput.svelte</code>.</p>
@@ -593,10 +600,6 @@
   <p>Section block with blue title bar and content body.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbSection.tsx</code>; Svelte <code>svelte/src/components/fbSection.svelte</code>.</p>
   <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
-  <h3 id="component-fbtimedisplay">fbTimeDisplay</h3>
-  <p>Read-only local time display using a 24-hour hh:mm clock.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbTimeDisplay.tsx</code>; Svelte <code>No Svelte equivalent yet</code>.</p>
-  <p><strong>Parameters:</strong> `value` as a Date, ISO date-time string, hh:mm string, or empty value.</p>
   <h3 id="component-fbtooltip">fbToolTip</h3>
   <p>Tooltip popup and trigger wrapper.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbToolTip.tsx</code>; Svelte <code>svelte/src/components/fbToolTip.svelte</code>.</p>
@@ -607,7 +610,7 @@
   <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
 
   <h2 id="date-controls">Date controls detail</h2>
-  <p><code>fbExactDate</code> and <code>fbPartialDate</code> share the same visible date-control shell. Exact date mode accepts only complete dates. Partial date mode accepts exact dates, month-year values, and year-only values. The dropdown panel is an absolutely positioned white panel below the input. It has a header/navigation area, mode buttons where applicable, and a calendar/month/year body. All rows of buttons inside the dropdown fill the panel width, and buttons expand horizontally to divide the available space. The panel must remain open while a user changes mode or navigates months/years.</p>
+  <p><code>fbDateExact</code> and <code>fbDatePartial</code> share the same visible date-control shell. Exact date mode accepts only complete dates. Partial date mode accepts exact dates, month-year values, and year-only values. The dropdown panel is an absolutely positioned white panel below the input. It has a header/navigation area, mode buttons where applicable, and a calendar/month/year body. All rows of buttons inside the dropdown fill the panel width, and buttons expand horizontally to divide the available space. The panel must remain open while a user changes mode or navigates months/years.</p>
   <pre><code>&lt;div class=&quot;fb-date-control&quot;&gt;
   &lt;input class=&quot;fb-date-control-input&quot; type=&quot;text&quot; aria-haspopup=&quot;dialog&quot; aria-expanded={open}&gt;
   &lt;button type=&quot;button&quot; class=&quot;fb-date-toggle&quot;&gt;&amp;#9660;&lt;/button&gt;
@@ -663,11 +666,21 @@
 }</code></pre>
   <pre><code>function parseDateInput(text, exactOnly) {
   const value = text.trim();
-  if (exactOnly &amp;&amp; !isCompleteClinicalDate(value)) return { error: 'Complete date required' };
-  if (isCompleteClinicalDate(value)) return { kind: 'exact', value: toIsoDate(value) };
-  if (!exactOnly &amp;&amp; isClinicalMonth(value)) return { kind: 'month', value: toIsoMonth(value) };
+  if (exactOnly &amp;&amp; !isCompleteDate(value)) return { error: 'Complete date required' };
+  if (isCompleteDate(value)) return { kind: 'exact', value: toIsoDate(value) };
+  if (!exactOnly &amp;&amp; isMonth(value)) return { kind: 'month', value: toIsoMonth(value) };
   if (!exactOnly &amp;&amp; /^\d{4}$/.test(value)) return { kind: 'year', value };
   return { error: 'Date not recognised' };
+}
+
+function isCompleteDate(value) {
+  return /^\d{1,2}-[A-Za-z]{3}-\d{2,4}$/.test(value)
+    || /^\d{1,2}[/.]\d{1,2}[/.]\d{2,4}$/.test(value);
+}
+
+function isMonth(value) {
+  return /^[A-Za-z]{3}-\d{2,4}$/.test(value)
+    || /^\d{1,2}[/.]\d{2,4}$/.test(value);
 }</code></pre>
 
   <h2 id="msi-selector">fbMSISelector detail</h2>
@@ -871,6 +884,9 @@ function resizeTextarea(textarea) {
     '&lt;span class=&quot;required-word&quot;&gt;' + lastWord +
     '&lt;span class=&quot;required&quot;&gt;*&lt;/span&gt;&lt;/span&gt;';
 }</code></pre>
+
+  <h3>Password cleanup</h3>
+  <p>Authentication and password-confirmation inputs are transient. If a user enters a password but does not complete the Save and close action, the password input and any in-memory pending password value are cleared so the value does not keep the form dirty or persist across workflows.</p>
 
   <h3>RoV Rules</h3>
   <p>Read-only views preserve patient context and section navigation, hide edit-only inputs and save controls, and follow form-specific footer rules. Sectioned RoVs keep the nav panel but hide required counters.</p>

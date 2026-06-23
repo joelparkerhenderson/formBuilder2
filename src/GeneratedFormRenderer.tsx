@@ -4,8 +4,8 @@ import { fbBoxedAlert as FbBoxedAlert, fbBoxedInfo as FbBoxedInfo, fbBoxedWarnin
 import { fbDropdown as FbDropdown } from './components/fbDropdown';
 import { fbGroup as FbGroup } from './components/fbGroup';
 import { fbMSISelector as MSISelector } from './components/fbMSISelector';
-import { fbExactDate as FbExactDate } from './components/fbExactDate';
-import { fbPartialDate as FbPartialDate } from './components/fbPartialDate';
+import { fbDateExact as FbExactDate } from './components/fbDateExact';
+import { fbDatePartial as FbPartialDate } from './components/fbDatePartial';
 import { fbQuestion as FbQuestion } from './components/fbQuestion';
 import { fbGridRow as FbGridRow } from './components/fbGridRow';
 import { fbGridCell as FbGridCell } from './components/fbGridCell';
@@ -21,7 +21,7 @@ import { DesignerComponentSpec, DesignerFormSpec, DesignerOption } from './treat
 
 type FormState = Record<string, any>;
 
-const fieldTypes = new Set(['fbBloodPressure', 'fbDropdown', 'fbExactDate', 'fbMSISelector', 'fbNumberInput', 'fbNumberInputWithUnits', 'fbPartialDate', 'fbSCTDiagnosis', 'fbSCTProcedure', 'fbTextArea', 'fbTextInput', 'fbTime']);
+const fieldTypes = new Set(['fbBloodPressure', 'fbDropdown', 'fbDateExact', 'fbMSISelector', 'fbNumberInput', 'fbNumberInputWithUnits', 'fbDatePartial', 'fbSCTDiagnosis', 'fbSCTProcedure', 'fbTextArea', 'fbTextInput', 'fbTime']);
 
 export const cleanDesignerLabel = (label = '') => label.replace(/\*+$/g, '').trim();
 
@@ -65,13 +65,6 @@ export function defaultFormState(spec: DesignerFormSpec): FormState {
   return defaults;
 }
 
-const groupLabel = (component: DesignerComponentSpec) => (
-  <>
-    <span style={{ fontWeight: 500 }}>{cleanDesignerLabel(component.label)}</span>
-    {component.required && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}
-  </>
-);
-
 interface EditProps {
   spec: DesignerFormSpec;
   formState: FormState;
@@ -112,7 +105,14 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
 
     if (type === 'fbGroup') {
       return (
-        <FbGroup key={component.id} label={groupLabel(component)} valueError={component.valueError}>
+        <FbGroup
+          key={component.id}
+          label={label}
+          required={component.required}
+          requiredForAudit={component.requiredForAudit}
+          valueError={component.valueError}
+          labelStyle={{ fontWeight: 500 }}
+        >
           {component.children?.map((child) => (
             <FbRadio
               key={child.id}
@@ -123,6 +123,8 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
               onChange={() => onChange(component.id, child.id)}
               label={cleanDesignerLabel(child.label)}
               required={component.required}
+              requiredForAudit={component.requiredForAudit}
+              showRequiredMarkers={false}
             />
           ))}
         </FbGroup>
@@ -152,6 +154,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           diastolic={value.diastolic || ''}
           onChange={(nextValue) => onChange(component.id, nextValue)}
           required={component.required}
+          requiredForAudit={component.requiredForAudit}
           valueError={component.valueError}
         />
       );
@@ -167,6 +170,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           onChange={(value) => onChange(component.id, value)}
           options={asOptions(component.options)}
           required={component.required}
+          requiredForAudit={component.requiredForAudit}
           valueError={component.valueError}
           placeholder=""
         />
@@ -182,6 +186,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           value={formState[component.id] || ''}
           onChange={(value) => onChange(component.id, value)}
           required={component.required}
+          requiredForAudit={component.requiredForAudit}
           placeholder={component.placeholder || ''}
           fullWidth={component.fullWidth}
           valueError={component.valueError}
@@ -198,6 +203,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           value={formState[component.id] || ''}
           onChange={(value) => onChange(component.id, value)}
           required={component.required}
+          requiredForAudit={component.requiredForAudit}
           placeholder={component.placeholder || ''}
           valueError={component.valueError}
         />
@@ -206,7 +212,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
 
     if (component.type === 'fbNumberInput' || component.type === 'fbNumberInputWithUnits') {
       return (
-        <FbQuestion key={component.id} label={label} required={component.required} valueError={component.valueError}>
+        <FbQuestion key={component.id} label={label} required={component.required} requiredForAudit={component.requiredForAudit} valueError={component.valueError}>
           <input
             id={component.id}
             type="number"
@@ -243,34 +249,39 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           value={formState[component.id] || ''}
           onChange={(value) => onChange(component.id, value)}
           required={component.required}
+          requiredForAudit={component.requiredForAudit}
           placeholder={component.placeholder || ''}
           valueError={component.valueError}
         />
       );
     }
 
-    if (component.type === 'fbPartialDate') {
+    if (component.type === 'fbDatePartial') {
       return (
-        <FbQuestion key={component.id} label={label} required={component.required} valueError={component.valueError}>
+        <FbQuestion key={component.id} label={label} required={component.required} requiredForAudit={component.requiredForAudit} valueError={component.valueError}>
           <FbPartialDate
             name={component.id}
             value={formState[component.id] || ''}
             onChange={(value) => onChange(component.id, value)}
             required={component.required}
+            requiredForAudit={component.requiredForAudit}
+            showRequiredMarkers={false}
             placeholder={component.placeholder || undefined}
           />
         </FbQuestion>
       );
     }
 
-    if (component.type === 'fbExactDate') {
+    if (component.type === 'fbDateExact') {
       return (
-        <FbQuestion key={component.id} label={label} required={component.required} valueError={component.valueError}>
+        <FbQuestion key={component.id} label={label} required={component.required} requiredForAudit={component.requiredForAudit} valueError={component.valueError}>
           <FbExactDate
             name={component.id}
             value={formState[component.id] || ''}
             onChange={(value) => onChange(component.id, value)}
             required={component.required}
+            requiredForAudit={component.requiredForAudit}
+            showRequiredMarkers={false}
           />
         </FbQuestion>
       );
@@ -286,6 +297,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           coded={!!formState[`${component.id}_coded`]}
           onChange={(value, coded) => onChange(component.id, value, coded)}
           required={component.required}
+          requiredForAudit={component.requiredForAudit}
           valueError={component.valueError}
         />
       );
@@ -301,6 +313,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           coded={!!formState[`${component.id}_coded`]}
           onChange={(value, coded) => onChange(component.id, value, coded)}
           required={component.required}
+          requiredForAudit={component.requiredForAudit}
           valueError={component.valueError}
         />
       );
@@ -316,6 +329,7 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           coded={!!formState[`${component.id}_coded`]}
           onChange={(value, coded) => onChange(component.id, value, coded)}
           required={component.required}
+          requiredForAudit={component.requiredForAudit}
           valueError={component.valueError}
         />
       );
@@ -333,11 +347,33 @@ interface RoVProps {
 }
 
 export const GeneratedReadOnlyForm: React.FC<RoVProps> = ({ spec, formState }) => {
+  const hasRoVData = (component: DesignerComponentSpec): boolean => {
+    const type = componentType(component);
+    if (type === 'fbSection' || type === 'fbGridRow' || type === 'fbGridCell') {
+      return (component.children || []).some(hasRoVData);
+    }
+    if (type === 'fbGroup') {
+      return !isFbRoVEmptyValue(formState[component.id]);
+    }
+    if (component.type === 'fbBloodPressure') {
+      const value = formState[component.id];
+      const displayValue = value && typeof value === 'object'
+        ? [value.systolic, value.diastolic].filter(Boolean).join('/')
+        : value;
+      return !isFbRoVEmptyValue(displayValue);
+    }
+    if (fieldTypes.has(component.type)) {
+      return !isFbRoVEmptyValue(formState[component.id]);
+    }
+    return false;
+  };
+
   const renderComponent = (component: DesignerComponentSpec): React.ReactNode => {
     const label = cleanDesignerLabel(component.label);
     const type = componentType(component);
 
     if (type === 'fbSection') {
+      if (!hasRoVData(component)) return null;
       return (
         <div key={component.id} id={component.id} style={{ marginBottom: '0.8rem' }}>
           <h3 className="font-bold text-white" style={{

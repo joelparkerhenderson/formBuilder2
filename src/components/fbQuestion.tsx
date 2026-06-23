@@ -1,9 +1,13 @@
 import React from 'react';
+import { fbRequiredForAudit as FbRequiredForAudit } from './fbRequiredForAudit';
 import { fbValueError as FbValueError } from './fbValueError';
+
+export const fbQuestionRequiredMarkerContext = React.createContext(false);
 
 interface fbQuestionProps {
   label: string;
   required?: boolean;
+  requiredForAudit?: boolean;
   children: React.ReactNode;
   style?: React.CSSProperties;
   className?: string;
@@ -14,15 +18,23 @@ interface fbQuestionProps {
 export const fbQuestion: React.FC<fbQuestionProps> = ({
   label,
   required = false,
+  requiredForAudit = false,
   children,
   style,
   className = '',
   labelStyle,
   valueError,
 }) => {
-  // Gracefully parses the label string to group the last word and required asterisk
+  const renderRequiredMarkers = () => (
+    <>
+      {requiredForAudit && <FbRequiredForAudit />}
+      {required && <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>}
+    </>
+  );
+
+  // Gracefully parses the label string to group the last word and required markers
   const renderLabelText = () => {
-    if (!required) return label;
+    if (!required && !requiredForAudit) return label;
 
     const trimmed = label.trim();
     const lastSpaceIndex = trimmed.lastIndexOf(' ');
@@ -32,7 +44,7 @@ export const fbQuestion: React.FC<fbQuestionProps> = ({
       return (
         <span style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
           {trimmed}
-          <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>
+          {renderRequiredMarkers()}
         </span>
       );
     }
@@ -45,7 +57,7 @@ export const fbQuestion: React.FC<fbQuestionProps> = ({
         {firstPart}
         <span style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
           {lastWord}
-          <span style={{ color: '#d50000', marginLeft: '0.1rem' }}>*</span>
+          {renderRequiredMarkers()}
         </span>
       </>
     );
@@ -79,9 +91,11 @@ export const fbQuestion: React.FC<fbQuestionProps> = ({
       >
         {renderLabelText()}
       </label>
-      <div style={{ width: '100%' }}>
-        {children}
-      </div>
+      <fbQuestionRequiredMarkerContext.Provider value={required || requiredForAudit}>
+        <div style={{ width: '100%' }}>
+          {children}
+        </div>
+      </fbQuestionRequiredMarkerContext.Provider>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { fbSmallerButton as FbSmallerButton } from './fbSmallerButton';
+import { fbButtonSmaller as FbSmallerButton } from './fbButtonSmaller';
 import { fbViewOldVersion as FbViewOldVersion } from './fbViewOldVersion';
 import { fbTableHeaderCell as FbTableHeaderCell } from './fbTable';
 

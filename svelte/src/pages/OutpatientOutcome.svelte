@@ -3,37 +3,45 @@
   import FbAuthAndSensitivity from '../components/fbAuthAndSensitivity.svelte';
   import FbBottomControlsRow from '../components/fbBottomControlsRow.svelte';
   import FbButton from '../components/fbButton.svelte';
-  import FbCancelPopup from '../components/fbCancelPopup.svelte';
+  import FbCancelPopup from '../components/fbModalCancel.svelte';
   import FbCheck from '../components/fbCheck.svelte';
-  import FbDraftPopup from '../components/fbDraftPopup.svelte';
-  import FbExactDate from '../components/fbExactDate.svelte';
+  import FbDraftPopup from '../components/fbModalDraft.svelte';
+  import FbExactDate from '../components/fbDateExact.svelte';
   import FbHeader from '../components/fbHeader.svelte';
   import FbLayout from '../components/fbLayout.svelte';
-  import FbPasswordPopup from '../components/fbPasswordPopup.svelte';
+  import FbModalPassword from '../components/fbModalPassword.svelte';
   import FbQuestion from '../components/fbQuestion.svelte';
   import FbRadio from '../components/fbRadio.svelte';
   import FbRoVField from '../components/fbRoVField.svelte';
   import FbSCTDiagnosis from '../components/fbSCTDiagnosis.svelte';
-  import FbSaveErrorPopup from '../components/fbSaveErrorPopup.svelte';
-  import FbSavedPopup from '../components/fbSavedPopup.svelte';
-  import FbSavingPopup from '../components/fbSavingPopup.svelte';
+  import FbSaveErrorPopup from '../components/fbModalSaveError.svelte';
+  import FbSavedPopup from '../components/fbModalSaved.svelte';
+  import FbSavingPopup from '../components/fbModalSaving.svelte';
   import FbTextArea from '../components/fbTextArea.svelte';
   import FbTextInput from '../components/fbTextInput.svelte';
   import FbToolTip from '../components/fbToolTip.svelte';
+  import FbFormHistoryMenu, { type FbFormHistoryItem } from '../components/fbFormHistoryMenu.svelte';
+  import WaitingListCard from './WaitingListCard.svelte';
   import {
     hospitalLabels,
     organisationLabels,
     specialityLabels,
   } from '../lib/constants';
   import { compareFormStatesObj } from '../lib/formStateUtils';
-  import { formatClinicalDate, generateUUID } from '../lib/dateFormat';
-  import { getLatestVersion, getPatient, insertForm, insertFormsIndex } from '../lib/api';
+  import { formatFormDate, generateUUID } from '../lib/dateFormat';
+  import { getForm, getFormHistory, getFormVersion, getLatestVersion, getPatient, insertForm, insertFormsIndex } from '../lib/api';
   import type { Patient } from '../lib/types';
 
   type SaveStatus = 'final' | 'draft';
 
   const params = new URLSearchParams(window.location.search);
-  const patientUuid = params.get('patientUuid') || 'fd55880a-7ada-47a8-adbb-65850af6f7e2';
+  export let patientUuid = params.get('patientUuid') || 'fd55880a-7ada-47a8-adbb-65850af6f7e2';
+  export let formUuid = params.get('formUuid') || '';
+  export let formVersion = Number(params.get('formVersion') || '') || null;
+  export let appointmentUuid = params.get('appointmentUuid') || '';
+  export let openInRoV = params.get('openInRoV') === 'true';
+  export let inline = false;
+  export let onClose: () => void = () => {};
   const outpatientWlcBridgeKey = `fb_svelte_oo_wlc_bridge_${patientUuid}`;
   const dateTooltip = 'Date of consultation';
   const timeTooltip = 'Time of consultation';
@@ -61,6 +69,8 @@
   let showSavedPopup = false;
   let showSaveErrorPopup = false;
   let saveErrorDetails = '';
+  let formHistory: FbFormHistoryItem[] = [];
+  let showHistoryMenu = false;
   let dischargeDisabled = false;
   let sosDisabled = false;
   let pifuDisabled = false;
@@ -85,6 +95,11 @@
   let refToTherapiesChecked = false;
   let refToConsultantChecked = false;
   let fuOPAChecked = false;
+  let inlineWaitingListCard: {
+    formUuid?: string;
+    openInRoV: boolean;
+    openedFromOutpatientOutcomeButton: boolean;
+  } | null = null;
 
   $: formChanged = !compareFormStatesObj(cleanSnapshot, formState);
   $: requiredComplete = (formState, areRequiredFieldsComplete());
@@ -135,7 +150,7 @@
       site: 'Princess of Wales Hospital',
       seniorClinician: 'HURLE, Rhidian A, Mr (GMC:567890)',
       clinicName: 'General Urology',
-      date: formatClinicalDate(new Date()),
+      date: formatFormDate(new Date()),
       time: '09:00',
       consultationType: 'faceToFace',
     };
@@ -216,27 +231,39 @@
   }
 
   function createWaitingListCardFromOutcome() {
-    storeWaitingListBridge();
     const initialFormState = {
       organisation: mapLabelToValue(formState.organisation, organisationLabels, 'cwm-taf'),
       speciality: mapLabelToValue(formState.speciality, specialityLabels, 'urology'),
       hospital: mapLabelToValue(formState.site || formState.hospital, hospitalLabels, 'princess-wales'),
       seniorClinician: formState.seniorClinician || '',
       seniorClinician_coded: formState.seniorClinician_coded,
-      dateListed: formatClinicalDate(new Date()),
+      dateListed: formatFormDate(new Date()),
       urgency: formState.usc === 'yes' ? 'usc' : '',
     };
     sessionStorage.setItem(`${outpatientWlcBridgeKey}_initial_wlc`, JSON.stringify({
       formState: initialFormState,
       procedures: [{ id: 1, side: '', procedure: '', additionalInfo: '' }],
     }));
-    window.location.href = `waitingListCard.html?patientUuid=${encodeURIComponent(patientUuid)}&fromOutpatientOutcome=1`;
+    inlineWaitingListCard = {
+      openInRoV: false,
+      openedFromOutpatientOutcomeButton: false,
+    };
   }
 
   function openLinkedWaitingListCard() {
     if (!formState.linkedWaitingListCardUuid) return;
-    storeWaitingListBridge();
-    window.location.href = `waitingListCard.html?patientUuid=${encodeURIComponent(patientUuid)}&formUuid=${encodeURIComponent(formState.linkedWaitingListCardUuid)}&fromOutpatientOutcome=1&openInRoV=true&openedFromOutpatientOutcomeButton=1`;
+    inlineWaitingListCard = {
+      formUuid: formState.linkedWaitingListCardUuid,
+      openInRoV: true,
+      openedFromOutpatientOutcomeButton: true,
+    };
+  }
+
+  function handleWaitingListCardReturn(savedWaitingListCard?: { uuid: string; formState: Record<string, any>; procedures: any[] }) {
+    inlineWaitingListCard = null;
+    if (savedWaitingListCard) {
+      applyWaitingListSummary(savedWaitingListCard);
+    }
   }
 
   function areRequiredFieldsComplete() {
@@ -268,12 +295,40 @@
       patient = null;
     }
     formState = initialFormState();
+    if (appointmentUuid) {
+      formState = { ...formState, appointmentUuid };
+    }
+    if (formUuid) {
+      try {
+        const saved = formVersion ? await getFormVersion('outpatient_outcome', formUuid, formVersion) : await getForm('outpatient_outcome', formUuid);
+        formState = { ...formState, ...(saved?.form_data || {}), uuid: formUuid };
+        finalChecked = saved?.form_status === 'final' || Boolean(saved?.form_data?.finalChecked);
+        highlySensitive = Boolean(saved?.form_data?.highlySensitive);
+        isReadOnlyView = openInRoV;
+        formHistory = await getFormHistory(formUuid);
+      } catch (error) {
+        console.error('Error loading outpatient outcome:', error);
+      }
+    } else {
+      isReadOnlyView = openInRoV;
+    }
     cleanSnapshot = { ...formState };
     consumeWaitingListBridge();
     loadingData = false;
   }
 
   onMount(loadData);
+
+  async function viewHistoryVersion(version: number) {
+    if (!formUuid) return;
+    const saved = await getFormVersion('outpatient_outcome', formUuid, version);
+    formState = { ...initialFormState(), ...(saved?.form_data || {}), uuid: formUuid };
+    finalChecked = saved?.form_status === 'final' || Boolean(saved?.form_data?.finalChecked);
+    highlySensitive = Boolean(saved?.form_data?.highlySensitive);
+    cleanSnapshot = { ...formState };
+    isReadOnlyView = true;
+    showHistoryMenu = false;
+  }
 
   async function saveForm(status: SaveStatus) {
     if (formChanged && !password.trim()) {
@@ -317,6 +372,12 @@
       cleanSnapshot = { ...formState, uuid: formUuid };
       showSavingPopup = false;
       showSavedPopup = true;
+      if (inline) {
+        window.setTimeout(() => {
+          showSavedPopup = false;
+          onClose();
+        }, 1000);
+      }
     } catch (error) {
       saveErrorDetails = error instanceof Error ? error.message : String(error);
       showSavingPopup = false;
@@ -507,6 +568,17 @@
 
 {#if loadingData}
   <p style="padding: 0.8rem;">Loading...</p>
+{:else if inlineWaitingListCard}
+  <WaitingListCard
+    {patientUuid}
+    formUuid={inlineWaitingListCard.formUuid || ''}
+    openInRoV={inlineWaitingListCard.openInRoV}
+    inline
+    fromOutpatientOutcome
+    openedFromOutpatientOutcomeButton={inlineWaitingListCard.openedFromOutpatientOutcomeButton}
+    onClose={() => (inlineWaitingListCard = null)}
+    onReturnToOutpatientOutcome={handleWaitingListCardReturn}
+  />
 {:else}
   <FbLayout sections={[]} {formState} isReadOnlyView={isReadOnlyView} onFormActivity={() => (formState = { ...formState })}>
     <svelte:fragment slot="header"><FbHeader title="Outpatient outcome" {patient} /></svelte:fragment>
@@ -519,14 +591,17 @@
       <FbBottomControlsRow>
         {#if isReadOnlyView}
           <FbButton type="button" onClick={() => (isReadOnlyView = false)}>EV</FbButton>
+          {#if formUuid}
+            <FbButton type="button" onClick={() => (showHistoryMenu = true)}>History</FbButton>
+          {/if}
           <div style="flex: 1;"></div>
-          <FbButton type="button" onClick={() => (window.location.href = 'index.html')}>Back</FbButton>
+          <FbButton type="button" onClick={() => inline ? onClose() : (window.location.href = 'index.html')}>Back</FbButton>
         {:else}
           <FbButton type="button" onClick={() => (isReadOnlyView = true)}>RoV</FbButton>
           <div style="flex: 1;"></div>
           <FbAuthAndSensitivity bind:username bind:password bind:highlySensitive bind:finalChecked {formChanged} finalDisabled={!requiredComplete} />
           <FbButton type="button" variant={formChanged ? 'success' : 'secondary'} disabled={!requiredComplete || isSaving || !formChanged} onClick={() => saveForm('final')}>Save and close</FbButton>
-          <FbButton type="button" variant="danger" onClick={() => formChanged ? (showCancelPopup = true) : (window.location.href = 'index.html')}>Cancel</FbButton>
+          <FbButton type="button" variant="danger" onClick={() => formChanged ? (showCancelPopup = true) : (inline ? onClose() : (window.location.href = 'index.html'))}>Cancel</FbButton>
         {/if}
       </FbBottomControlsRow>
     </svelte:fragment>
@@ -534,11 +609,14 @@
 {/if}
 
 {#if showDraftPopup}<FbDraftPopup onSaveDraft={() => { showDraftPopup = false; saveForm('draft'); }} onCancel={() => (showDraftPopup = false)} />{/if}
-{#if showPasswordPopup}<FbPasswordPopup on:confirm={(event) => { password = event.detail; showPasswordPopup = false; saveForm(pendingSaveStatus); }} on:cancel={() => (showPasswordPopup = false)} />{/if}
-{#if showCancelPopup}<FbCancelPopup onDiscard={() => (window.location.href = 'index.html')} onReturnToForm={() => (showCancelPopup = false)} />{/if}
+{#if showPasswordPopup}<FbModalPassword on:confirm={(event) => { password = event.detail; showPasswordPopup = false; saveForm(pendingSaveStatus); }} on:cancel={() => (showPasswordPopup = false)} />{/if}
+{#if showCancelPopup}<FbCancelPopup onDiscard={() => inline ? onClose() : (window.location.href = 'index.html')} onReturnToForm={() => (showCancelPopup = false)} />{/if}
 {#if showSavingPopup}<FbSavingPopup />{/if}
 {#if showSavedPopup}<FbSavedPopup />{/if}
 {#if showSaveErrorPopup}<FbSaveErrorPopup error={saveErrorDetails} onReturnToForm={() => (showSaveErrorPopup = false)} />{/if}
+{#if showHistoryMenu}
+  <FbFormHistoryMenu history={formHistory} onViewVersion={viewHistoryVersion} onClose={() => (showHistoryMenu = false)} />
+{/if}
 
 <style>
   .oo-content {

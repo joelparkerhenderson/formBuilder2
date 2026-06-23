@@ -8,6 +8,7 @@
   export let value = '';
   export let placeholder = '';
   export let required = false;
+  export let requiredForAudit = false;
   export let readonly = false;
   export let subfield = false;
   export let valueError = '';
@@ -27,7 +28,7 @@
   }
 </script>
 
-<FbQuestion {label} {required} {subfield} {valueError} {tooltip}>
+<FbQuestion {label} {required} {requiredForAudit} {subfield} {valueError} {tooltip}>
   <input
     {id}
     {name}

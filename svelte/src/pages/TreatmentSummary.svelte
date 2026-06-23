@@ -3,8 +3,8 @@
   import FbAuthAndSensitivity from '../components/fbAuthAndSensitivity.svelte';
   import FbBottomControlsRow from '../components/fbBottomControlsRow.svelte';
   import FbButton from '../components/fbButton.svelte';
-  import FbCancelPopup from '../components/fbCancelPopup.svelte';
-  import FbDraftPopup from '../components/fbDraftPopup.svelte';
+  import FbCancelPopup from '../components/fbModalCancel.svelte';
+  import FbDraftPopup from '../components/fbModalDraft.svelte';
   import FbDropdown from '../components/fbDropdown.svelte';
   import FbGridCell from '../components/fbGridCell.svelte';
   import FbGridRow from '../components/fbGridRow.svelte';
@@ -15,22 +15,28 @@
   import FbRadio from '../components/fbRadio.svelte';
   import FbRoVField from '../components/fbRoVField.svelte';
   import FbSCTDiagnosis from '../components/fbSCTDiagnosis.svelte';
+  import FbFormHistoryMenu, { type FbFormHistoryItem } from '../components/fbFormHistoryMenu.svelte';
   import FbSaveCancelButtons from '../components/fbSaveCancelButtons.svelte';
-  import FbSaveErrorPopup from '../components/fbSaveErrorPopup.svelte';
-  import FbSavedPopup from '../components/fbSavedPopup.svelte';
-  import FbSavingPopup from '../components/fbSavingPopup.svelte';
+  import FbSaveErrorPopup from '../components/fbModalSaveError.svelte';
+  import FbSavedPopup from '../components/fbModalSaved.svelte';
+  import FbSavingPopup from '../components/fbModalSaving.svelte';
   import FbSection from '../components/fbSection.svelte';
   import FbTextArea from '../components/fbTextArea.svelte';
   import FbTextInput from '../components/fbTextInput.svelte';
-  import { getLatestVersion, getPatient, insertForm, insertFormsIndex } from '../lib/api';
-  import { formatClinicalDate, generateUUID } from '../lib/dateFormat';
+  import { getForm, getFormHistory, getFormVersion, getLatestVersion, getPatient, insertForm, insertFormsIndex } from '../lib/api';
+  import { formatFormDate, generateUUID } from '../lib/dateFormat';
   import { compareFormStatesObj } from '../lib/formStateUtils';
   import type { Patient, SectionSpec } from '../lib/types';
 
   type SaveStatus = 'final' | 'draft';
 
   const params = new URLSearchParams(window.location.search);
-  const patientUuid = params.get('patientUuid') || 'fd55880a-7ada-47a8-adbb-65850af6f7e2';
+  export let patientUuid = params.get('patientUuid') || 'fd55880a-7ada-47a8-adbb-65850af6f7e2';
+  export let formUuid = params.get('formUuid') || '';
+  export let formVersion = Number(params.get('formVersion') || '') || null;
+  export let openInRoV = params.get('openInRoV') === 'true';
+  export let inline = false;
+  export let onClose: () => void = () => {};
 
   const yesNoUnknownOptions = [
     { value: 'field6', label: 'Yes' },
@@ -108,6 +114,8 @@
   let showSavedPopup = false;
   let saveError = '';
   let cleanSnapshot: Record<string, any> | null = null;
+  let formHistory: FbFormHistoryItem[] = [];
+  let showHistoryMenu = false;
 
   let formState: Record<string, any> = {
     group5: 'field8',
@@ -132,7 +140,7 @@
     field50: '',
     field52: '',
     field54: '',
-    dateCreated: formatClinicalDate(new Date()),
+    dateCreated: formatFormDate(new Date()),
   };
 
   const sectionsConfig: SectionSpec[] = [
@@ -212,7 +220,8 @@
       showSavedPopup = true;
       window.setTimeout(() => {
         showSavedPopup = false;
-        window.location.href = 'index.html';
+        if (inline) onClose();
+        else window.location.href = 'index.html';
       }, 1000);
     } catch (err) {
       saveError = err instanceof Error ? err.message : String(err);
@@ -231,17 +240,37 @@
 
   function cancel() {
     if (formChanged) showCancelPopup = true;
+    else if (inline) onClose();
     else window.location.href = 'index.html';
   }
 
   onMount(async () => {
     try {
       patient = await getPatient(patientUuid);
+      if (formUuid) {
+        const saved = formVersion ? await getFormVersion('treatment_summary', formUuid, formVersion) : await getForm('treatment_summary', formUuid);
+        formState = { ...formState, ...(saved?.form_data || {}), uuid: formUuid };
+        finalChecked = saved?.form_status === 'final' || Boolean(saved?.form_data?.finalChecked);
+        highlySensitive = Boolean(saved?.form_data?.highlySensitive);
+        formHistory = await getFormHistory(formUuid);
+      }
+      isReadOnlyView = openInRoV;
     } finally {
       loadingData = false;
       cleanSnapshot = { ...formState, finalChecked, highlySensitive };
     }
   });
+
+  async function viewHistoryVersion(version: number) {
+    if (!formUuid) return;
+    const saved = await getFormVersion('treatment_summary', formUuid, version);
+    formState = { ...formState, ...(saved?.form_data || {}), uuid: formUuid };
+    finalChecked = saved?.form_status === 'final' || Boolean(saved?.form_data?.finalChecked);
+    highlySensitive = Boolean(saved?.form_data?.highlySensitive);
+    cleanSnapshot = { ...formState, finalChecked, highlySensitive };
+    isReadOnlyView = true;
+    showHistoryMenu = false;
+  }
 </script>
 
 {#if loadingData}
@@ -307,8 +336,11 @@
     <svelte:fragment slot="bottomControls">
       <FbBottomControlsRow>
         <FbButton type="button" onClick={() => (isReadOnlyView = false)}>EV</FbButton>
+        {#if formUuid}
+          <FbButton type="button" onClick={() => (showHistoryMenu = true)}>History</FbButton>
+        {/if}
         <div style="flex: 1;"></div>
-        <FbButton type="button" onClick={() => (window.location.href = 'index.html')}>Back</FbButton>
+        <FbButton type="button" onClick={() => inline ? onClose() : (window.location.href = 'index.html')}>Back</FbButton>
       </FbBottomControlsRow>
     </svelte:fragment>
   </FbLayout>
@@ -401,7 +433,10 @@
 {/if}
 
 {#if showCancelPopup}
-  <FbCancelPopup onDiscard={() => (window.location.href = 'index.html')} onReturnToForm={() => (showCancelPopup = false)} />
+  <FbCancelPopup onDiscard={() => inline ? onClose() : (window.location.href = 'index.html')} onReturnToForm={() => (showCancelPopup = false)} />
+{/if}
+{#if showHistoryMenu}
+  <FbFormHistoryMenu history={formHistory} onViewVersion={viewHistoryVersion} onClose={() => (showHistoryMenu = false)} />
 {/if}
 
 {#if isSaving}

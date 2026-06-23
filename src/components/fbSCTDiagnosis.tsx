@@ -10,6 +10,7 @@ interface SCTDiagnosisProps {
   onBlur?: () => void;
   placeholder?: string;
   required?: boolean;
+  requiredForAudit?: boolean;
   coded?: boolean;
   valueError?: string;
   labelStyle?: React.CSSProperties;
@@ -24,6 +25,7 @@ export const fbSCTDiagnosis: React.FC<SCTDiagnosisProps> = ({
   onBlur,
   placeholder = 'Type to search SNOMED CT',
   required,
+  requiredForAudit,
   coded,
   valueError,
   labelStyle,
@@ -37,6 +39,7 @@ export const fbSCTDiagnosis: React.FC<SCTDiagnosisProps> = ({
     onBlur={onBlur}
     placeholder={placeholder}
     required={required}
+    requiredForAudit={requiredForAudit}
     coded={coded}
     valueError={valueError}
     labelStyle={labelStyle}

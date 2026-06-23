@@ -9,6 +9,7 @@ export interface DesignerComponentSpec {
   type: string;
   label: string;
   required?: boolean;
+  requiredForAudit?: boolean;
   placeholder?: string;
   defaultValue?: string | boolean;
   valueError?: string;

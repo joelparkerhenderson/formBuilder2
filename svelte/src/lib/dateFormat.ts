@@ -1,6 +1,6 @@
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-export function formatClinicalDate(value: Date | string | null | undefined): string {
+export function formatFormDate(value: Date | string | null | undefined): string {
   if (!value) return '';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '';
@@ -10,7 +10,7 @@ export function formatClinicalDate(value: Date | string | null | undefined): str
   return `${day}-${month}-${year}`;
 }
 
-export function clinicalDateToIsoDate(value: string | null | undefined): string | null {
+export function formDateToIsoDate(value: string | null | undefined): string | null {
   if (!value) return null;
   const exact = /^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(value.trim());
   if (!exact) return null;

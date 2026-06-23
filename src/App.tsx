@@ -133,6 +133,14 @@ styleSheet.textContent = `
     font-weight: 300 !important;
   }
 
+  .fb-table-required-row {
+    color: #d50000 !important;
+    font-family: 'Roboto', sans-serif !important;
+    font-size: 0.8rem !important;
+    font-style: italic !important;
+    font-weight: 500 !important;
+  }
+
   .fb-rov-field-value-inline {
     display: flex !important;
     align-items: flex-start !important;

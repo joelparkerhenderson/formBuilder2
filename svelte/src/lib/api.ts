@@ -45,8 +45,16 @@ export function getForm(formType: string, uuid: string) {
   return request<any>(`/forms/${encodeURIComponent(formType)}/${encodeURIComponent(uuid)}`);
 }
 
+export function getFormVersion(formType: string, uuid: string, version: number) {
+  return request<any>(`/forms/${encodeURIComponent(formType)}/${encodeURIComponent(uuid)}/versions/${encodeURIComponent(version)}`);
+}
+
 export function getLatestVersion(formType: string, uuid: string) {
   return request<{ version: number | null }>(`/forms/${encodeURIComponent(formType)}/${encodeURIComponent(uuid)}/latest-version`);
+}
+
+export function getFormHistory(uuid: string) {
+  return request<any[]>(`/forms-index/${encodeURIComponent(uuid)}/history`);
 }
 
 export function insertForm(formType: string, body: Record<string, any>) {

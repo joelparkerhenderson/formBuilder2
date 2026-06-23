@@ -3,14 +3,14 @@ import { useNavigate, useLocation } from 'react-router';
 import { specialities } from './data/specialities';
 import { fbAddressograph as Addressograph } from './components/fbAddressograph';
 import { fbAuthControls as AuthControls } from './components/fbAuthControls';
-import { fbExactDate as ExactDate } from './components/fbExactDate';
-import { fbPartialDate as PartialDate } from './components/fbPartialDate';
+import { fbDateExact as ExactDate } from './components/fbDateExact';
+import { fbDatePartial as PartialDate } from './components/fbDatePartial';
 import { fbSCTProcedure as FbSCTProcedure } from './components/fbSCTProcedure';
 import { fbSCTDiagnosis as SCTDiagnosis } from './components/fbSCTDiagnosis';
 import { fbMSISelector as MSISelector } from './components/fbMSISelector';
-import { fbDraftPopup as DraftPopup } from './components/fbDraftPopup';
-import { fbPasswordPopup as PasswordPopup } from './components/fbPasswordPopup';
-import { fbCancelPopup as CancelPopup } from './components/fbCancelPopup';
+import { fbModalDraft as DraftPopup } from './components/fbModalDraft';
+import { fbModalPassword as PasswordPopup } from './components/fbModalPassword';
+import { fbModalCancel as CancelPopup } from './components/fbModalCancel';
 import { fbFinalControl as FinalControl } from './components/fbFinalControl';
 import { OperationNoteRoV } from './OperationNoteRoV';
 import { fbSaveCancelButtons as SaveCancelButtons } from './components/fbSaveCancelButtons';
@@ -33,7 +33,7 @@ import {
 import { fbFormHistoryMenu as FbFormHistoryMenu, fbFormHistoryItem } from "./components/fbFormHistoryMenu";
 import { compareFormStatesObj, cleanArrayOfObjects } from "./utils/formStateUtils";
 import { generateUUID } from "./utils/formUtils";
-import { clinicalDateToIsoDate, formatClinicalDate } from "./utils/dateFormat";
+import { formDateToIsoDate, formatFormDate } from "./utils/dateFormat";
 import { useEditFormAutoExpandTextareas, useEditFormLabelEqualization } from "./utils/formLayoutEffects";
 import { appendRow, removeRowIfMultiple, updateRowById } from "./utils/rowState";
 import { useFbTooltips } from "./utils/useFbTooltips";
@@ -45,7 +45,7 @@ import { createClient } from './restClient';
 // Create REST client
 const restClient = createClient();
 
-const formatDate = formatClinicalDate;
+const formatDate = formatFormDate;
 type SaveStatus = 'final' | 'draft';
 
 interface Patient {
@@ -466,7 +466,7 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
         finalChecked: formStatus === 'final'
       };
 
-      const eventDate = clinicalDateToIsoDate(formState.date) || new Date().toISOString();
+      const eventDate = formDateToIsoDate(formState.date) || new Date().toISOString();
 
       // Insert new version
       const { error: insertError } = await restClient
@@ -1086,6 +1086,7 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
                       onFocus={(e) => showTooltipForControl('Knife to skin', e.currentTarget)}
                       onBlur={hideTooltip}
                       required
+                      showRequiredMarkers={false}
                     />
                   </div>
                   <FbTime
@@ -1328,7 +1329,7 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
                     <FbTableBody id="proceduresTableBody">
                       {(procedures.length === 0 || procedures.every(p => !p.procedure || String(p.procedure).trim() === '')) && (
                         <FbTableRow>
-                          <td colSpan={5} className="p-2" style={{fontSize: '0.8rem', fontWeight: 500, fontStyle: 'italic', color: '#d50000', borderBottom: '1px solid silver'}}>
+                          <td colSpan={5} className="fb-table-required-row p-2" style={{fontSize: '0.8rem', fontWeight: 500, fontStyle: 'italic', color: '#d50000', borderBottom: '1px solid silver'}}>
                             Enter at least one procedure
                           </td>
                         </FbTableRow>
@@ -1760,6 +1761,7 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
                                   onChange={(value) => updateImplant(impl.id, 'removeBy', value)}
                                   placeholder="dd-Mmm-yyyy"
                                   required={impl.requiresRemoval === 'yes'}
+                                  showRequiredMarkers={false}
                                 />
                                 <span style={{color: '#d50000', flexShrink: 0}}>*</span>
                               </div>

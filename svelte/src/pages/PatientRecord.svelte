@@ -4,10 +4,14 @@
   import FbAddButtonForPage from '../components/fbAddButtonForPage.svelte';
   import FbAddFormMenu from '../components/fbAddFormMenu.svelte';
   import FbButton from '../components/fbButton.svelte';
-  import FbDraftBadge from '../components/fbDraftBadge.svelte';
+  import FbDraftBadge from '../components/fbBadgeDraft.svelte';
   import FbFormTile from '../components/fbFormTile.svelte';
   import FbOutpatientAppointmentTile from '../components/fbOutpatientAppointmentTile.svelte';
   import FbUserName from '../components/fbUserName.svelte';
+  import OperationNote from './OperationNote.svelte';
+  import OutpatientOutcome from './OutpatientOutcome.svelte';
+  import TreatmentSummary from './TreatmentSummary.svelte';
+  import WaitingListCard from './WaitingListCard.svelte';
   import { getPatient, getPatientAppointments, getPatientForms } from '../lib/api';
   import { specialityLabels } from '../lib/constants';
   import type { Patient } from '../lib/types';
@@ -34,6 +38,12 @@
   let appointments: any[] = [];
   let loading = true;
   let showAddMenu = false;
+  let inlineActiveForm: {
+    formType: 'waiting_list_card' | 'operation_note' | 'outpatient_outcome' | 'treatment_summary';
+    formUuid?: string;
+    appointmentUuid?: string;
+    openInRoV?: boolean;
+  } | null = null;
 
   onMount(() => {
     sessionStorage.setItem('fb_prev_main_page', '/patient-record');
@@ -66,6 +76,11 @@
     else window.location.href = 'index.html';
   }
 
+  function closeInlineForm() {
+    inlineActiveForm = null;
+    void fetchPatientRecord();
+  }
+
   function formTypeDisplay(type: string) {
     if (type === 'waiting_list_card') return 'Waiting list card';
     if (type === 'operation_note') return 'Operation note';
@@ -86,16 +101,29 @@
   function openForm(form: FormIndexItem) {
     const href = formTypeHref(form.form_type);
     if (!href) return;
-    window.location.href = `${href}?patientUuid=${encodeURIComponent(patientUuid)}&formUuid=${encodeURIComponent(form.form_uuid)}&openInRoV=true`;
+    inlineActiveForm = {
+      formType: form.form_type as any,
+      formUuid: form.form_uuid,
+      openInRoV: true,
+    };
   }
 
   function openAppointmentOutcome(form: FormIndexItem) {
     const appt = appointments.find((item) => item.uuid === form.form_uuid);
     const outcomeUuid = appt?.outcome_form_uuid;
     if (outcomeUuid) {
-      window.location.href = `outpatientOutcome.html?patientUuid=${encodeURIComponent(patientUuid)}&formUuid=${encodeURIComponent(outcomeUuid)}&openInRoV=true`;
+      const matchingForm = forms.find((item) => item.form_uuid === outcomeUuid);
+      inlineActiveForm = {
+        formType: 'outpatient_outcome',
+        formUuid: outcomeUuid,
+        openInRoV: matchingForm?.form_status === 'final',
+      };
     } else {
-      window.location.href = `outpatientOutcome.html?patientUuid=${encodeURIComponent(patientUuid)}&appointmentUuid=${encodeURIComponent(form.form_uuid)}`;
+      inlineActiveForm = {
+        formType: 'outpatient_outcome',
+        appointmentUuid: form.form_uuid,
+        openInRoV: false,
+      };
     }
   }
 
@@ -103,7 +131,12 @@
     showAddMenu = false;
     const mapped = type === 'waiting_list' ? 'waiting_list_card' : type;
     const href = formTypeHref(mapped);
-    if (href) window.location.href = `${href}?patientUuid=${encodeURIComponent(patientUuid)}`;
+    if (href) {
+      inlineActiveForm = {
+        formType: mapped as any,
+        openInRoV: false,
+      };
+    }
   }
 
   function formatDateTime(value?: string | null) {
@@ -139,6 +172,19 @@
   }
 </script>
 
+{#if inlineActiveForm}
+  <div class="patient-record-inline-form">
+    {#if inlineActiveForm.formType === 'waiting_list_card'}
+      <WaitingListCard {patientUuid} formUuid={inlineActiveForm.formUuid || ''} openInRoV={!!inlineActiveForm.openInRoV} inline onClose={closeInlineForm} />
+    {:else if inlineActiveForm.formType === 'operation_note'}
+      <OperationNote {patientUuid} formUuid={inlineActiveForm.formUuid || ''} openInRoV={!!inlineActiveForm.openInRoV} inline onClose={closeInlineForm} />
+    {:else if inlineActiveForm.formType === 'outpatient_outcome'}
+      <OutpatientOutcome {patientUuid} formUuid={inlineActiveForm.formUuid || ''} appointmentUuid={inlineActiveForm.appointmentUuid || ''} openInRoV={!!inlineActiveForm.openInRoV} inline onClose={closeInlineForm} />
+    {:else if inlineActiveForm.formType === 'treatment_summary'}
+      <TreatmentSummary {patientUuid} formUuid={inlineActiveForm.formUuid || ''} openInRoV={!!inlineActiveForm.openInRoV} inline onClose={closeInlineForm} />
+    {/if}
+  </div>
+{:else}
 <main class="patient-record-page">
   <header class="patient-record-header">
     <button type="button" class="patient-record-title" onclick={() => (window.location.href = 'index.html')}>Patient record</button>
@@ -169,7 +215,7 @@
       <div class="patient-record-muted italic">No forms recorded for this patient yet. Use the button in the bottom left corner to add a form.</div>
     {:else}
       <div class="patient-record-list">
-        {#each forms as form (form.form_uuid)}
+        {#each forms as form, index (`${form.form_uuid}-${form.form_version ?? index}`)}
           <div class="patient-record-row">
             <div class="patient-record-badge">
               {#if form.form_type === 'outpatient_appointment'}
@@ -227,6 +273,7 @@
     </div>
   </footer>
 </main>
+{/if}
 
 <style>
   .patient-record-page {
@@ -234,6 +281,11 @@
     display: flex;
     flex-direction: column;
     background: white;
+  }
+
+  .patient-record-inline-form {
+    height: 100vh;
+    overflow: hidden;
   }
 
   .patient-record-header {

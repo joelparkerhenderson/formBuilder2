@@ -1,17 +1,19 @@
 <script lang="ts">
   import { fbRed } from '../lib/constants';
+  import FbRequiredForAudit from './fbRequiredForAudit.svelte';
   import FbValueError from './fbValueError.svelte';
   import FbToolTip from './fbToolTip.svelte';
 
   export let label = '';
   export let required = false;
+  export let requiredForAudit = false;
   export let subfield = false;
   export let valueError = '';
   export let tooltip = '';
 
   function renderLabelParts(text: string) {
     const trimmed = text.trim().replace(/\s+/g, ' ');
-    if (!required) return { text: trimmed, prefix: '', lastWord: '', single: true };
+    if (!required && !requiredForAudit) return { text: trimmed, prefix: '', lastWord: '', single: true };
     const lastSpace = trimmed.lastIndexOf(' ');
     if (lastSpace === -1) return { text: trimmed, prefix: '', lastWord: trimmed, single: true };
     return {
@@ -30,21 +32,24 @@
   <FbValueError message={valueError} />
   {#if label}
     <div class="fb-question-label">
-      {#if required}
+      {#if required || requiredForAudit}
         {#if labelParts.single}
-          <span class="required-word">{labelParts.lastWord}<span class="required" style="color: {fbRed};">*</span></span>
+          <span class="required-word">{labelParts.lastWord}{#if requiredForAudit}<FbRequiredForAudit />{/if}{#if required}<span class="required" style="color: {fbRed};">*</span>{/if}</span>
         {:else}
-          {labelParts.prefix} <span class="required-word">{labelParts.lastWord}<span class="required" style="color: {fbRed};">*</span></span>
+          {labelParts.prefix} <span class="required-word">{labelParts.lastWord}{#if requiredForAudit}<FbRequiredForAudit />{/if}{#if required}<span class="required" style="color: {fbRed};">*</span>{/if}</span>
         {/if}
       {:else}
         {labelParts.text}
       {/if}
     </div>
   {/if}
-  <div class="fb-question-control" class:no-label-required={!label && required}>
-    <div class:no-label-required-control={!label && required}><slot /></div>
-    {#if !label && required}
-      <span class="required no-label-required-star" style="color: {fbRed};">*</span>
+  <div class="fb-question-control" class:no-label-required={!label && (required || requiredForAudit)}>
+    <div class:no-label-required-control={!label && (required || requiredForAudit)}><slot /></div>
+    {#if !label && (required || requiredForAudit)}
+      <span class="no-label-required-markers">
+        {#if requiredForAudit}<FbRequiredForAudit />{/if}
+        {#if required}<span class="required no-label-required-star" style="color: {fbRed};">*</span>{/if}
+      </span>
     {/if}
   </div>
 </FbToolTip>
@@ -100,9 +105,15 @@
   }
 
   .no-label-required-star {
-    flex: 0 0 auto;
     line-height: 1.2rem;
-    margin-top: 0.15rem;
     user-select: none;
+  }
+
+  .no-label-required-markers {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.1rem;
+    flex: 0 0 auto;
+    margin-top: 0.15rem;
   }
 </style>

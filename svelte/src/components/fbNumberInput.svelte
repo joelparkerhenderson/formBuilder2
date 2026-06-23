@@ -10,6 +10,7 @@
   export let placeholder = '';
   export let min: number | undefined = undefined;
   export let required = false;
+  export let requiredForAudit = false;
   export let readonly = false;
   export let subfield = false;
   export let valueError = '';
@@ -31,7 +32,7 @@
   }
 </script>
 
-<FbQuestion {label} {required} {subfield} {tooltip} valueError={valueError || (value !== '' && Number.isNaN(Number(value)) ? 'Enter a number' : '')}>
+<FbQuestion {label} {required} {requiredForAudit} {subfield} {tooltip} valueError={valueError || (value !== '' && Number.isNaN(Number(value)) ? 'Enter a number' : '')}>
     <span class="fb-number-input-with-units">
     <input
       class="fb-number-input-with-units-input"

@@ -1,5 +1,5 @@
 import React from 'react';
-import { fbQuestion as FbQuestion } from './fbQuestion';
+import { fbQuestion as FbQuestion, fbQuestionRequiredMarkerContext } from './fbQuestion';
 import { fbNumberInputWithUnits as FbNumberInputWithUnits } from './fbNumberInputWithUnits';
 
 interface fbNumberInputProps {
@@ -7,6 +7,7 @@ interface fbNumberInputProps {
   value: string | number;
   onChange: (value: string) => void;
   required?: boolean;
+  requiredForAudit?: boolean;
   units?: string;
   placeholder?: string;
   min?: number;
@@ -26,6 +27,7 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
   value = '',
   onChange,
   required = false,
+  requiredForAudit = false,
   units,
   placeholder = '',
   min,
@@ -39,6 +41,8 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
   subfield = false,
   valueError,
 }) => {
+  const questionOwnsRequiredMarkers = React.useContext(fbQuestionRequiredMarkerContext);
+  const renderRequiredMarkers = !questionOwnsRequiredMarkers;
   const [hasBadInput, setHasBadInput] = React.useState(false);
   const currentValue = String(value ?? '');
   const automaticValueError = hasBadInput || (currentValue.trim() && !Number.isFinite(Number(currentValue)))
@@ -98,6 +102,18 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
   };
 
   if (!label) {
+    if (required || requiredForAudit) {
+      if (!renderRequiredMarkers) return renderInput();
+      return (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.2rem', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ flex: 1, width: '100%' }}>{renderInput()}</div>
+          <span style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '0.1rem', marginTop: '0.15rem' }}>
+            {requiredForAudit && <span style={{ backgroundColor: '#fd8a10', color: 'white', fontSize: '0.8rem', fontWeight: 300, lineHeight: 1, padding: '0.05rem 0.2rem', display: 'inline-block', whiteSpace: 'nowrap' }}>RfA</span>}
+            {required && <span style={{ color: '#d50000', fontSize: '1rem', fontWeight: 'bold', lineHeight: '1.2rem', display: 'inline-block', userSelect: 'none' }}>*</span>}
+          </span>
+        </div>
+      );
+    }
     return renderInput();
   }
 
@@ -105,6 +121,7 @@ export const fbNumberInput: React.FC<fbNumberInputProps> = ({
     <FbQuestion
       label={label}
       required={required}
+      requiredForAudit={requiredForAudit}
       className={className}
       style={style}
       labelStyle={{

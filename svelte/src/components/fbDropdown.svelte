@@ -7,6 +7,7 @@
   export let label = '';
   export let value = '';
   export let required = false;
+  export let requiredForAudit = false;
   export let placeholder = '';
   export let options: Array<{ value: string; label: string }> = [];
   export let valueError = '';
@@ -24,7 +25,7 @@
 </script>
 
 {#if label}
-  <FbQuestion {label} {required} {valueError} {tooltip}>
+  <FbQuestion {label} {required} {requiredForAudit} {valueError} {tooltip}>
     <select
       {id}
       {name}
@@ -40,19 +41,21 @@
     </select>
   </FbQuestion>
 {:else}
-  <select
-    {id}
-    {name}
-    bind:value
-    onchange={emitValue}
-  >
-    {#if placeholder}
-      <option value="">{placeholder}</option>
-    {/if}
-    {#each options as option}
-      <option value={option.value}>{option.label}</option>
-    {/each}
-  </select>
+  <FbQuestion label="" {required} {requiredForAudit}>
+    <select
+      {id}
+      {name}
+      bind:value
+      onchange={emitValue}
+    >
+      {#if placeholder}
+        <option value="">{placeholder}</option>
+      {/if}
+      {#each options as option}
+        <option value={option.value}>{option.label}</option>
+      {/each}
+    </select>
+  </FbQuestion>
 {/if}
 
 <style>

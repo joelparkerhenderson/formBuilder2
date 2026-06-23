@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { fbSavingPopup as SavingPopup } from '../components/fbSavingPopup';
-import { fbSavedPopup as SavedPopup } from '../components/fbSavedPopup';
-import { fbSaveErrorPopup as SaveErrorPopup } from '../components/fbSaveErrorPopup';
-import { fbStaleSavePopup as StaleSavePopup } from '../components/fbStaleSavePopup';
+import { fbModalSaving as SavingPopup } from '../components/fbModalSaving';
+import { fbModalSaved as SavedPopup } from '../components/fbModalSaved';
+import { fbModalSaveError as SaveErrorPopup } from '../components/fbModalSaveError';
+import { fbModalStaleSave as StaleSavePopup } from '../components/fbModalStaleSave';
 import { isStaleFormVersionError } from './formVersion';
 
 const SAVE_SUCCESS_DISPLAY_MS = 1000;

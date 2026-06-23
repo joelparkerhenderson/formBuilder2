@@ -6,7 +6,7 @@ import { fbButton as FbButton } from './components/fbButton';
 import { fbUserName as FbUserName } from './components/fbUserName';
 import { fbOutpatientAppointmentTile as OutpatientAppointmentTile } from './components/fbOutpatientAppointmentTile';
 import { fbFormTile as FormTile } from './components/fbFormTile';
-import { fbDraftBadge as DraftBadge } from './components/fbDraftBadge';
+import { fbBadgeDraft as DraftBadge } from './components/fbBadgeDraft';
 import { fbAddButtonForPage as AddButtonForPage } from './components/fbAddButtonForPage';
 import WaitingListCard from './WaitingListCard';
 import OperationNote from './OperationNote';
@@ -14,6 +14,7 @@ import OutpatientOutcome from './OutpatientOutcome';
 import TreatmentSummary from './TreatmentSummary';
 import { specialities } from './data/specialities';
 import { createClient } from './restClient';
+import { popCntNavigation } from './caseNoteTracker/cntNavigation';
 
 // Create REST client
 const restClient = createClient();
@@ -90,7 +91,9 @@ export default function PatientRecord({
 
   // Parse location state to see if patientUuid was passed
   const state = location.state as { patientUuid?: string; from?: string } | null;
-  const patientUuid = inline ? propPatientUuid : (state?.patientUuid || DONALD_DUCK_PATIENT_UUID);
+  const queryPatientUuid = new URLSearchParams(location.search || '').get('patientUuid') || '';
+  const bridgedPatientUuid = sessionStorage.getItem('fbcntPatientRecordPatientUuid') || '';
+  const patientUuid = inline ? propPatientUuid : (state?.patientUuid || queryPatientUuid || bridgedPatientUuid || DONALD_DUCK_PATIENT_UUID);
 
   const fetchPatientAndForms = async (options: { showLoading?: boolean } = {}) => {
     const showLoading = options.showLoading !== false;
@@ -240,6 +243,22 @@ export default function PatientRecord({
   const handleClose = () => {
     if (inline && onClose) {
       onClose();
+      return;
+    }
+    const entry = popCntNavigation();
+    if (entry?.kind === 'cnt-view') {
+      const returnState = sessionStorage.getItem('fbcntReturnState');
+      if (returnState) {
+        sessionStorage.setItem('fbcntRestoreState', returnState);
+        sessionStorage.removeItem('fbcntReturnState');
+      } else if (entry.view) {
+        sessionStorage.setItem('fbcntRestoreState', JSON.stringify({ view: entry.view }));
+      }
+      window.location.href = '/formBuilder2/caseNoteTracker.html';
+      return;
+    }
+    if (entry?.kind === 'url' && entry.url) {
+      window.location.href = entry.url;
       return;
     }
     const fromPath = (location.state as any)?.from || '/';

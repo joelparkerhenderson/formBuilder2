@@ -6,6 +6,8 @@ type TitleSpec = {
   kicker: string;
   title: string;
   details?: React.ReactNode;
+  titleStyle?: React.CSSProperties;
+  detailsStyle?: React.CSSProperties;
 };
 
 export function FbcntHeaderForUser({ title, user, right }: { title: TitleSpec; user: CntUser; right?: React.ReactNode }) {
@@ -14,8 +16,8 @@ export function FbcntHeaderForUser({ title, user, right }: { title: TitleSpec; u
       <div style={styles.titleBlock}>
         <div style={styles.kicker}>{title.kicker}</div>
         <div style={styles.userLine}>{formatUserLine(user)}</div>
-        <h1 style={styles.title}>{title.title}</h1>
-        {title.details && <div style={styles.titleDetails}>{title.details}</div>}
+        <h1 style={{ ...styles.title, ...title.titleStyle }}>{title.title}</h1>
+        {title.details && <div style={{ ...styles.titleDetails, ...title.detailsStyle }}>{title.details}</div>}
       </div>
       <div style={styles.headerRight}>{right}</div>
     </header>
@@ -49,7 +51,7 @@ const styles = {
   } as React.CSSProperties,
   userLine: {
     fontSize: '1rem',
-    fontWeight: 300,
+    fontWeight: 500,
     color: '#333',
     lineHeight: 1.1,
   } as React.CSSProperties,
@@ -58,13 +60,14 @@ const styles = {
     fontWeight: 500,
     margin: 0,
     color: '#333',
-    lineHeight: 1.1,
+    lineHeight: 1.05,
   } as React.CSSProperties,
   titleDetails: {
     marginTop: '0.2rem',
     fontSize: '0.9rem',
     fontWeight: 300,
     color: '#333',
+    lineHeight: 1.05,
   } as React.CSSProperties,
   headerRight: {
     fontWeight: 500,

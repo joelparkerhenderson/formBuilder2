@@ -7,6 +7,7 @@
   export let systolic: string | number = '';
   export let diastolic: string | number = '';
   export let required = false;
+  export let requiredForAudit = false;
   export let valueError = '';
   export let tooltip = '';
   export let onChange: (value: { systolic: string; diastolic: string }) => void = () => {};
@@ -24,7 +25,7 @@
   }
 </script>
 
-<FbQuestion {label} {required} {valueError} {tooltip}>
+<FbQuestion {label} {required} {requiredForAudit} {valueError} {tooltip}>
   <div class="fb-blood-pressure-control">
     <input
       class="fb-blood-pressure-input"
