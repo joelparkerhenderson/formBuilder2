@@ -2,7 +2,8 @@ import * as React from 'react';
 import { fbAddressograph as Addressograph } from './fbAddressograph';
 import { fbButton as FbButton } from './fbButton';
 import { fbBadgeDraft as DraftBadge } from './fbBadgeDraft';
-import { fbBadgeSupperseded as SupersededBadge } from './fbBadgeSupperseded';
+import { fbBadgeSuperseded as SupersededBadge } from './fbBadgeSuperseded';
+import { fbBadgeHighlySensitive as HighlySensitiveBadge } from './fbBadgeHighlySensitive';
 
 interface fbRoVPatient {
   nhs_number: string;
@@ -23,6 +24,7 @@ interface fbRoVHeaderProps {
   patient: fbRoVPatient | null;
   formStatus: string;
   superseded?: boolean;
+  highlySensitive?: boolean;
 }
 
 interface fbRoVFooterProps {
@@ -40,14 +42,16 @@ export const fbRoVHeader: React.FC<fbRoVHeaderProps> = ({
   patient,
   formStatus,
   superseded,
+  highlySensitive,
 }) => (
   <div className="fb-rov-header">
     <div className="flex justify-between items-center">
       <div>
-        {(superseded || formStatus === 'draft') && (
+        {(superseded || formStatus === 'draft' || highlySensitive) && (
           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginBottom: '0.2rem' }}>
             {superseded && <SupersededBadge />}
             {formStatus === 'draft' && <DraftBadge />}
+            {highlySensitive && <HighlySensitiveBadge />}
           </div>
         )}
         <h1 className="fb-rov-title">{title}</h1>

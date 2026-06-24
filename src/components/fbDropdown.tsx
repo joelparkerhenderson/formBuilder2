@@ -21,6 +21,9 @@ interface fbDropdownProps {
   placeholder?: string;
   subfield?: boolean;
   valueError?: string;
+  children?: React.ReactNode;
+  noWidthConstraint?: boolean;
+  fullWidth?: boolean;
 }
 
 export const fbDropdown: React.FC<fbDropdownProps> = ({
@@ -38,6 +41,9 @@ export const fbDropdown: React.FC<fbDropdownProps> = ({
   placeholder,
   subfield = false,
   valueError,
+  children,
+  noWidthConstraint = false,
+  fullWidth = false,
 }) => {
   const questionOwnsRequiredMarkers = React.useContext(fbQuestionRequiredMarkerContext);
   const renderRequiredMarkers = !questionOwnsRequiredMarkers;
@@ -49,7 +55,9 @@ export const fbDropdown: React.FC<fbDropdownProps> = ({
   });
 
   const renderSelect = () => {
+    const childContent = React.Children.map(children, (child) => React.isValidElement(child) ? React.cloneElement(child as React.ReactElement<any>, { selectedValue: value }) : child);
     return (
+      <>
       <select
         id={id}
         name={name}
@@ -67,6 +75,8 @@ export const fbDropdown: React.FC<fbDropdownProps> = ({
           height: '2rem',
           padding: '0.2rem 0.4rem',
           backgroundColor: 'white',
+          width: '100%',
+          maxWidth: fullWidth || noWidthConstraint ? undefined : '35rem',
           ...selectStyle,
         }}
       >
@@ -79,6 +89,8 @@ export const fbDropdown: React.FC<fbDropdownProps> = ({
           </option>
         ))}
       </select>
+      {childContent}
+      </>
     );
   };
 

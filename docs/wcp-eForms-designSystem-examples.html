@@ -26,7 +26,7 @@
 </head>
 <body>
   <h1>WCP eForms patient form examples</h1>
-  <p class="note">This document is generated from <code>spec.md</code> and <code>src/treatmentSummarySpec.ts</code>. It is a complete component-level specification for the four patient forms, expressed with the shared <code>fbXxx</code> vocabulary. Additional behaviour and field metadata are written as <code>attr:</code> bullets.</p>
+  <p class="note">This document is generated from <code>spec.md</code> and <code>src/treatmentSummarySpec.ts</code>. It is a complete component-level specification for the five patient forms, expressed with the shared <code>fbXxx</code> vocabulary. Additional behaviour and field metadata are written as <code>attr:</code> bullets.</p>
   <h2>1. Waiting list card (`wlc`)</h2>
 <div class="bullet depth-0">Reached from &quot;New form or document&quot; popup selections inside Patient Record.</div>
 <div class="bullet depth-0">Fetches static baseline parameters through the REST client to load active patient profiles.</div>
@@ -271,7 +271,73 @@
 <div class="bullet depth-4">attr: span: 3</div>
 <div class="bullet depth-4"><code>fbTextArea</code>: Any other information</div>
 <div class="bullet depth-5">attr: key: <code>otherInfo</code></div>
-<h2>2. Outpatient outcome form (`oo`)</h2>
+<h2>2. Cardiology test request (`cardiology_test_request`)</h2>
+<div class="bullet depth-0">Reached from the home page, <code>/formBuilder2/cardiologyTestRequest.html</code>, and the Patient record &quot;New form or document&quot; menu.</div>
+<div class="bullet depth-0">Saves to <code>cardiology_test_requests</code> and writes <code>forms_index.form_type = &quot;cardiology_test_request&quot;</code>.</div>
+<div class="bullet depth-0">Destination controls use the shared fictitious health board/facility list. Hospital options depend on the selected health board; speciality options depend on the selected hospital/facility.</div>
+<div class="bullet depth-0">Form contents include:</div>
+<div class="bullet depth-1"><code>fbSection</code>: To</div>
+<div class="bullet depth-2"><code>fbDropdown</code>: Organisation</div>
+<div class="bullet depth-3">attr: required</div>
+<div class="bullet depth-2"><code>fbDropdown</code>: Hospital / department</div>
+<div class="bullet depth-3">attr: required</div>
+<div class="bullet depth-3">attr: options filtered by Organisation</div>
+<div class="bullet depth-2"><code>fbTextInput</code>: For attention of</div>
+<div class="bullet depth-1"><code>fbSection</code>: From</div>
+<div class="bullet depth-2"><code>fbDropdown</code>: Organisation</div>
+<div class="bullet depth-2"><code>fbDropdown</code>: Hospital</div>
+<div class="bullet depth-2"><code>fbDropdown</code>: Speciality</div>
+<div class="bullet depth-3">attr: options filtered by Hospital</div>
+<div class="bullet depth-2"><code>fbTextInput</code>: Senior responsible clinician</div>
+<div class="bullet depth-1"><code>fbSection</code>: Request type</div>
+<div class="bullet depth-2"><code>fbGroup</code>: Request type</div>
+<div class="bullet depth-3">attr: required</div>
+<div class="bullet depth-3"><code>fbRadio</code>: Inpatient / Emergency Department</div>
+<div class="bullet depth-4"><code>fbSmartDropdown</code>: Patient location</div>
+<div class="bullet depth-4"><code>fbCheck</code>: Test(s) required on ward</div>
+<div class="bullet depth-5"><code>fbInverseSubq</code></div>
+<div class="bullet depth-6"><code>fbTextArea</code>: Transport requirements</div>
+<div class="bullet depth-4"><code>fbNotificationTypeGroup</code>: Notification type</div>
+<div class="bullet depth-3"><code>fbRadio</code>: Outpatient</div>
+<div class="bullet depth-4"><code>fbGroup</code>: Urgency</div>
+<div class="bullet depth-5"><code>fbRadio</code>: Routine</div>
+<div class="bullet depth-5"><code>fbRadio</code>: Urgent</div>
+<div class="bullet depth-4"><code>fbDropdown</code>: Patient category</div>
+<div class="bullet depth-5"><code>fbSubqForOption</code>: Clinical trial details</div>
+<div class="bullet depth-4"><code>fbGroup</code>: Does the patient have capacity to consent to the test(s)?</div>
+<div class="bullet depth-4"><code>fbGroup</code>: Defer test(s)?</div>
+<div class="bullet depth-5"><code>fbRadio</code>: Yes</div>
+<div class="bullet depth-6"><code>fbDateExact</code>: Defer test(s) until</div>
+<div class="bullet depth-6"><code>fbTextArea</code>: Reason for deferral</div>
+<div class="bullet depth-4"><code>fbDateExact</code>: Report required by</div>
+<div class="bullet depth-5">attr: child subquestion appears when a date is present</div>
+<div class="bullet depth-5"><code>fbTextArea</code>: Reason required by</div>
+<div class="bullet depth-1"><code>fbSection</code>: Tests required</div>
+<div class="bullet depth-2"><code>fbCheck</code>: Ambulatory BP monitoring</div>
+<div class="bullet depth-2"><code>fbCheck</code>: Ambulatory ECG</div>
+<div class="bullet depth-2"><code>fbCheck</code>: Exercise tolerance test</div>
+<div class="bullet depth-3">attr: warning text: <code>This test is NOT available in St Elsewhere UHB.</code></div>
+<div class="bullet depth-2"><code>fbCheck</code>: Implantable loop recorder (ILR) download</div>
+<div class="bullet depth-2"><code>fbCheck</code>: Cardiac implanted electronic device (CIED) check</div>
+<div class="bullet depth-3"><code>fbDropdown</code>: Implant centre</div>
+<div class="bullet depth-4"><code>fbSubqForOption</code>: Other implant centre</div>
+<div class="bullet depth-3"><code>fbDropdown</code>: Manufacturer</div>
+<div class="bullet depth-4"><code>fbSubqForOption</code>: Other manufacturer</div>
+<div class="bullet depth-2"><code>fbCheck</code>: Tilt test</div>
+<div class="bullet depth-3">attr: warning text: <code>This test is only available in St Elsewhere UHB.</code></div>
+<div class="bullet depth-2"><code>fbCheck</code>: Transthoracic echocardiogram</div>
+<div class="bullet depth-2">attr: selected tests, request type, urgency, and destination are summarised in Patient record details.</div>
+<div class="bullet depth-1"><code>fbSection</code>: Past medical history</div>
+<div class="bullet depth-2"><code>fbGroup</code>: Cardiac device</div>
+<div class="bullet depth-2"><code>fbGroup</code>: Previous cardiac surgery</div>
+<div class="bullet depth-1"><code>fbSection</code>: Other patient information</div>
+<div class="bullet depth-2"><code>fbTextArea</code>: Clinical question to be answered and relevant clinical information</div>
+<div class="bullet depth-2"><code>fbTextArea</code>: Infection control risks or special requirements</div>
+<div class="bullet depth-2"><code>fbDateHeightWeightBMIRow</code>: Date recorded / Height / Weight / Uncertified calculated BMI (kg/m2)</div>
+<div class="bullet depth-1"><code>fbSection</code>: Requestor</div>
+<div class="bullet depth-2"><code>fbTextInput</code>: Requestor name</div>
+<div class="bullet depth-2"><code>fbTextArea</code>: Reason this document is highly sensitive</div>
+<h2>3. Outpatient outcome form (`oo`)</h2>
 <div class="bullet depth-0">Reached via patient appointments list inside Patient Record.</div>
 <div class="bullet depth-0">Structured around visual groups instead of <code>fbSection</code> containers. The OO form has no sections and no EV/RoV sidebar navigation; it still uses the fixed header, scrolling central workspace, fixed footer, patient context, save controls, RoV/EV buttons, and popup components provided by <code>fbLayout</code>.</div>
 <div class="bullet depth-0">The visual group order is Appointment, Attendance, Urgent suspected cancer, Working diagnosis, Outcome, and Notes. Urgent suspected cancer, Working diagnosis, and Outcome are shown only after the patient has been marked as attended.</div>
@@ -411,7 +477,7 @@
 <div class="bullet depth-3">If *any* Tier 1 checkbox is checked, all *other* Tier 1 checkboxes are immediately disabled (making Tier 1 completely mutually exclusive).</div>
 <div class="bullet depth-3">If *any* Tier 2 checkbox is checked, *all* Tier 1 checkboxes are immediately disabled.</div>
 <div class="bullet depth-3">The non-pathway checkboxes (&quot;Treatment given in clinic today&quot;, &quot;Referral to therapies&quot;, and &quot;Referral to consultant&quot;) always remain active and enabled regardless of the selected Tier.</div>
-<h2>3. Operation note (`op note`)</h2>
+<h2>4. Operation note (`op note`)</h2>
 <div class="bullet depth-0">Reached from Patient Record forms menu.</div>
 <div class="bullet depth-0">Form contents include:</div>
 <div class="bullet depth-1"><code>fbSection</code>: Basic information</div>
@@ -641,15 +707,15 @@
 <div class="bullet depth-0">Renders future hospital appointments in visual bright-green &quot;Future appt&quot; tags.</div>
 <div class="bullet depth-0">Direct Patient record visits without router state should resolve only when an explicit patient context is available or when a configured non-production demonstration patient has been selected.</div>
 <div class="bullet depth-0">Open triggers mount form components in the DOM, hiding the parent records dashboard.</div>
-<div class="bullet depth-0">The &quot;New form or document&quot; popup creates Outpatient outcome, Waiting list card, Treatment summary, and Operation note documents for the current patient. Treatment summary documents use the normal inline EV/RoV pattern and are indexed as <code>forms_index.form_type = &quot;treatment_summary&quot;</code>.</div>
+<div class="bullet depth-0">The &quot;New form or document&quot; popup creates Outpatient outcome, Waiting list card, Treatment summary, Cardiology test request, and Operation note documents for the current patient. Treatment summary documents use the normal inline EV/RoV pattern and are indexed as <code>forms_index.form_type = &quot;treatment_summary&quot;</code>.</div>
 <div class="bullet depth-0">Svelte entry point: <code>/formBuilder2/svelte/patientRecord.html?patientUuid={uuid}</code>.</div>
 <div class="bullet depth-0">The Svelte page calls <code>GET /formBuilder2/api/patients/{uuid}</code>, <code>GET /formBuilder2/api/patients/{uuid}/forms</code>, and <code>GET /formBuilder2/api/patients/{uuid}/appointments</code>.</div>
 <div class="bullet depth-0">The Svelte page renders the React three-column record row structure: badge column (<code>Draft</code>, <code>Future appt</code>, or <code>Not outcomed</code>), form/appointment tile column, and action button column.</div>
 <div class="bullet depth-0">Svelte record row <code>Open</code> buttons navigate to the matching Svelte form page with <code>patientUuid</code>, <code>formUuid</code>, and <code>openInRoV=true</code> query parameters. The current Svelte forms may still treat <code>formUuid</code>/<code>openInRoV</code> as transition inputs until full historical form loading is complete.</div>
 <div class="bullet depth-0">Svelte appointment <code>Outcome form</code> buttons navigate to Svelte Outpatient outcome with the linked <code>formUuid</code> when an outcome already exists, otherwise with <code>appointmentUuid</code> for a new outcome.</div>
-<div class="bullet depth-0">The Svelte <code>New form or document</code> menu offers Outpatient outcome form, Waiting list card, Treatment summary, and Operation note and navigates to the matching Svelte form page for the current patient.</div>
+<div class="bullet depth-0">The Svelte <code>New form or document</code> menu offers Outpatient outcome form, Waiting list card, Treatment summary, and Operation note and navigates to the matching Svelte form page for the current patient. Cardiology test request remains a Svelte follow-up.</div>
 
-  <h2>4. Treatment summary</h2>
+  <h2>5. Treatment summary</h2>
 <div class="bullet depth-0">attr: Composer public id: <code>c2d1a786</code></div>
 <div class="bullet depth-0">attr: saved values are keyed by component id in <code>form_data</code>; coded selector companion values use <code>{componentId}_coded</code></div>
 <div class="bullet depth-0"><code>fbSection</code>: Details</div>

@@ -7,11 +7,13 @@ export type SimpleFieldType =
   | 'text'
   | 'textarea'
   | 'dropdown'
+  | 'smartDropdown'
   | 'radioGroup'
   | 'urgencyGroup'
   | 'checkGroup'
   | 'number'
   | 'bloodPressure'
+  | 'dateHeightWeightBMIRow'
   | 'date'
   | 'partialDate'
   | 'time'
@@ -26,7 +28,8 @@ export type SimpleFieldType =
   | 'anaesthetistGroup'
   | 'boxedInfo'
   | 'boxedWarning'
-  | 'boxedAlert';
+  | 'boxedAlert'
+  | 'notificationTypeGroup';
 
 export interface SimpleField {
   key: string;
@@ -40,6 +43,7 @@ export interface SimpleField {
   units?: string;
   rows?: number;
   fullWidth?: boolean;
+  noWidthConstraint?: boolean;
   options?: SimpleOption[];
 }
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { fbAnimatedSubquestion as FbAnimatedSubquestion } from './fbAnimatedSubquestion';
 import { fbGroupRequiredMarkerContext } from './fbGroup';
 import { fbQuestionRequiredMarkerContext } from './fbQuestion';
 
@@ -74,11 +75,7 @@ export const fbRadio: React.FC<fbRadioProps> = ({
           {renderRequiredMarkers && required && <span style={{ color: '#d50000', marginLeft: '0.1rem', fontWeight: 500 }}>*</span>}
         </span>
       </label>
-      {checked && children && (
-        <div className="pl-6 pb-1">
-          {children}
-        </div>
-      )}
+      {children && <FbAnimatedSubquestion open={checked}>{children}</FbAnimatedSubquestion>}
     </div>
   );
 };

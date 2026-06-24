@@ -173,6 +173,8 @@ export const GeneratedEditForm: React.FC<EditProps> = ({ spec, formState, onChan
           requiredForAudit={component.requiredForAudit}
           valueError={component.valueError}
           placeholder=""
+          fullWidth={component.fullWidth}
+          noWidthConstraint={component.noWidthConstraint}
         />
       );
     }

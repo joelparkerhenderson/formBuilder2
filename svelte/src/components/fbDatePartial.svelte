@@ -233,11 +233,20 @@
     </div>
   {/if}
 </div>
+{#if inputValue}
+  <div class="fb-subquestion fb-date-subquestion">
+    <slot />
+  </div>
+{/if}
 
 <style>
   .fb-partial-date {
     position: relative;
     width: 100%;
+  }
+
+  .fb-date-subquestion {
+    padding-left: 1.5rem;
   }
 
   .fb-date-input-wrap {

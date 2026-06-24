@@ -472,7 +472,7 @@ export default function OutpatientOutcome({ inlineProps }: { inlineProps?: Inlin
             loadedTherapies = formData.form_data.refToTherapies || false;
             loadedConsultant = formData.form_data.refToConsultant || false;
             loadedFu = formData.form_data.fuOPA || false;
-            loadedHighlySensitive = formData.form_data.highlySensitive || false;
+            loadedHighlySensitive = !!(formData.highly_sensitive ?? formData.form_data.highlySensitive);
 
             setDischarged(loadedDischarged);
             setSos(loadedSos);
@@ -658,6 +658,7 @@ export default function OutpatientOutcome({ inlineProps }: { inlineProps?: Inlin
           patient_uuid: patient?.uuid || null,
           event_datetime: formState.date || new Date().toISOString(),
           form_status: formStatus,
+          highly_sensitive: highlySensitive,
           form_data: formDataToSave,
           appointment_uuid: appointmentUuid || null,
           linked_waiting_list_card_uuid: formState.linkedWaitingListCardUuid || null
@@ -685,6 +686,7 @@ export default function OutpatientOutcome({ inlineProps }: { inlineProps?: Inlin
           event_datetime: formState.date || new Date().toISOString(),
           document_datetime: new Date().toISOString(),
           form_status: formStatus,
+          highly_sensitive: highlySensitive,
           event_or_document: 'Document',
           organisation: formState.organisation || null,
           hospital: formState.site || null,

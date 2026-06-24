@@ -9,4 +9,6 @@
   export let change: (value: string) => void = () => {};
 </script>
 
-<FbPartialDate {name} {value} {required} {requiredForAudit} {showRequiredMarkers} exactOnly={true} {onChange} {change} on:change />
+<FbPartialDate {name} {value} {required} {requiredForAudit} {showRequiredMarkers} exactOnly={true} {onChange} {change} on:change>
+  <slot />
+</FbPartialDate>

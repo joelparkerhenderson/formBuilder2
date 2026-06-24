@@ -8,6 +8,7 @@ const uuidFields = new Set([
   "form_uuid",
   "appointment_uuid",
   "outcome_form_uuid",
+  "linked_waiting_list_card_uuid",
 ]);
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
@@ -167,6 +168,7 @@ class RestQueryBuilder {
       case "operation_notes":
       case "outpatient_outcomes":
       case "treatment_summaries":
+      case "cardiology_test_requests":
         if (!uuid) throw new Error(`uuid filter is required for ${this.table}`);
         if (this.selectedColumns.trim() === "version") {
           const result = await requestJson<{ version: number | null }>(
@@ -193,7 +195,7 @@ class RestQueryBuilder {
       });
     }
 
-    if (["waiting_list_cards", "operation_notes", "outpatient_outcomes", "treatment_summaries"].includes(this.table)) {
+    if (["waiting_list_cards", "operation_notes", "outpatient_outcomes", "treatment_summaries", "cardiology_test_requests"].includes(this.table)) {
       return requestJson(`/api/forms/${this.table}`, {
         method: "POST",
         body: JSON.stringify(row),

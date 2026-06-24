@@ -17,6 +17,9 @@
   import FbHeader from './fbHeader.svelte';
   import FbLayout from './fbLayout.svelte';
   import FbMSISelector from './fbMSISelector.svelte';
+  import FbSmartDropdown from './fbSmartDropdown.svelte';
+  import FbDateHeightWeightBMIRow from './fbDateHeightWeightBMIRow.svelte';
+  import FbNotificationTypeGroup from './fbNotificationTypeGroup.svelte';
   import FbNumberInput from './fbNumberInput.svelte';
   import FbPartialDate from './fbDatePartial.svelte';
   import FbQuestion from './fbQuestion.svelte';
@@ -135,6 +138,10 @@
               else if (field.type === 'bloodPressure') {
                 state[`${field.key}_systolic`] = '';
                 state[`${field.key}_diastolic`] = '';
+              } else if (field.type === 'dateHeightWeightBMIRow') {
+                state[`${field.key}_dateRecorded`] = '';
+                state[`${field.key}_heightCm`] = '';
+                state[`${field.key}_weightKg`] = '';
               } else if (field.type === 'date' && (field.key === 'date' || field.key.toLowerCase().includes('date'))) state[field.key] = today();
               else state[field.key] = '';
             }
@@ -367,11 +374,22 @@
   {:else if field.type === 'textarea'}
     <FbTextArea label={field.label} required={field.required} requiredForAudit={field.requiredForAudit} subfield={field.subfield} tooltip={field.tooltip || ''} rows={field.rows || 2} fullWidth={field.fullWidth || (field.span ? field.span > 1 : false)} value={formState[field.key] || ''} onChange={(value) => setValue(field.key, value)} />
   {:else if field.type === 'dropdown'}
-    <FbDropdown label={field.label} required={field.required} requiredForAudit={field.requiredForAudit} tooltip={field.tooltip || ''} value={formState[field.key] || ''} options={field.options || []} onChange={(value) => setValue(field.key, value)} />
+    <FbDropdown label={field.label} required={field.required} requiredForAudit={field.requiredForAudit} tooltip={field.tooltip || ''} value={formState[field.key] || ''} options={field.options || []} fullWidth={field.fullWidth} noWidthConstraint={field.noWidthConstraint} onChange={(value) => setValue(field.key, value)} />
+  {:else if field.type === 'smartDropdown'}
+    <FbSmartDropdown label={field.label} required={field.required} requiredForAudit={field.requiredForAudit} tooltip={field.tooltip || ''} value={formState[field.key] || ''} options={field.options || []} fullWidth={field.fullWidth} noWidthConstraint={field.noWidthConstraint} onChange={(value) => setValue(field.key, value)} />
   {:else if field.type === 'number'}
     <FbNumberInput label={field.label} required={field.required} requiredForAudit={field.requiredForAudit} tooltip={field.tooltip || ''} value={formState[field.key] || ''} units={field.units || ''} onChange={(value) => setValue(field.key, value)} />
   {:else if field.type === 'bloodPressure'}
     <FbBloodPressure label={field.label} required={field.required} requiredForAudit={field.requiredForAudit} tooltip={field.tooltip || ''} systolic={formState[`${field.key}_systolic`] || ''} diastolic={formState[`${field.key}_diastolic`] || ''} onChange={(value) => { setValue(`${field.key}_systolic`, value.systolic); setValue(`${field.key}_diastolic`, value.diastolic); }} />
+  {:else if field.type === 'dateHeightWeightBMIRow'}
+    <FbDateHeightWeightBMIRow
+      dateRecorded={formState[`${field.key}_dateRecorded`] || ''}
+      heightCm={formState[`${field.key}_heightCm`] || ''}
+      weightKg={formState[`${field.key}_weightKg`] || ''}
+      onDateRecordedChange={(value) => setValue(`${field.key}_dateRecorded`, value)}
+      onHeightCmChange={(value) => setValue(`${field.key}_heightCm`, value)}
+      onWeightKgChange={(value) => setValue(`${field.key}_weightKg`, value)}
+    />
   {:else if field.type === 'date'}
     <FbQuestion label={field.label} required={field.required} requiredForAudit={field.requiredForAudit} subfield={field.subfield} tooltip={field.tooltip || ''}>
       <FbExactDate name={field.key} value={formState[field.key] || ''} onChange={(value) => setValue(field.key, value)} />
@@ -639,11 +657,13 @@
       {/each}
     </FbGroup>
   {:else if field.type === 'checkGroup'}
-      <FbGroup label={field.label} required={field.required} requiredForAudit={field.requiredForAudit} tooltip={field.tooltip || ''}>
-      {#each field.options || [] as option}
-        <FbCheck name={field.key} label={option.label} checked={(formState[field.key] || []).includes(option.value)} onChange={(checked) => setCheckValue(field.key, option.value, checked)} />
-      {/each}
-    </FbGroup>
+        <FbGroup label={field.label} required={field.required} requiredForAudit={field.requiredForAudit} tooltip={field.tooltip || ''}>
+        {#each field.options || [] as option}
+          <FbCheck name={field.key} label={option.label} checked={(formState[field.key] || []).includes(option.value)} onChange={(checked) => setCheckValue(field.key, option.value, checked)} />
+        {/each}
+      </FbGroup>
+  {:else if field.type === 'notificationTypeGroup'}
+    <FbNotificationTypeGroup name={field.key} value={formState[field.key] || ''} onChange={(value) => setValue(field.key, value)} />
   {:else if field.type === 'imageTiles'}
     <div class="simple-image-section">
       <div class="simple-image-grid">
@@ -679,8 +699,12 @@
       <button type="button" class="fb-add-button simple-table-add-button">Upload image</button>
     </div>
   {:else if field.type === 'bloodPressure'}
-      <FbRoVField label={field.label} tooltip={field.tooltip || ''} value={[formState[`${field.key}_systolic`], formState[`${field.key}_diastolic`]].filter(Boolean).join('/')} units="mmHg" />
-    {:else}
+        <FbRoVField label={field.label} tooltip={field.tooltip || ''} value={[formState[`${field.key}_systolic`], formState[`${field.key}_diastolic`]].filter(Boolean).join('/')} units="mmHg" />
+      {:else if field.type === 'dateHeightWeightBMIRow'}
+        <FbRoVField label="Date recorded" value={formState[`${field.key}_dateRecorded`] || ''} />
+        <FbRoVField label="Height" value={formState[`${field.key}_heightCm`] || ''} units="cm" />
+        <FbRoVField label="Weight" value={formState[`${field.key}_weightKg`] || ''} units="kg" />
+      {:else}
       <FbRoVField label={field.label} tooltip={field.tooltip || ''} value={optionLabel(field, formState[field.key])} coded={field.type === 'msi' || field.type === 'sctProcedure' || field.type === 'sctDiagnosis' ? formState[`${field.key}_coded`] : undefined} units={field.units || ''} />
   {/if}
 {/snippet}

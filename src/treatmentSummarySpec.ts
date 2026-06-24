@@ -15,6 +15,7 @@ export interface DesignerComponentSpec {
   valueError?: string;
   units?: string;
   fullWidth?: boolean;
+  noWidthConstraint?: boolean;
   colSpan?: number;
   options?: DesignerOption[];
   children?: DesignerComponentSpec[];

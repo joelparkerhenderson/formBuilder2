@@ -7,6 +7,7 @@
     { value: 'waiting_list', label: 'Waiting list card' },
     { value: 'treatment_summary', label: 'Treatment summary' },
     { value: 'operation_note', label: 'Operation note' },
+    { value: 'cardiology_test_request', label: 'Cardiology test request' },
   ];
 </script>
 

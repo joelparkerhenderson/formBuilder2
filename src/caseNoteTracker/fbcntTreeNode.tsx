@@ -1,6 +1,7 @@
 import React from 'react';
 import { styles } from './fbcntPageComponents';
 import { HighlightBlock } from './fbcntHighlightBlock';
+import { fbAnimatedCollapsible as FbAnimatedCollapsible } from '../components/fbAnimatedSubquestion';
 
 export function TreeNode({
   label,
@@ -37,7 +38,9 @@ export function TreeNode({
         <strong>{label}</strong>
       </button>
     </HighlightBlock>
-    {!isCollapsed && <div>{children}</div>}
+    <FbAnimatedCollapsible open={!isCollapsed}>
+      {children}
+    </FbAnimatedCollapsible>
     </>
   );
 }

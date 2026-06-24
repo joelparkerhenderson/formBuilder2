@@ -45,7 +45,7 @@
               <div class="level level-2">
                 <div class="level-label">{type}</div>
                 {#each sortVolumes(items) as volume (volume.uuid)}
-                  <div class="level level-3" tabindex="0">
+                  <div class="level level-3">
                     <span class="volume-name">
                       {#if hasActiveTag(volume)}<FbcntTag />{/if}
                       <span>{volumeLabel(volume)}</span>

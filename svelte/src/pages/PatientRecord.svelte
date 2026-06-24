@@ -12,6 +12,7 @@
   import OutpatientOutcome from './OutpatientOutcome.svelte';
   import TreatmentSummary from './TreatmentSummary.svelte';
   import WaitingListCard from './WaitingListCard.svelte';
+  import CardiologyTestRequest from './CardiologyTestRequest.svelte';
   import { getPatient, getPatientAppointments, getPatientForms } from '../lib/api';
   import { specialityLabels } from '../lib/constants';
   import type { Patient } from '../lib/types';
@@ -39,7 +40,7 @@
   let loading = true;
   let showAddMenu = false;
   let inlineActiveForm: {
-    formType: 'waiting_list_card' | 'operation_note' | 'outpatient_outcome' | 'treatment_summary';
+    formType: 'waiting_list_card' | 'operation_note' | 'outpatient_outcome' | 'treatment_summary' | 'cardiology_test_request';
     formUuid?: string;
     appointmentUuid?: string;
     openInRoV?: boolean;
@@ -86,6 +87,7 @@
     if (type === 'operation_note') return 'Operation note';
     if (type === 'outpatient_outcome') return 'Outpatient outcome';
     if (type === 'treatment_summary') return 'Treatment summary';
+    if (type === 'cardiology_test_request') return 'Cardiology test request';
     if (type === 'outpatient_appointment') return 'Outpatient appointment';
     return type;
   }
@@ -95,6 +97,7 @@
     if (type === 'operation_note') return 'operationNote.html';
     if (type === 'outpatient_outcome') return 'outpatientOutcome.html';
     if (type === 'treatment_summary') return 'treatmentSummary.html';
+    if (type === 'cardiology_test_request') return 'cardiologyTestRequest.html';
     return '';
   }
 
@@ -182,6 +185,8 @@
       <OutpatientOutcome {patientUuid} formUuid={inlineActiveForm.formUuid || ''} appointmentUuid={inlineActiveForm.appointmentUuid || ''} openInRoV={!!inlineActiveForm.openInRoV} inline onClose={closeInlineForm} />
     {:else if inlineActiveForm.formType === 'treatment_summary'}
       <TreatmentSummary {patientUuid} formUuid={inlineActiveForm.formUuid || ''} openInRoV={!!inlineActiveForm.openInRoV} inline onClose={closeInlineForm} />
+    {:else if inlineActiveForm.formType === 'cardiology_test_request'}
+      <CardiologyTestRequest {patientUuid} formUuid={inlineActiveForm.formUuid || ''} openInRoV={!!inlineActiveForm.openInRoV} inline onClose={closeInlineForm} />
     {/if}
   </div>
 {:else}
@@ -226,6 +231,9 @@
                 {/if}
               {:else if form.form_status === 'draft'}
                 <FbDraftBadge />
+              {/if}
+              {#if form.highly_sensitive || form.form_data?.highlySensitive}
+                <span class="patient-record-sensitive-badge">Highly sensitive</span>
               {/if}
             </div>
             <div>
@@ -346,11 +354,23 @@
     display: flex;
     align-items: start;
     justify-content: flex-start;
+    gap: 0.4rem;
+    flex-wrap: wrap;
   }
 
   .patient-record-badge-box {
     display: inline-block;
     padding: 0.2rem 0.4rem;
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .patient-record-sensitive-badge {
+    display: inline-block;
+    padding: 0.2rem 0.4rem;
+    background: var(--fb-red);
     color: white;
     font-size: 1rem;
     font-weight: 700;

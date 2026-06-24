@@ -5,6 +5,7 @@ import WaitingListCard from './WaitingListCard';
 import OperationNote from './OperationNote';
 import OutpatientOutcome from './OutpatientOutcome';
 import TreatmentSummary from './TreatmentSummary';
+import CardiologyTestRequest from './etr/CardiologyTestRequest';
 import PatientRecord from './PatientRecord';
 import PatientRegistry from './PatientRegistry';
 import PatientSearch from './PatientSearch';
@@ -35,6 +36,18 @@ const routes = [
   {
     path: '/treatment-summary',
     element: <TreatmentSummary />,
+  },
+  {
+    path: '/cardiology-test-request',
+    element: <CardiologyTestRequest />,
+  },
+  {
+    path: '/cardiologyTestRequest.html',
+    element: <CardiologyTestRequest />,
+  },
+  {
+    path: '/formBuilder2/cardiologyTestRequest.html',
+    element: <CardiologyTestRequest />,
   },
   {
     path: '/patient-record',

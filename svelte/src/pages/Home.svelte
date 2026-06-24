@@ -7,6 +7,7 @@
   $: operationNoteHref = `operationNote.html?patientUuid=${encodeURIComponent(patientUuid)}`;
   $: outpatientOutcomeHref = `outpatientOutcome.html?patientUuid=${encodeURIComponent(patientUuid)}`;
   $: treatmentSummaryHref = `treatmentSummary.html?patientUuid=${encodeURIComponent(patientUuid)}`;
+  $: cardiologyTestRequestHref = `cardiologyTestRequest.html?patientUuid=${encodeURIComponent(patientUuid)}`;
 </script>
 
 <main class="fb-home">
@@ -22,6 +23,7 @@
         <a class="fb-home-link green-gradient dark-tile-text" href={operationNoteHref}>Operation note</a>
         <a class="fb-home-link red-gradient" href={outpatientOutcomeHref}>Outpatient outcome</a>
         <a class="fb-home-link orange-gradient" href={treatmentSummaryHref}>Treatment summary</a>
+        <a class="fb-home-link blue-green-gradient" href={cardiologyTestRequestHref}>Cardiology test request</a>
       </div>
     </fieldset>
     <fieldset class="fb-home-fieldset">
@@ -33,6 +35,8 @@
         <a class="fb-home-link orange-gradient" href="composer.html">Composer</a>
         <a class="fb-home-link red-gradient" href="caseNoteTracker.html">Case note tracker</a>
         <a class="fb-home-link light-orange-gradient" href="componentLibrary.html">Component library</a>
+        <a class="fb-home-link purple-gradient" href="../docs/wcp-eForms-designSystem-specification.html">Design system specification</a>
+        <a class="fb-home-link purple-yellow-gradient" href="../docs/wcp-eForms-designSystem-examples.html">Form specification examples</a>
       </div>
     </fieldset>
     <p>Right-click links to open in new tab/window</p>
@@ -136,6 +140,8 @@
   .blue-green-gradient { background: linear-gradient(135deg, #1b6ec2, #008000); }
   .green-blue-gradient { background: linear-gradient(135deg, #008000, #8cd2e7); }
   .light-orange-gradient { background: linear-gradient(135deg, #8cd2e7, #fee715); color: black; }
+  .purple-gradient { background: linear-gradient(135deg, #1b6ec2, #7048e8); }
+  .purple-yellow-gradient { background: linear-gradient(135deg, #7048e8, #fee715); color: black; }
 
   p {
     margin: 0.7rem 0 0 0;

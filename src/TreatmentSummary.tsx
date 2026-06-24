@@ -120,6 +120,7 @@ export default function TreatmentSummary({ inlineProps }: { inlineProps?: Inline
         patient_uuid: patientUuidForSave,
         event_datetime: now,
         form_status: formStatus,
+        highly_sensitive: highlySensitive,
         form_data: formDataToSave,
       });
     if (insertError) throw insertError;
@@ -132,6 +133,7 @@ export default function TreatmentSummary({ inlineProps }: { inlineProps?: Inline
       event_datetime: now,
       document_datetime: now,
       form_status: formStatus,
+      highly_sensitive: highlySensitive,
       event_or_document: 'Document',
       details: username,
     });
@@ -194,7 +196,7 @@ export default function TreatmentSummary({ inlineProps }: { inlineProps?: Inline
             setFormState(loadedState);
             setInitialSnapshot(loadedState);
             setFinalChecked(formData.form_status === 'final' || !!formData.form_data?.finalChecked);
-            setHighlySensitive(!!formData.form_data?.highlySensitive);
+            setHighlySensitive(!!(formData.highly_sensitive ?? formData.form_data?.highlySensitive));
             setCurrentFormVersion(formData.version ?? null);
             setLatestFormVersion(latestVersion);
           setFormHistory(historyState.history);

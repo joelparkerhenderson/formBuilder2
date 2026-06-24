@@ -1,9 +1,11 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { onMount } from 'svelte';
   import FbModal from './fbModal.svelte';
   import FbButton from './fbButton.svelte';
   let password = '';
   let error = '';
+  let passwordInput: HTMLInputElement;
   const dispatch = createEventDispatcher<{ confirm: string; cancel: void }>();
 
   function confirm() {
@@ -14,6 +16,10 @@
     error = '';
     dispatch('confirm', password);
   }
+
+  onMount(() => {
+    passwordInput?.focus();
+  });
 </script>
 
 <FbModal title="Password re-entry required">
@@ -22,11 +28,11 @@
     <span>Password</span>
     <input
       id="password-input"
+      bind:this={passwordInput}
       type="password"
       bind:value={password}
       placeholder="Enter password..."
       class:error={!!error}
-      autofocus
       oninput={() => {
         if (password) error = '';
       }}

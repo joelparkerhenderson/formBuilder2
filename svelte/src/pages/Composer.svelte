@@ -17,6 +17,9 @@
   import FbTableHeaderCell from '../components/fbTableHeaderCell.svelte';
   import FbTableRow from '../components/fbTableRow.svelte';
   import FbNumberInput from '../components/fbNumberInput.svelte';
+  import FbDateHeightWeightBMIRow from '../components/fbDateHeightWeightBMIRow.svelte';
+  import FbNotificationTypeGroup from '../components/fbNotificationTypeGroup.svelte';
+  import FbSmartDropdown from '../components/fbSmartDropdown.svelte';
   import FbTextArea from '../components/fbTextArea.svelte';
   import FbTextInput from '../components/fbTextInput.svelte';
   import FbToolTip from '../components/fbToolTip.svelte';
@@ -80,11 +83,16 @@
     'fbTextInput',
     'fbTextArea',
     'fbDropdown',
+    'fbSmartDropdown',
     'fbGroup',
     'fbRadio',
     'fbCheck',
+    'fbInverseSubq',
+    'fbSubqForOption',
     'fbNumberInput',
     'fbNumberInputWithUnits',
+    'fbDateHeightWeightBMIRow',
+    'fbNotificationTypeGroup',
     'fbDateExact',
     'fbDatePartial',
     'fbTime',
@@ -101,11 +109,16 @@
     'fbTime',
     'fbTextArea',
     'fbDropdown',
+    'fbSmartDropdown',
     'fbNumberInput',
     'fbNumberInputWithUnits',
+    'fbDateHeightWeightBMIRow',
+    'fbNotificationTypeGroup',
     'fbBloodPressure',
     'fbCheck',
     'fbRadio',
+    'fbInverseSubq',
+    'fbSubqForOption',
     'fbGroup',
     'fbDatePartial',
     'fbDateExact',
@@ -123,11 +136,16 @@
     fbTextInput: 'Text input',
     fbTextArea: 'Text area',
     fbDropdown: 'Dropdown',
+    fbSmartDropdown: 'Smart dropdown',
     fbGroup: 'Group',
     fbRadio: 'Radio button',
     fbCheck: 'Checkbox',
+    fbInverseSubq: 'Inverse subquestion',
+    fbSubqForOption: 'Subquestion for option',
     fbNumberInput: 'Number input',
     fbNumberInputWithUnits: 'Number input with units',
+    fbDateHeightWeightBMIRow: 'Date, height, weight, BMI row',
+    fbNotificationTypeGroup: 'Notification type group',
     fbDateExact: 'Exact date',
     fbDatePartial: 'Partial date',
     fbTime: 'Time',
@@ -413,7 +431,11 @@
       tableRows: [{ id: `${id}-row1` }, { id: `${id}-row2` }, { id: `${id}-row3` }],
       tableCellTemplates: [makeComponent('fbTextInput', [...existing, base])],
     };
-    if (type === 'fbDropdown') return { ...base, label: `Question ${sameTypeCount}`, options: [{ value: 'option1', label: 'Option 1' }] };
+    if (type === 'fbDropdown' || type === 'fbSmartDropdown') return { ...base, label: `Question ${sameTypeCount}`, options: [{ value: 'option1', label: 'Option 1' }] };
+    if (type === 'fbSubqForOption') return { ...base, label: `Option subquestion ${sameTypeCount}`, optionValue: 'option1', children: [] };
+    if (type === 'fbInverseSubq') return { ...base, label: `Inverse subquestion ${sameTypeCount}`, children: [] };
+    if (type === 'fbNotificationTypeGroup') return { ...base, label: 'Notification type' };
+    if (type === 'fbDateHeightWeightBMIRow') return { ...base, label: 'Date recorded / height / weight / BMI' };
     if (type === 'fbGroup') return {
       ...base,
       label: `Group ${sameTypeCount}`,
@@ -776,6 +798,7 @@
     const parent = separator.parentId === 'form' ? null : findComponent(activeDesign.components, separator.parentId);
     if (!parent || parent.type === 'fbSection' || parent.type === 'fbGridCell') return formOrSectionComponentTypes;
     if (parent.type === 'fbGroup') return ['fbRadio', 'fbCheck'];
+    if (parent.type === 'fbDropdown' || parent.type === 'fbSmartDropdown') return ['fbSubqForOption'];
     return questionTypes;
   }
 
@@ -829,7 +852,7 @@
       addComponentRight(type);
       return;
     }
-    if (['fbSection', 'fbGridRow', 'fbGroup', 'fbRadio', 'fbCheck'].includes(selectedComponent.type)) {
+    if (['fbSection', 'fbGridRow', 'fbGroup', 'fbRadio', 'fbCheck', 'fbDropdown', 'fbSmartDropdown', 'fbInverseSubq', 'fbSubqForOption'].includes(selectedComponent.type)) {
       addComponent(type, selectedId);
       return;
     }
@@ -1773,6 +1796,16 @@
     {:else if component.type === 'fbCheck'}
       <label class="preview-choice fb-radio-checkbox-item"><input type="checkbox" checked={component.defaultValue === 'checked'} disabled={isReadOnlyPreview} onchange={(event) => updateComponent(component.id, { defaultValue: event.currentTarget.checked ? 'checked' : '' })} /> <span>{controlLabel(component)}</span>{@render requiredMark(component)}</label>
       {@render renderChildren(component)}
+    {:else if component.type === 'fbInverseSubq'}
+      <div class="preview-inverse-subq fb-subquestion">
+        {@render editableLabel(component)}
+        {@render renderChildren(component)}
+      </div>
+    {:else if component.type === 'fbSubqForOption'}
+      <div class="preview-subq-for-option fb-subquestion">
+        {@render editableLabel(component)}
+        {@render renderChildren(component)}
+      </div>
     {:else if component.type === 'fbTextArea'}
       {@render editableLabel(component)}
       <FbTextArea
@@ -1803,6 +1836,33 @@
           <option value={option.value}>{option.label}</option>
         {/each}
       </select>
+      {@render renderChildren(component)}
+    {:else if component.type === 'fbSmartDropdown'}
+      <FbSmartDropdown
+        label={component.label || ''}
+        value={previewValues[component.id] ?? component.defaultValue ?? ''}
+        options={component.options || []}
+        placeholder={component.placeholder || 'Type here to search'}
+        fullWidth={component.fullWidth}
+        noWidthConstraint={component.noWidthConstraint}
+        onChange={(value) => setPreviewValue(component.id, value)}
+      />
+      {@render renderChildren(component)}
+    {:else if component.type === 'fbDateHeightWeightBMIRow'}
+      <FbDateHeightWeightBMIRow
+        dateRecorded={previewValues[`${component.id}-dateRecorded`] || ''}
+        heightCm={previewValues[`${component.id}-heightCm`] || ''}
+        weightKg={previewValues[`${component.id}-weightKg`] || ''}
+        onDateRecordedChange={(value) => setPreviewValue(`${component.id}-dateRecorded`, value)}
+        onHeightCmChange={(value) => setPreviewValue(`${component.id}-heightCm`, value)}
+        onWeightKgChange={(value) => setPreviewValue(`${component.id}-weightKg`, value)}
+      />
+    {:else if component.type === 'fbNotificationTypeGroup'}
+      <FbNotificationTypeGroup
+        value={previewValues[component.id] ?? component.defaultValue ?? 'routine'}
+        onChange={(value) => setPreviewValue(component.id, value)}
+        subfield
+      />
     {:else if component.type === 'fbNumberInput' || component.type === 'fbNumberInputWithUnits'}
       {@render editableLabel(component)}
       <FbNumberInput
@@ -2252,6 +2312,7 @@
                       </div>
                     </details>
                   </li>
+                  <FbcAction onClick={() => addComponent('fbInverseSubq', selectedId)}><span class="fb-designer-action-label">Add an inverse subcomponent</span></FbcAction>
                   <FbcAction onClick={() => addComponentBelow('fbRadio')}><span class="fb-designer-action-label">Add another radiobutton below</span></FbcAction>
                 {:else if selectedComponent.type === 'fbCheck'}
                   <li>
@@ -2266,7 +2327,22 @@
                       </div>
                     </details>
                   </li>
+                  <FbcAction onClick={() => addComponent('fbInverseSubq', selectedId)}><span class="fb-designer-action-label">Add an inverse subcomponent</span></FbcAction>
                   <FbcAction onClick={() => addComponentBelow('fbCheck')}><span class="fb-designer-action-label">Add another check box below</span></FbcAction>
+                {:else if selectedComponent.type === 'fbDropdown' || selectedComponent.type === 'fbSmartDropdown'}
+                  <FbcAction onClick={() => addComponent('fbSubqForOption', selectedId)}><span class="fb-designer-action-label">Add an option subquestion</span></FbcAction>
+                  <li>
+                    <details open>
+                      <summary class="fb-designer-action-summary"><span class="fb-designer-action-label">Add component below</span></summary>
+                      <div class="palette-grid">
+                        {#each questionTypes as type}
+                          <button type="button" class="fb-designer-action-item" onclick={() => addComponentBelow(type)}>
+                            <span class="fb-designer-action-marker" aria-hidden="true">&#x25b6; </span><span class="fb-designer-action-label">{typeLabels[type] || type}</span>
+                          </button>
+                        {/each}
+                      </div>
+                    </details>
+                  </li>
                 {:else}
                   <li>
                     <details open>

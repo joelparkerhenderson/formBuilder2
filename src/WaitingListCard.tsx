@@ -495,7 +495,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
               clopidogrel: false,
               other: false,
             };
-            const hSensitive = !!formData.form_data.highlySensitive;
+            const hSensitive = !!(formData.highly_sensitive ?? formData.form_data.highlySensitive);
             const fChecked = formData.form_status === "final";
 
             setFormState(fState);
@@ -605,6 +605,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
           patient_uuid: patientUuidForSave,
           event_datetime: eventDate,
           form_status: formStatus,
+          highly_sensitive: highlySensitive,
           form_data: formDataToSave,
         });
 
@@ -618,6 +619,7 @@ export default function WaitingListCard({ inlineProps }: { inlineProps?: InlineP
         event_datetime: eventDate,
         document_datetime: new Date().toISOString(),
         form_status: formStatus,
+        highly_sensitive: highlySensitive,
         event_or_document: "Document",
         details: username,
       });

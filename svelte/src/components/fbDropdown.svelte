@@ -12,6 +12,9 @@
   export let options: Array<{ value: string; label: string }> = [];
   export let valueError = '';
   export let tooltip = '';
+  export let subfield = false;
+  export let noWidthConstraint = false;
+  export let fullWidth = false;
   export let onChange: (value: string) => void = () => {};
   export let change: (value: string) => void = () => {};
 
@@ -25,11 +28,12 @@
 </script>
 
 {#if label}
-  <FbQuestion {label} {required} {requiredForAudit} {valueError} {tooltip}>
+  <FbQuestion {label} {required} {requiredForAudit} {subfield} {valueError} {tooltip}>
     <select
       {id}
       {name}
       bind:value
+      class:unconstrained={noWidthConstraint || fullWidth}
       onchange={emitValue}
     >
       {#if placeholder}
@@ -39,6 +43,7 @@
         <option value={option.value}>{option.label}</option>
       {/each}
     </select>
+    <slot selectedValue={value} />
   </FbQuestion>
 {:else}
   <FbQuestion label="" {required} {requiredForAudit}>
@@ -46,6 +51,7 @@
       {id}
       {name}
       bind:value
+      class:unconstrained={noWidthConstraint || fullWidth}
       onchange={emitValue}
     >
       {#if placeholder}
@@ -55,17 +61,22 @@
         <option value={option.value}>{option.label}</option>
       {/each}
     </select>
+    <slot selectedValue={value} />
   </FbQuestion>
 {/if}
 
 <style>
   select {
     width: 100%;
-    max-width: 24rem;
+    max-width: 35rem;
     height: 2rem;
     border: 0.1rem solid silver;
     border-radius: 0.4rem;
     padding: 0.2rem 0.4rem;
     font-size: 1rem;
+  }
+
+  select.unconstrained {
+    max-width: none;
   }
 </style>

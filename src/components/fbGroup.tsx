@@ -15,6 +15,7 @@ interface fbGroupProps {
   required?: boolean;
   requiredForAudit?: boolean;
   showRequiredMarkers?: boolean;
+  subfield?: boolean;
 }
 
 export const fbGroup: React.FC<fbGroupProps> = ({
@@ -28,6 +29,7 @@ export const fbGroup: React.FC<fbGroupProps> = ({
   required = false,
   requiredForAudit = false,
   showRequiredMarkers = true,
+  subfield = false,
 }) => {
   const renderLabel = () => {
     if (!label || !showRequiredMarkers || (!required && !requiredForAudit) || typeof label !== 'string') return label;
@@ -70,10 +72,11 @@ export const fbGroup: React.FC<fbGroupProps> = ({
           style={{
             fontFamily: "'Roboto', sans-serif",
             fontSize: '1rem',
-            fontWeight: 300,
+            fontWeight: subfield ? 300 : 500,
             color: 'black',
             margin: 0,
             display: 'block',
+            ...(subfield ? { fontWeight: 300, fontSize: '1rem' } : {}),
             ...labelStyle
           }}
         >

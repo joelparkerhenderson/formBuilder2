@@ -12,9 +12,11 @@ import WaitingListCard from './WaitingListCard';
 import OperationNote from './OperationNote';
 import OutpatientOutcome from './OutpatientOutcome';
 import TreatmentSummary from './TreatmentSummary';
+import CardiologyTestRequest from './etr/CardiologyTestRequest';
 import { specialities } from './data/specialities';
 import { createClient } from './restClient';
 import { popCntNavigation } from './caseNoteTracker/cntNavigation';
+import { fbBadgeHighlySensitive as HighlySensitiveBadge } from './components/fbBadgeHighlySensitive';
 
 // Create REST client
 const restClient = createClient();
@@ -49,6 +51,7 @@ interface FormIndexItem {
   organisation?: string;
   hospital?: string;
   senior_responsible_clinician?: string;
+  highly_sensitive?: boolean;
 }
 
 interface PatientRecordProps {
@@ -83,7 +86,7 @@ export default function PatientRecord({
 
   // Local state to keep track of actively opened forms/documents inline
   const [inlineActiveForm, setInlineActiveForm] = React.useState<{
-    formType: 'waiting_list_card' | 'operation_note' | 'outpatient_outcome' | 'treatment_summary';
+    formType: 'waiting_list_card' | 'operation_note' | 'outpatient_outcome' | 'treatment_summary' | 'cardiology_test_request';
     formUuid?: string;
     appointmentUuid?: string;
     openInRoV?: boolean;
@@ -176,6 +179,7 @@ export default function PatientRecord({
     if (type === 'operation_note') return 'Operation note';
     if (type === 'outpatient_outcome') return 'Outpatient outcome';
     if (type === 'treatment_summary') return 'Treatment summary';
+    if (type === 'cardiology_test_request') return 'Cardiology test request';
     if (type === 'outpatient_appointment') return 'Outpatient appointment';
     return type;
   };
@@ -218,6 +222,7 @@ export default function PatientRecord({
     if (formType === 'operation-note') resolvedType = 'operation_note';
     if (formType === 'outpatient-outcome') resolvedType = 'outpatient_outcome';
     if (formType === 'treatment-summary') resolvedType = 'treatment_summary';
+    if (formType === 'cardiology-test-request') resolvedType = 'cardiology_test_request';
 
     setInlineActiveForm({
       formType: resolvedType,
@@ -316,8 +321,13 @@ export default function PatientRecord({
       return null;
     }
 
-    if (form.form_status === 'draft') {
-      return <DraftBadge />;
+    if (form.form_status === 'draft' || form.highly_sensitive) {
+      return (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+          {form.form_status === 'draft' && <DraftBadge />}
+          {form.highly_sensitive && <HighlySensitiveBadge />}
+        </div>
+      );
     }
 
     return null;
@@ -425,6 +435,7 @@ export default function PatientRecord({
                           formTypeName={getFormTypeDisplay(form.form_type)}
                           speciality={getSpecialityDisplay(form.speciality)}
                           src={form.senior_responsible_clinician || ''}
+                          highlySensitive={!!form.highly_sensitive}
                         />
                       )}
                     </div>
@@ -486,8 +497,7 @@ export default function PatientRecord({
                 buttonRef={addButtonRef}
                 onSelectFormType={(type) => {
                   setShowAddMenu(false);
-                  const mappedType = type.replace('_', '-');
-                  handleAddNewForm(mappedType);
+                  handleAddNewForm(type);
                 }}
                 onCancel={() => setShowAddMenu(false)}
               />
@@ -557,6 +567,19 @@ export default function PatientRecord({
           )}
           {inlineActiveForm.formType === 'treatment_summary' && (
             <TreatmentSummary
+              inlineProps={{
+                patientUuid: patient?.uuid,
+                formUuid: inlineActiveForm.formUuid,
+                openInRoV: inlineActiveForm.openInRoV,
+                onClose: () => {
+                  setInlineActiveForm(null);
+                  fetchPatientAndForms({ showLoading: false });
+                }
+              }}
+            />
+          )}
+          {inlineActiveForm.formType === 'cardiology_test_request' && (
+            <CardiologyTestRequest
               inlineProps={{
                 patientUuid: patient?.uuid,
                 formUuid: inlineActiveForm.formUuid,

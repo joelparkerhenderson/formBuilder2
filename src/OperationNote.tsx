@@ -337,7 +337,7 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
             loadedAnas = formData.form_data.anaesthetists || [{id: 1, name: ''}];
             loadedUrgency = formData.form_data.urgencyType || '';
             loadedElectiveUrgency = formData.form_data.electiveUrgency || '';
-            loadedHighlySensitive = formData.form_data.highlySensitive || false;
+            loadedHighlySensitive = !!(formData.highly_sensitive ?? formData.form_data.highlySensitive);
 
             setFormState(loadedFormState);
             setProcedures(loadedProcs);
@@ -477,6 +477,7 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
           patient_uuid: patient?.uuid || null,
           event_datetime: eventDate,
           form_status: formStatus,
+          highly_sensitive: highlySensitive,
           form_data: formDataToSave,
           organisation: formState.organisation || null,
           hospital: formState.hospital || null,
@@ -497,6 +498,7 @@ export default function OperationNote({ inlineProps }: { inlineProps?: InlinePro
           event_datetime: eventDate,
           document_datetime: new Date().toISOString(),
           form_status: formStatus,
+          highly_sensitive: highlySensitive,
           event_or_document: 'Document',
           organisation: formState.organisation || null,
           hospital: formState.hospital || null,

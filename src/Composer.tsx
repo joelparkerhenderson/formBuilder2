@@ -19,6 +19,7 @@ import { fbSCTProcedure as FbSCTProcedure } from './components/fbSCTProcedure';
 import { fbSection as FbSection } from './components/fbSection';
 import { fbGroup as FbGroup } from './components/fbGroup';
 import { fbValueError as FbValueError } from './components/fbValueError';
+import { fbAnimatedCollapsible as FbAnimatedCollapsible } from './components/fbAnimatedSubquestion';
 import {
   fbcAction,
   fbcActions,
@@ -94,6 +95,7 @@ interface DesignerComponentSpec {
   units?: string;
   colSpan?: number;
   fullWidth?: boolean;
+  noWidthConstraint?: boolean;
   boldOverride?: boolean;
   plainOverride?: boolean;
   showInRoVIfEmpty?: boolean;
@@ -498,6 +500,59 @@ const propertyValueStyle: React.CSSProperties = {
   ...propertyCellStyle,
   display: 'flex',
   alignItems: 'center',
+};
+
+const composerCollapseActionAccordionsEvent = 'fb-composer-collapse-action-accordions';
+
+const FbDesignerActionDetails: React.FC<{
+  summary: React.ReactNode;
+  summaryClassName?: string;
+  children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}> = ({ summary, summaryClassName, children, open, onOpenChange }) => {
+  const controlled = open !== undefined;
+  const initialOpen = open ?? false;
+  const [detailsOpen, setDetailsOpen] = React.useState(initialOpen);
+  const [contentOpen, setContentOpen] = React.useState(initialOpen);
+
+  const setOpenState = React.useCallback((nextOpen: boolean) => {
+    if (nextOpen) {
+      setDetailsOpen(true);
+      requestAnimationFrame(() => setContentOpen(true));
+    } else {
+      setContentOpen(false);
+    }
+    onOpenChange?.(nextOpen);
+  }, [onOpenChange]);
+
+  React.useEffect(() => {
+    if (!controlled) return;
+    setOpenState(!!open);
+  }, [controlled, open, setOpenState]);
+
+  React.useEffect(() => {
+    const close = () => setOpenState(false);
+    window.addEventListener(composerCollapseActionAccordionsEvent, close);
+    return () => window.removeEventListener(composerCollapseActionAccordionsEvent, close);
+  }, [setOpenState]);
+
+  return (
+    <details open={detailsOpen}>
+      <summary
+        className={summaryClassName}
+        onClick={(event) => {
+          event.preventDefault();
+          setOpenState(!contentOpen);
+        }}
+      >
+        {summary}
+      </summary>
+      <FbAnimatedCollapsible open={contentOpen} onCollapsed={() => setDetailsOpen(false)}>
+        {children}
+      </FbAnimatedCollapsible>
+    </details>
+  );
 };
 
 const passwordRevealButtonStyle: React.CSSProperties = {
@@ -3026,7 +3081,8 @@ export default function Composer() {
             {row('Plain override', toggle(selectedComponent.plainOverride, (checked) => updateComponent(selectedComponent.id, { plainOverride: checked })))}
             {row('Show in RoV if empty', toggle(selectedComponent.showInRoVIfEmpty, (checked) => updateComponent(selectedComponent.id, { showInRoVIfEmpty: checked })))}
             {supportsPlaceholder && row('Placeholder', <PropertyTextInput value={selectedComponent.placeholder || ''} onChange={(event) => updateComponent(selectedComponent.id, { placeholder: event.target.value })} style={propertyInputStyle} />)}
-            {selectedComponent.type === 'fbTextArea' && row('Full width', toggle(selectedComponent.fullWidth, (checked) => updateComponent(selectedComponent.id, { fullWidth: checked })))}
+            {['fbDropdown', 'fbSmartDropdown', 'fbTextArea'].includes(selectedComponent.type) && row('Full width', toggle(selectedComponent.fullWidth, (checked) => updateComponent(selectedComponent.id, { fullWidth: checked })))}
+            {['fbDropdown', 'fbSmartDropdown'].includes(selectedComponent.type) && row('No width constraint', toggle(selectedComponent.noWidthConstraint, (checked) => updateComponent(selectedComponent.id, { noWidthConstraint: checked })))}
             {supportsAcceptUncoded && row('Accept uncoded values', toggle(selectedComponent.acceptUncodedValues, (checked) => updateComponent(selectedComponent.id, { acceptUncodedValues: checked })))}
             {row('Database column', <PropertyTextInput value={selectedComponent.databaseColumn || ''} onChange={(event) => updateComponent(selectedComponent.id, { databaseColumn: event.target.value })} style={propertyInputStyle} />)}
             {isTable && row('Use full width', toggle(selectedComponent.useFullWidth, (checked) => updateComponent(selectedComponent.id, { useFullWidth: checked })))}
@@ -3091,9 +3147,7 @@ export default function Composer() {
   const actionLabel = (label: string) => label.replace(/questions/g, 'components').replace(/question/g, 'component').replace(/SNOMED(?! CT)/g, 'SNOMED CT');
 
   const collapseTaskAccordions = () => {
-    document.querySelectorAll<HTMLDetailsElement>('.fb-designer-action-nested details').forEach((details) => {
-      details.open = false;
-    });
+    window.dispatchEvent(new Event(composerCollapseActionAccordionsEvent));
     setDeleteOpen(false);
   };
 
@@ -3124,12 +3178,11 @@ export default function Composer() {
 
   const actionChoiceList = (label: string, action: AddAction, parentId = selectedId, types: DesignerComponentType[] = questionTypes) => (
     <li key={label} className="fb-designer-action-nested">
-      <details>
-        <summary><span className="fb-designer-action-label">{actionLabel(label)}</span></summary>
+      <FbDesignerActionDetails summary={<span className="fb-designer-action-label">{actionLabel(label)}</span>}>
         <ul className="fb-designer-action-list">
           {types.map((type) => actionListItem(typeLabels[type], action, parentId, type))}
         </ul>
-      </details>
+      </FbDesignerActionDetails>
     </li>
   );
 
@@ -3214,8 +3267,7 @@ export default function Composer() {
     } else if (selectedTableTarget?.kind === 'cell') {
       controls.push((
         <li key="add-table-cell-component" className="fb-designer-action-nested">
-          <details>
-            <summary><span className="fb-designer-action-label">Add component here</span></summary>
+          <FbDesignerActionDetails summary={<span className="fb-designer-action-label">Add component here</span>}>
             <ul className="fb-designer-action-list">
               {questionTypes.map((type) => (
                 <li
@@ -3235,7 +3287,7 @@ export default function Composer() {
                 </li>
               ))}
             </ul>
-          </details>
+          </FbDesignerActionDetails>
         </li>
       ));
     } else if (selectedTableTarget?.kind === 'separator') {
@@ -3354,8 +3406,12 @@ export default function Composer() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.35rem' }}>
         <ul className="fb-designer-action-list">{controls}</ul>
-        {!selectedSeparator && !selectedTableTarget && <details open={deleteOpen} onToggle={(event) => setDeleteOpen(event.currentTarget.open)}>
-          <summary className="fb-designer-delete-summary">Delete</summary>
+        {!selectedSeparator && !selectedTableTarget && <FbDesignerActionDetails
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          summaryClassName="fb-designer-delete-summary"
+          summary="Delete"
+        >
           <ul className="fb-designer-action-list fb-designer-delete-action-list">
             <li
               className="fb-designer-action-item fb-designer-action-danger"
@@ -3379,7 +3435,7 @@ export default function Composer() {
               {selectedComponent ? 'Confirm delete component' : 'Confirm delete form'}
             </li>
           </ul>
-        </details>}
+        </FbDesignerActionDetails>}
       </div>
     );
   };

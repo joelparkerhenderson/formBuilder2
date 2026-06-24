@@ -41,7 +41,7 @@ export function FbcntPageHome({
     { target: 'allClinics', label: 'All clinics', background: 'linear-gradient(135deg, #008000, #c5e1a5)' },
     { target: 'allLocations', label: 'Locations', background: 'linear-gradient(135deg, #7048e8, #8cd2e7)' },
     { target: 'admin', label: 'Admin', subtext: 'For records admins', background: 'linear-gradient(135deg, #333, #8cd2e7)' },
-    { label: 'CNT specification', href: '/formBuilder2/docs/cnt-specification.html', background: 'linear-gradient(135deg, #fd8a10, #fee715)' },
+    { label: 'CNT specification', href: 'docs/cnt-specification.html', background: 'linear-gradient(135deg, #fd8a10, #fee715)' },
   ];
   const renderTile = (item: { target?: View; label: string; subtext?: string; href?: string; background: string; onClick?: () => void }) => (
     <button

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { fbBadgeHighlySensitive as HighlySensitiveBadge } from './fbBadgeHighlySensitive';
 
 interface FormTileProps {
   dateTime: string;
   formTypeName: string;
   speciality: string;
   src: string;
+  highlySensitive?: boolean;
 }
 
 const HoverTooltipField: React.FC<{ tooltipText: string; children: React.ReactNode }> = ({ tooltipText, children }) => {
@@ -48,7 +50,8 @@ export const fbFormTile: React.FC<FormTileProps> = ({
   dateTime,
   formTypeName,
   speciality,
-  src
+  src,
+  highlySensitive = false
 }) => {
   return (
     <div
@@ -71,6 +74,7 @@ export const fbFormTile: React.FC<FormTileProps> = ({
       </HoverTooltipField>
       <div style={{ fontWeight: 500 }}>
         {formTypeName}
+        {highlySensitive && <span style={{ marginLeft: '0.4rem' }}><HighlySensitiveBadge /></span>}
       </div>
       {speciality && (
         <HoverTooltipField tooltipText="Speciality">
@@ -89,4 +93,3 @@ export const fbFormTile: React.FC<FormTileProps> = ({
     </div>
   );
 };
-

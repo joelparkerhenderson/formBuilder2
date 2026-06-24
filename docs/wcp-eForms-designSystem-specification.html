@@ -111,18 +111,23 @@
     <tr><td><code>fbBoxedWarning</code></td><td>Full-width orange boxed warning message.</td></tr>
     <tr><td><code>fbCheck</code></td><td>Checkbox option with optional conditional subquestions.</td></tr>
     <tr><td><code>fbDateExact</code></td><td>Complete-date control with picker dropdown.</td></tr>
+    <tr><td><code>fbDateHeightWeightBMIRow</code></td><td>Date, height, weight, and calculated BMI row.</td></tr>
     <tr><td><code>fbDatePartial</code></td><td>Partial date control accepting exact, month-only, or year-only dates.</td></tr>
     <tr><td><code>fbDropdown</code></td><td>Fixed-option selector.</td></tr>
     <tr><td><code>fbGridCell</code></td><td>Grid cell inside a row.</td></tr>
     <tr><td><code>fbGridRow</code></td><td>Responsive horizontal row of grid cells.</td></tr>
     <tr><td><code>fbGroup</code></td><td>Labelled group for radio/check options and subquestions.</td></tr>
+    <tr><td><code>fbInverseSubq</code></td><td>Non-indented inverse subquestion for radio/check options.</td></tr>
     <tr><td><code>fbMSISelector</code></td><td>Clinician autocomplete selector with coded/not-coded indicator.</td></tr>
+    <tr><td><code>fbNotificationTypeGroup</code></td><td>Notification type radio group with required tooltips.</td></tr>
     <tr><td><code>fbNumberInput</code></td><td>Numeric input without units.</td></tr>
     <tr><td><code>fbNumberInputWithUnits</code></td><td>Numeric input with a fixed or editable units label.</td></tr>
     <tr><td><code>fbRadio</code></td><td>Radio option with optional conditional subquestions.</td></tr>
     <tr><td><code>fbRequiredForAudit</code></td><td>Inline required-for-audit marker.</td></tr>
     <tr><td><code>fbSCTDiagnosis</code></td><td>SNOMED CT diagnosis selector.</td></tr>
     <tr><td><code>fbSCTProcedure</code></td><td>SNOMED CT procedure selector.</td></tr>
+    <tr><td><code>fbSmartDropdown</code></td><td>Search-as-you-type dropdown using reusable smart matching.</td></tr>
+    <tr><td><code>fbSubqForOption</code></td><td>Indented dropdown option subquestion.</td></tr>
     <tr><td><code>fbTable</code></td><td>Form table shell.</td></tr>
     <tr><td><code>fbTextArea</code></td><td>Auto-expanding multi-line text input.</td></tr>
     <tr><td><code>fbTextInput</code></td><td>Standard one-line text input.</td></tr>
@@ -135,6 +140,9 @@
     <tr><td><code>fbAddressograph</code></td><td>Patient identity card shown top right in headers.</td></tr>
     <tr><td><code>fbAuthAndSensitivity</code></td><td>Highly sensitive/final controls and authentication wrapper.</td></tr>
     <tr><td><code>fbAuthControls</code></td><td>Footer authentication controls.</td></tr>
+    <tr><td><code>fbBadgeDraft</code></td><td>Draft status badge.</td></tr>
+    <tr><td><code>fbBadgeHighlySensitive</code></td><td>Highly-sensitive document badge.</td></tr>
+    <tr><td><code>fbBadgeSuperseded</code></td><td>Superseded old-version badge.</td></tr>
     <tr><td><code>fbBottomControlsRow</code></td><td>Fixed footer content row.</td></tr>
     <tr><td><code>fbButton</code></td><td>Standard patient-form command button.</td></tr>
     <tr><td><code>fbFinalControl</code></td><td>Final/draft state selector.</td></tr>
@@ -263,6 +271,19 @@
   flex: 1 1 0;
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> Input remains keyboard editable; picker buttons are native buttons.</p>
+  <h3 id="component-fbdateheightweightbmirow">fbDateHeightWeightBMIRow</h3>
+  <p>Date, height, weight, and calculated BMI row.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbDateHeightWeightBMIRow.tsx</code>; Svelte <code>Svelte follow-up required</code>.</p>
+  <p><strong>Parameters:</strong> `dateRecorded`, `heightCm`, `weightKg`, and matching change handlers.</p>
+  <p><code>&lt;div class=&quot;fb-grid-row&quot;&gt;Date recorded / Height / Weight / BMI&lt;/div&gt;</code></p>
+  <pre><code>.fb-bmi-tooltip {
+  cursor: help;
+}
+.fb-grid-row {
+  display: grid;
+  gap: 0.4rem;
+}</code></pre>
+  <p><strong>ARIA/semantics:</strong> Structural row plus labelled native inputs; BMI is read-only display.</p>
   <h3 id="component-fbdatepartial">fbDatePartial</h3>
   <p>Partial date control accepting exact, month-only, or year-only dates.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbDatePartial.tsx</code>; Svelte <code>svelte/src/components/fbDatePartial.svelte</code>.</p>
@@ -331,6 +352,15 @@
   background: var(--fb-active-lighter-yellow);
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> `role="group"` with visible label.</p>
+  <h3 id="component-fbinversesubq">fbInverseSubq</h3>
+  <p>Non-indented inverse subquestion for radio/check options.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbInverseSubq.tsx</code>; Svelte <code>Svelte follow-up required</code>.</p>
+  <p><strong>Parameters:</strong> `isOpen`, children.</p>
+  <p><code>&lt;div class=&quot;fb-subquestion-wrapper inverse&quot;&gt;...&lt;/div&gt;</code></p>
+  <pre><code>.fb-subquestion-wrapper.inverse {
+  padding-left: 0;
+}</code></pre>
+  <p><strong>ARIA/semantics:</strong> Structural grouping only.</p>
   <h3 id="component-fbmsiselector">fbMSISelector</h3>
   <p>Clinician autocomplete selector with coded/not-coded indicator.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbMSISelector.tsx</code>; Svelte <code>svelte/src/components/fbMSISelector.svelte</code>.</p>
@@ -348,6 +378,15 @@
   border: 0.1rem solid silver;
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> Search input behaves as a combobox-style text field; coded icons use visible/title text and decorative Material icons.</p>
+  <h3 id="component-fbnotificationtypegroup">fbNotificationTypeGroup</h3>
+  <p>Notification type radio group with required tooltips.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbNotificationTypeGroup.tsx</code>; Svelte <code>Svelte follow-up required</code>.</p>
+  <p><strong>Parameters:</strong> `value`, `onChange`, `name`, `label`, `required`.</p>
+  <p><code>&lt;div role=&quot;group&quot;&gt;Routine notification / Urgent notification&lt;/div&gt;</code></p>
+  <pre><code>.fb-radio-checkbox-group-container {
+  border-radius: 0.4rem;
+}</code></pre>
+  <p><strong>ARIA/semantics:</strong> `role="group"` with native radio children.</p>
   <h3 id="component-fbnumberinput">fbNumberInput</h3>
   <p>Numeric input without units.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbNumberInput.tsx</code>; Svelte <code>svelte/src/components/fbNumberInput.svelte</code>.</p>
@@ -444,6 +483,31 @@
   background: var(--fb-active-lighter-yellow);
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> Search input plus buttons/links for selection and navigation.</p>
+  <h3 id="component-fbsmartdropdown">fbSmartDropdown</h3>
+  <p>Search-as-you-type dropdown using reusable smart matching.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbSmartDropdown.tsx</code>; Svelte <code>Svelte follow-up required</code>.</p>
+  <p><strong>Parameters:</strong> `label`, `value`, `onChange`, `options`, `required`, `requiredForAudit`, `placeholder`, children.</p>
+  <p><code>&lt;div class=&quot;fb-smart-dropdown&quot;&gt;&lt;input role=&quot;combobox&quot;&gt;&lt;div role=&quot;listbox&quot;&gt;...&lt;/div&gt;&lt;/div&gt;</code></p>
+  <pre><code>.fb-smart-dropdown input {
+  border: 0.1rem solid silver;
+  border-radius: 0.4rem;
+  height: 2rem;
+}
+.fb-smart-dropdown [role=&quot;listbox&quot;] {
+  position: absolute;
+  background: white;
+  border: 0.1rem solid silver;
+}</code></pre>
+  <p><strong>ARIA/semantics:</strong> Input uses combobox semantics; result buttons use role option.</p>
+  <h3 id="component-fbsubqforoption">fbSubqForOption</h3>
+  <p>Indented dropdown option subquestion.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbSubqForOption.tsx</code>; Svelte <code>Svelte follow-up required</code>.</p>
+  <p><strong>Parameters:</strong> `optionValue`, `selectedValue`, children.</p>
+  <p><code>&lt;div class=&quot;fb-subquestion-wrapper&quot;&gt;...&lt;/div&gt;</code></p>
+  <pre><code>.fb-subquestion-wrapper {
+  padding-left: 1.5rem;
+}</code></pre>
+  <p><strong>ARIA/semantics:</strong> Structural grouping only.</p>
   <h3 id="component-fbtable">fbTable</h3>
   <p>Form table shell.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbTable.tsx</code>; Svelte <code>svelte/src/components/fbTable.svelte</code>.</p>
@@ -519,6 +583,18 @@
   <h3 id="component-fbauthcontrols">fbAuthControls</h3>
   <p>Footer authentication controls.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbAuthControls.tsx</code>; Svelte <code>svelte/src/components/fbAuthControls.svelte</code>.</p>
+  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
+  <h3 id="component-fbbadgedraft">fbBadgeDraft</h3>
+  <p>Draft status badge.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbBadgeDraft.tsx</code>; Svelte <code>svelte/src/components/fbBadgeDraft.svelte</code>.</p>
+  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
+  <h3 id="component-fbbadgehighlysensitive">fbBadgeHighlySensitive</h3>
+  <p>Highly-sensitive document badge.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbBadgeHighlySensitive.tsx</code>; Svelte <code>Svelte follow-up required</code>.</p>
+  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
+  <h3 id="component-fbbadgesuperseded">fbBadgeSuperseded</h3>
+  <p>Superseded old-version badge.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbBadgeSuperseded.tsx</code>; Svelte <code>Svelte follow-up required</code>.</p>
   <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
   <h3 id="component-fbbottomcontrolsrow">fbBottomControlsRow</h3>
   <p>Fixed footer content row.</p>

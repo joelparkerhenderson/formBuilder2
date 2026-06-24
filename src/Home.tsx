@@ -39,6 +39,7 @@ export default function Home() {
     { kind: 'route', label: 'Operation note', to: '/operation-note', background: 'linear-gradient(135deg, #008000, #c5e1a5)', state: { patientUuid: DONALD_DUCK_PATIENT_UUID, username } },
     { kind: 'route', label: 'Outpatient outcome', to: '/outpatient-outcome', background: 'linear-gradient(135deg, #d50000, #fd8a10)', state: { patientUuid: DONALD_DUCK_PATIENT_UUID, username } },
     { kind: 'route', label: 'Treatment summary', to: '/treatment-summary', background: 'linear-gradient(135deg, #fd8a10, #fee715)', color: 'black', state: { patientUuid: DONALD_DUCK_PATIENT_UUID, username } },
+    { kind: 'route', label: 'Cardiology test request', to: '/cardiology-test-request', background: 'linear-gradient(135deg, #1b6ec2, #c5e1a5)', state: { patientUuid: DONALD_DUCK_PATIENT_UUID, username } },
   ];
   const systemTiles: HomeTile[] = [
     { kind: 'route', label: 'Patient registry', to: '/patient-registry', background: 'linear-gradient(135deg, #8cd2e7, #c5e1a5)', color: 'black' },
@@ -47,6 +48,8 @@ export default function Home() {
     { kind: 'href', label: 'Case note tracker', href: caseNoteTrackerHref, background: 'linear-gradient(135deg, #d50000, #fd8a10)' },
     { kind: 'href', label: 'Composer', href: composerHref, background: 'linear-gradient(135deg, #fd8a10, #fee715)', color: 'black' },
     { kind: 'href', label: 'Component library', href: componentLibraryHref, background: 'linear-gradient(135deg, #8cd2e7, #fee715)', color: 'black' },
+    { kind: 'href', label: 'Design system specification', href: 'docs/wcp-eForms-designSystem-specification.html', background: 'linear-gradient(135deg, #1b6ec2, #7048e8)' },
+    { kind: 'href', label: 'Form specification examples', href: 'docs/wcp-eForms-designSystem-examples.html', background: 'linear-gradient(135deg, #7048e8, #fee715)', color: 'black' },
   ];
 
   const tileStyle = (background: string, color = 'white'): React.CSSProperties => ({

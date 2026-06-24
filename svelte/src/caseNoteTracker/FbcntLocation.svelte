@@ -112,14 +112,14 @@
       />
       <div class="input-buttons">
         {#if searchTerm}
-          <button type="button" class="icon-button" onmousedown={(event) => event.preventDefault()} onclick={clear}>✕</button>
+          <button type="button" class="icon-button" aria-label="Clear location" onmousedown={(event) => event.preventDefault()} onclick={clear}>&times;</button>
         {/if}
         <button
           type="button"
           class="toggle-button"
           onmousedown={(event) => event.preventDefault()}
           onclick={() => showDropdown ? closeDropdown() : openDropdown()}
-        >{showDropdown ? '▲' : '▼'}</button>
+        >{showDropdown ? '\u25b2' : '\u25bc'}</button>
       </div>
       {#if showDropdown && results.length}
         <div class="dropdown" class:open-above={openAbove} style={`max-height: ${maxHeight}px`}>
@@ -127,6 +127,9 @@
             <div
               class="result"
               class:highlighted={highlightedIndex === index}
+              role="option"
+              aria-selected={highlightedIndex === index}
+              tabindex="-1"
               onmousedown={() => selectLocation(result.location)}
               onmouseenter={() => highlightedIndex = index}
             >

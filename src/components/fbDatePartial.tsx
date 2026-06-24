@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { fbQuestionRequiredMarkerContext } from './fbQuestion';
+import { fbAnimatedSubquestion as FbAnimatedSubquestion } from './fbAnimatedSubquestion';
 
 interface PartialDateProps {
   name: string;
@@ -14,6 +15,7 @@ interface PartialDateProps {
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   onMouseEnter?: (e: React.MouseEvent<HTMLInputElement>) => void;
   onMouseLeave?: (e: React.MouseEvent<HTMLInputElement>) => void;
+  children?: React.ReactNode;
 }
 
 export const fbDatePartial: React.FC<PartialDateProps> = ({
@@ -29,6 +31,7 @@ export const fbDatePartial: React.FC<PartialDateProps> = ({
   onBlur,
   onMouseEnter,
   onMouseLeave,
+  children,
 }) => {
   const questionOwnsRequiredMarkers = React.useContext(fbQuestionRequiredMarkerContext);
   const renderRequiredMarkers = showRequiredMarkers && !questionOwnsRequiredMarkers;
@@ -473,6 +476,7 @@ export const fbDatePartial: React.FC<PartialDateProps> = ({
           value={inputValue}
           onChange={(e) => {
             setInputValue(e.target.value);
+            onChange(e.target.value);
             setError('');
           }}
           onClick={() => {
@@ -644,6 +648,13 @@ export const fbDatePartial: React.FC<PartialDateProps> = ({
             </button>
           </div>
         </div>
+      )}
+      {children && (
+        <FbAnimatedSubquestion open={Boolean((inputValue || value || '').trim())}>
+          <div style={{ paddingLeft: '1.5rem', marginTop: '0.3rem' }}>
+            {children}
+          </div>
+        </FbAnimatedSubquestion>
       )}
     </div>
   );

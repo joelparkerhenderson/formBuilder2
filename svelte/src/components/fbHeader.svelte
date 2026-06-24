@@ -1,14 +1,24 @@
 <script lang="ts">
   import FbAddressograph from './fbAddressograph.svelte';
+  import FbBadgeDraft from './fbBadgeDraft.svelte';
+  import FbBadgeHighlySensitive from './fbBadgeHighlySensitive.svelte';
   import type { Patient } from '../lib/types';
   import { fbBlue } from '../lib/constants';
 
   export let title = '';
   export let patient: Patient | null = null;
+  export let formStatus = '';
+  export let highlySensitive = false;
 </script>
 
 <header class="fb-header" style="border-bottom: 0.2rem solid {fbBlue};">
-  <h1>{title}</h1>
+  <div class="fb-header-title-block">
+    <div class="fb-header-badges">
+      {#if formStatus === 'draft'}<FbBadgeDraft />{/if}
+      {#if highlySensitive}<FbBadgeHighlySensitive />{/if}
+    </div>
+    <h1>{title}</h1>
+  </div>
   <FbAddressograph
     nhsNumber={patient?.nhs_number}
     surname={patient?.surname}
@@ -38,6 +48,20 @@
     margin: 0;
     font-size: 2rem;
     font-weight: 500;
+  }
+
+  .fb-header-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
+
+  .fb-header-badges {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    min-height: 1.4rem;
   }
 
   @media (max-width: 767px) {

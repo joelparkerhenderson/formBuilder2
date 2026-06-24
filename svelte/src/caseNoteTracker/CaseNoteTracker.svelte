@@ -674,7 +674,7 @@
             <button type="button" class="tile green-gradient" on:click={() => navigate('allClinics')}>All clinics</button>
             <button type="button" class="tile blue-green-gradient" on:click={() => navigate('locations')}>Locations</button>
             <button type="button" class="tile orange-gradient" on:click={() => navigate('admin')}>Admin<br><small>For records admins</small></button>
-            <button type="button" class="tile light-green-gradient" on:click={() => window.location.href = '/formBuilder2/docs/cnt-specification.html'}>CNT specification</button>
+            <button type="button" class="tile light-green-gradient" on:click={() => window.location.href = '../docs/cnt-specification.html'}>CNT specification</button>
             <button type="button" class="tile light-orange-gradient" on:click={() => modalMessage = 'Typed and wired scanning remain available for review. Camera scanning depends on browser support.'}>Show offline warning</button>
           </div>
         </fieldset>
