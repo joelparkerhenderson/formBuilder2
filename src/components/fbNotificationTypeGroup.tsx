@@ -15,12 +15,18 @@ export const fbNotificationTypeGroup: React.FC<fbNotificationTypeGroupProps> = (
   name = 'notificationType',
   subfield = false,
 }) => (
-  <FbGroup label="Notification type" subfield={subfield}>
-    <div title="The department will contact the requester using the usual clinical communication route.">
-      <FbRadio name={name} value="routine" checked={value === 'routine'} onChange={() => onChange('routine')} label="Routine notification" />
+  <FbGroup
+    label="Notification type"
+    required
+    subfield={subfield}
+    tooltip="WCP results notifications are in pilot and are not switched on for all consultants"
+  >
+    <div title="For tests that should usually be actioned by ward doctors">
+      <FbRadio name={name} value="inpatient-ed-non-specialist" checked={value === 'inpatient-ed-non-specialist'} onChange={() => onChange('inpatient-ed-non-specialist')} label="Inpatient / ED / non-specialist" />
     </div>
-    <div title="Use only where a prompt clinical response is needed and the request has been discussed with the receiving department.">
-      <FbRadio name={name} value="urgent" checked={value === 'urgent'} onChange={() => onChange('urgent')} label="Urgent notification" />
+    <div title="For tests that should usually be actioned by consultants">
+      <FbRadio name={name} value="outpatient-specialist" checked={value === 'outpatient-specialist'} onChange={() => onChange('outpatient-specialist')} label="Outpatient / specialist" />
     </div>
+    <FbRadio name={`${name}Personal`} value="personal-notification" checked={value === 'personal-notification'} onChange={() => onChange('personal-notification')} label="Personal notification" />
   </FbGroup>
 );

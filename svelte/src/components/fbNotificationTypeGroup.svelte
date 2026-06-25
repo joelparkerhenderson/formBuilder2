@@ -9,11 +9,12 @@
   export let onChange: (value: string) => void = () => {};
 </script>
 
-<FbGroup label="Notification type" {subfield}>
-  <FbToolTip text="The department will contact the requester using the usual clinical communication route." as="div">
-    <FbRadio {name} value="routine" checked={value === 'routine'} label="Routine notification" onChange={() => onChange('routine')} />
+<FbGroup label="Notification type" required {subfield} tooltip="WCP results notifications are in pilot and are not switched on for all consultants">
+  <FbToolTip text="For tests that should usually be actioned by ward doctors" as="div">
+    <FbRadio {name} value="inpatient-ed-non-specialist" checked={value === 'inpatient-ed-non-specialist'} label="Inpatient / ED / non-specialist" onChange={() => onChange('inpatient-ed-non-specialist')} />
   </FbToolTip>
-  <FbToolTip text="Use only where a prompt clinical response is needed and the request has been discussed with the receiving department." as="div">
-    <FbRadio {name} value="urgent" checked={value === 'urgent'} label="Urgent notification" onChange={() => onChange('urgent')} />
+  <FbToolTip text="For tests that should usually be actioned by consultants" as="div">
+    <FbRadio {name} value="outpatient-specialist" checked={value === 'outpatient-specialist'} label="Outpatient / specialist" onChange={() => onChange('outpatient-specialist')} />
   </FbToolTip>
+  <FbRadio name={`${name}Personal`} value="personal-notification" checked={value === 'personal-notification'} label="Personal notification" onChange={() => onChange('personal-notification')} />
 </FbGroup>

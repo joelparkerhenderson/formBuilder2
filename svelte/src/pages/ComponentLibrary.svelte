@@ -2,15 +2,20 @@
   import FbBoxedAlert from '../components/fbBoxedAlert.svelte';
   import FbBoxedInfo from '../components/fbBoxedInfo.svelte';
   import FbBoxedWarning from '../components/fbBoxedWarning.svelte';
+  import FbBadgeDraft from '../components/fbBadgeDraft.svelte';
+  import FbBadgeHighlySensitive from '../components/fbBadgeHighlySensitive.svelte';
   import FbBloodPressure from '../components/fbBloodPressure.svelte';
   import FbButton from '../components/fbButton.svelte';
   import FbCheck from '../components/fbCheck.svelte';
+  import FbDateHeightWeightBMIRow from '../components/fbDateHeightWeightBMIRow.svelte';
   import FbDropdown from '../components/fbDropdown.svelte';
   import FbExactDate from '../components/fbDateExact.svelte';
   import FbGridCell from '../components/fbGridCell.svelte';
   import FbGridRow from '../components/fbGridRow.svelte';
   import FbGroup from '../components/fbGroup.svelte';
+  import FbInverseSubq from '../components/fbInverseSubq.svelte';
   import FbMSISelector from '../components/fbMSISelector.svelte';
+  import FbNotificationTypeGroup from '../components/fbNotificationTypeGroup.svelte';
   import FbNumberInput from '../components/fbNumberInput.svelte';
   import FbPartialDate from '../components/fbDatePartial.svelte';
   import FbQuestion from '../components/fbQuestion.svelte';
@@ -19,6 +24,8 @@
   import FbSCTDiagnosis from '../components/fbSCTDiagnosis.svelte';
   import FbSCTProcedure from '../components/fbSCTProcedure.svelte';
   import FbSection from '../components/fbSection.svelte';
+  import FbSmartDropdown from '../components/fbSmartDropdown.svelte';
+  import FbSubqForOption from '../components/fbSubqForOption.svelte';
   import FbTextArea from '../components/fbTextArea.svelte';
   import FbTextInput from '../components/fbTextInput.svelte';
   import FbTime from '../components/fbTime.svelte';
@@ -44,6 +51,13 @@
   let procedureCoded = false;
   let bloodPressure = { systolic: '128', diastolic: '82' };
   let erroredBloodPressure = { systolic: '220', diastolic: '120' };
+  let bmiDate = '14-Jun-2026';
+  let heightCm = '172';
+  let weightKg = '74';
+  let inverseCheck = false;
+  let notificationType = 'inpatient-ed-non-specialist';
+  let smartDropdown = 'option-one';
+  let subqDropdown = 'other';
 
   function goHome() {
     window.location.href = 'index.html';
@@ -216,6 +230,54 @@
           <FbBoxedInfo text="This is an fbBoxedInfo message for supporting information." />
         </div>
       </FbSection>
+
+      <FbSection id="component-library-new-form-components" title="Form specification components">
+        <FbGridRow cols={3}>
+          <FbGridCell>
+            <FbGroup label="Badges">
+              <div class="badge-row">
+                <FbBadgeDraft />
+                <FbBadgeHighlySensitive />
+              </div>
+            </FbGroup>
+          </FbGridCell>
+          <FbGridCell span={2}>
+            <FbGroup label="fbDateHeightWeightBMIRow">
+              <FbDateHeightWeightBMIRow dateRecorded={bmiDate} heightCm={heightCm} weightKg={weightKg} onDateRecordedChange={(value) => (bmiDate = value)} onHeightCmChange={(value) => (heightCm = value)} onWeightKgChange={(value) => (weightKg = value)} />
+            </FbGroup>
+          </FbGridCell>
+        </FbGridRow>
+        <FbGridRow cols={3}>
+          <FbGridCell>
+            <FbGroup label="fbInverseSubq">
+              <FbCheck name="component-library-inverse-check" checked={inverseCheck} label="Test required on ward" onChange={(value) => (inverseCheck = value)} />
+              <FbInverseSubq open={!inverseCheck}>
+                <FbGroup label="Transport" required subfield>
+                  <FbRadio name="component-library-transport" value="walking" checked={radio === 'walking'} label="Walking" onChange={(value) => (radio = value)} />
+                  <FbRadio name="component-library-transport" value="chair" checked={radio === 'chair'} label="Chair" onChange={(value) => (radio = value)} />
+                </FbGroup>
+              </FbInverseSubq>
+            </FbGroup>
+          </FbGridCell>
+          <FbGridCell>
+            <FbNotificationTypeGroup value={notificationType} onChange={(value) => (notificationType = value)} />
+          </FbGridCell>
+          <FbGridCell>
+            <FbSmartDropdown label="fbSmartDropdown" value={smartDropdown} onChange={(value) => (smartDropdown = value)} options={dropdownOptions} />
+          </FbGridCell>
+        </FbGridRow>
+        <FbGridRow cols={3}>
+          <FbGridCell>
+            <FbDropdown label="fbSubqForOption" value={subqDropdown} onChange={(value) => (subqDropdown = value)} options={[{ value: '', label: '' }, { value: 'standard', label: 'Standard' }, { value: 'other', label: 'Other' }]}>
+              <FbSubqForOption optionValue="other" selectedValue={subqDropdown}>
+                <FbTextInput label="Other details" bind:value={text} required />
+              </FbSubqForOption>
+            </FbDropdown>
+          </FbGridCell>
+          <FbGridCell><div aria-hidden="true"></div></FbGridCell>
+          <FbGridCell><div aria-hidden="true"></div></FbGridCell>
+        </FbGridRow>
+      </FbSection>
     {:else}
       <FbSection id="component-library-rov-questions" title="Question components">
         <FbGridRow cols={3}>
@@ -336,5 +398,11 @@
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
   }
 </style>

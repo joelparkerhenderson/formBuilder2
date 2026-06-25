@@ -19,6 +19,7 @@ interface fbSCTSelectorProps {
   coded?: boolean;
   valueError?: string;
   labelStyle?: React.CSSProperties;
+  subfield?: boolean;
   searchCommand: SCTSearchCommand;
   mode: SCTSelectorMode;
   inputClassName?: string;
@@ -37,6 +38,7 @@ export const fbSCTSelector: React.FC<fbSCTSelectorProps> = ({
   coded,
   valueError,
   labelStyle,
+  subfield = false,
   searchCommand,
   mode,
   inputClassName = '',
@@ -648,7 +650,7 @@ export const fbSCTSelector: React.FC<fbSCTSelectorProps> = ({
 
   if (label) {
     return (
-      <FbQuestion label={label} required={required} requiredForAudit={requiredForAudit} valueError={valueError} labelStyle={labelStyle}>
+      <FbQuestion label={label} required={required} requiredForAudit={requiredForAudit} valueError={valueError} labelStyle={{ ...(subfield ? { fontWeight: 300, fontSize: '1rem' } : {}), ...labelStyle }}>
         {renderContent()}
       </FbQuestion>
     );

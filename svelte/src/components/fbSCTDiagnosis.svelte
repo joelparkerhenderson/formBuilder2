@@ -10,8 +10,9 @@
   export let coded: boolean | undefined = undefined;
   export let valueError = '';
   export let tooltip = '';
+  export let subfield = false;
   export let onChange: (value: string, coded: boolean) => void = () => {};
   export let change: (value: string, coded: boolean) => void = () => {};
 </script>
 
-<FbSCTProcedure searchCommand="findDisorder" {id} {name} {label} {value} {required} {requiredForAudit} {coded} {valueError} {tooltip} {onChange} {change} on:change />
+<FbSCTProcedure searchCommand="findDisorder" {id} {name} {label} {value} {required} {requiredForAudit} {coded} {valueError} {tooltip} {subfield} {onChange} {change} on:change />

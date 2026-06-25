@@ -10,6 +10,7 @@
   export let requiredForAudit = false;
   export let valueError = '';
   export let tooltip = '';
+  export let subfield = false;
   export let onChange: (value: { systolic: string; diastolic: string }) => void = () => {};
 
   $: controlName = name || id || 'blood-pressure';
@@ -25,7 +26,7 @@
   }
 </script>
 
-<FbQuestion {label} {required} {requiredForAudit} {valueError} {tooltip}>
+<FbQuestion {label} {required} {requiredForAudit} {valueError} {tooltip} {subfield}>
   <div class="fb-blood-pressure-control">
     <input
       class="fb-blood-pressure-input"

@@ -14,6 +14,7 @@ interface SCTDiagnosisProps {
   coded?: boolean;
   valueError?: string;
   labelStyle?: React.CSSProperties;
+  subfield?: boolean;
 }
 
 export const fbSCTDiagnosis: React.FC<SCTDiagnosisProps> = ({
@@ -29,6 +30,7 @@ export const fbSCTDiagnosis: React.FC<SCTDiagnosisProps> = ({
   coded,
   valueError,
   labelStyle,
+  subfield,
 }) => (
   <FbSCTSelector
     label={label}
@@ -43,6 +45,7 @@ export const fbSCTDiagnosis: React.FC<SCTDiagnosisProps> = ({
     coded={coded}
     valueError={valueError}
     labelStyle={labelStyle}
+    subfield={subfield}
     searchCommand="findDisorder"
     mode="diagnosis"
   />

@@ -26,7 +26,7 @@ type HomeTile = HomeRouteTile | HomeHrefTile;
 export default function Home() {
   const [username, setUsername] = React.useState<string>('demoUser');
   const underFormBuilder2 = window.location.pathname.startsWith('/formBuilder2/');
-  const componentLibraryHref = underFormBuilder2 ? '/formBuilder2/components.html' : '/components.html';
+  const componentLibraryHref = 'components.html';
   const composerHref = underFormBuilder2 ? '/formBuilder2/composer.html' : '/composer.html';
   const caseNoteTrackerHref = underFormBuilder2 ? '/formBuilder2/caseNoteTracker.html?forceLogin=1' : '/caseNoteTracker.html?forceLogin=1';
 

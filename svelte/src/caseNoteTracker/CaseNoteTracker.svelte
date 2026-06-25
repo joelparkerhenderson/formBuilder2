@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { slide } from 'svelte/transition';
   import FbAddressograph from '../components/fbAddressograph.svelte';
   import FbBoxedInfo from '../components/fbBoxedInfo.svelte';
   import FbButton from '../components/fbButton.svelte';
@@ -81,6 +82,7 @@
   let showRescheduledAppointments = false;
   let showCancelledAppointments = false;
   let modalMessage = '';
+  let cntTreeCollapsed: Record<string, boolean> = {};
 
   onMount(() => {
     const params = new URLSearchParams(window.location.search);
@@ -146,6 +148,15 @@
   }
 
   function back() {
+    if (view === 'login') {
+      if (onBack) onBack();
+      else window.location.href = '../index.html';
+      return;
+    }
+    if (view === 'home') {
+      logout();
+      return;
+    }
     if (onBack && inline && stack.length === 0) {
       onBack();
       return;
@@ -190,6 +201,14 @@
 
   function selectValue(event: Event) {
     return (event.currentTarget as HTMLSelectElement).value;
+  }
+
+  function toggleCntTree(key: string) {
+    cntTreeCollapsed = { ...cntTreeCollapsed, [key]: !cntTreeCollapsed[key] };
+  }
+
+  function cntTreeOpen(key: string) {
+    return !cntTreeCollapsed[key];
   }
 
   function setFilterValue(useLocationFilter: boolean, field: 'healthBoard' | 'locality' | 'facility', value: string) {
@@ -589,7 +608,9 @@
         </div>
       </div>
     </main>
-    <footer class="cnt-footer"></footer>
+    <footer class="login-footer">
+      <FbButton variant="blue" onClick={back}>Back</FbButton>
+    </footer>
   </section>
 {:else}
   <section class="cnt-page">
@@ -838,6 +859,7 @@
   .cnt-home-header div { font-size: 1rem; font-weight: 300; }
   .cnt-main { overflow: auto; padding: 0.8rem; }
   .cnt-footer { display: flex; justify-content: space-between; gap: 0.4rem; min-height: 2.4rem; padding: 0.2rem 0.4rem; border-top: 0.2rem solid #1b6ec2; background: white; }
+  .login-footer { display: flex; justify-content: flex-end; gap: 0.4rem; min-height: 2.4rem; padding: 0.2rem 0.4rem; background: white; }
   .footer-left, .footer-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
   .login-panel { max-width: 70rem; margin: 0 auto; }
   .login-grid, .tile-grid, .scan-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.8rem; margin-top: 0.8rem; }
@@ -866,6 +888,10 @@
   .right { text-align: right; }
   .tree-level, .tree-leaf, .volume-row { border-radius: 0.2rem; padding: 0.08rem 0.2rem; margin-top: 0.08rem; }
   .tree-level > strong { display: block; border-radius: 0.2rem; padding: 0.08rem 0.2rem; }
+  .tree-heading { display: flex; align-items: center; gap: 0.2rem; width: 100%; border: 0; border-radius: 0.2rem; background: transparent; color: #111; font: inherit; text-align: left; cursor: pointer; }
+  .tree-heading:hover, .tree-heading:focus-visible { background: #ffffcc; outline: none; }
+  .tree-heading.level-1:hover, .tree-heading.level-1:focus-visible { background: #fee715; }
+  .tree-icon { width: 1rem; color: #1b6ec2; font-size: 1.1rem; line-height: 1; }
   .level-0 > strong:hover, .level-2 > strong:hover { background: #ffffcc; }
   .level-1 > strong:hover, .tree-leaf:hover, .volume-row:hover, .volume-row:focus-within, .volume-row.selected { background: #fee715; }
   .level-1, .level-2, .tree-leaf { margin-left: 1rem; }
@@ -917,17 +943,37 @@
   {/if}
 {/snippet}
 
+{#snippet TreeHeading(key: string, label: string, level = 0)}
+  <button
+    type="button"
+    class={`tree-heading level-${level}`}
+    style={`padding-left: ${level * 1}rem`}
+    on:click={() => toggleCntTree(key)}
+    aria-expanded={cntTreeOpen(key)}
+  >
+    <span class="material-icons tree-icon" aria-hidden="true">{cntTreeOpen(key) ? 'expand_more' : 'chevron_right'}</span>
+    <strong>{label}</strong>
+  </button>
+{/snippet}
+
 {#snippet VolumeTree(volumes: CntVolume[], interactive = false)}
   {#if !volumes.length}
     <span class="empty">No volumes selected</span>
   {:else}
     {#each volumeGroups(volumes) as group}
+      {@const healthBoardKey = `volume-tree:hb:${group.healthBoard}`}
+      {@const localityKey = `volume-tree:loc:${group.healthBoard}:${group.locality}`}
+      {@const typeKey = `volume-tree:type:${group.healthBoard}:${group.locality}:${group.type}`}
       <div class="tree-level level-0">
-        <strong>{group.healthBoard}</strong>
-        <div class="tree-level level-1">
-          <strong>{group.locality}</strong>
-          <div class="tree-level level-2">
-            <strong>{group.type}</strong>
+        {@render TreeHeading(healthBoardKey, group.healthBoard, 0)}
+        {#if cntTreeOpen(healthBoardKey)}
+        <div class="tree-level level-1" transition:slide={{ duration: 500 }}>
+          {@render TreeHeading(localityKey, group.locality, 1)}
+          {#if cntTreeOpen(localityKey)}
+          <div class="tree-level level-2" transition:slide={{ duration: 500 }}>
+            {@render TreeHeading(typeKey, group.type, 2)}
+            {#if cntTreeOpen(typeKey)}
+            <div transition:slide={{ duration: 500 }}>
             {#each group.volumes as volume}
               {#if interactive}
                 <div class="volume-row" class:selected={selectedVolumeUuid === volume.uuid}>
@@ -941,8 +987,12 @@
                 <div class="tree-leaf">{volumeLabel(volume)}</div>
               {/if}
             {/each}
+            </div>
+            {/if}
           </div>
+          {/if}
         </div>
+        {/if}
       </div>
     {/each}
   {/if}
@@ -954,9 +1004,19 @@
     <span class="empty">No volumes selected</span>
   {:else}
     {#each volumeGroups(volumes) as group}
-      <div class="tree-level level-0"><strong>{group.healthBoard}</strong>
-        <div class="tree-level level-1"><strong>{group.locality}</strong>
-          <div class="tree-level level-2"><strong>{group.type}</strong>
+      {@const healthBoardKey = `selected-tree:hb:${group.healthBoard}`}
+      {@const localityKey = `selected-tree:loc:${group.healthBoard}:${group.locality}`}
+      {@const typeKey = `selected-tree:type:${group.healthBoard}:${group.locality}:${group.type}`}
+      <div class="tree-level level-0">
+        {@render TreeHeading(healthBoardKey, group.healthBoard, 0)}
+        {#if cntTreeOpen(healthBoardKey)}
+        <div class="tree-level level-1" transition:slide={{ duration: 500 }}>
+          {@render TreeHeading(localityKey, group.locality, 1)}
+          {#if cntTreeOpen(localityKey)}
+          <div class="tree-level level-2" transition:slide={{ duration: 500 }}>
+            {@render TreeHeading(typeKey, group.type, 2)}
+            {#if cntTreeOpen(typeKey)}
+            <div transition:slide={{ duration: 500 }}>
             {#each group.volumes as volume}
               <div class="tree-leaf">
                 <div>{volumeLabel(volume)}</div>
@@ -966,8 +1026,12 @@
                 </div>
               </div>
             {/each}
+            </div>
+            {/if}
           </div>
+          {/if}
         </div>
+        {/if}
       </div>
     {/each}
   {/if}

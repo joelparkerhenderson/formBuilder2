@@ -4,7 +4,7 @@
   .fb-draft-badge {
     display: inline-block;
     padding: 0.2rem 0.4rem;
-    background: var(--fb-orange);
+    background: var(--fb-red);
     color: white;
     font-size: 1rem;
     font-weight: 700;

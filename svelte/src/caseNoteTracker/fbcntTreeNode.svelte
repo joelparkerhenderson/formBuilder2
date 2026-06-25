@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from 'svelte/transition';
   import HighlightBlock from './fbcntHighlightBlock.svelte';
 
   export let label = '';
@@ -21,16 +22,17 @@
     type="button"
     class="tree-toggle"
     style={`padding-left: ${level * 1.6}rem`}
-    onclick={toggle}
+    on:click={toggle}
     aria-disabled={!isCollapsed && preventCollapse}
+    aria-expanded={!isCollapsed}
   >
-    <span aria-hidden="true">{isCollapsed ? '▶' : '▼'}</span>
+    <span class="material-icons tree-icon" aria-hidden="true">{isCollapsed ? 'chevron_right' : 'expand_more'}</span>
     <strong>{label}</strong>
   </button>
 </HighlightBlock>
 
 {#if !isCollapsed}
-  <div><slot /></div>
+  <div transition:slide={{ duration: 500 }}><slot /></div>
 {/if}
 
 <style>
@@ -44,8 +46,12 @@
     cursor: pointer;
   }
 
-  .tree-toggle span {
+  .tree-icon {
     display: inline-block;
     width: 1rem;
+    color: #1b6ec2;
+    font-size: 1.1rem;
+    line-height: 1;
+    vertical-align: middle;
   }
 </style>

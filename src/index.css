@@ -64,6 +64,10 @@ html,
   background-color: #fee715;
 }
 
+.fb-subquestion-wrapper .fb-inverse-subq {
+  margin-left: -1.5rem;
+}
+
 .fbcnt-highlight-level {
   transition: background-color 0.5s ease-out;
 }

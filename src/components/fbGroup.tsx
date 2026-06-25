@@ -16,6 +16,7 @@ interface fbGroupProps {
   requiredForAudit?: boolean;
   showRequiredMarkers?: boolean;
   subfield?: boolean;
+  tooltip?: string;
 }
 
 export const fbGroup: React.FC<fbGroupProps> = ({
@@ -30,6 +31,7 @@ export const fbGroup: React.FC<fbGroupProps> = ({
   requiredForAudit = false,
   showRequiredMarkers = true,
   subfield = false,
+  tooltip,
 }) => {
   const renderLabel = () => {
     if (!label || !showRequiredMarkers || (!required && !requiredForAudit) || typeof label !== 'string') return label;
@@ -57,6 +59,8 @@ export const fbGroup: React.FC<fbGroupProps> = ({
   return (
     <div
       className={`fb-question-container fb-radio-checkbox-group-container ${className}`}
+      title={tooltip}
+      aria-label={typeof label === 'string' ? label : undefined}
       style={{
         display: 'flex',
         flexDirection: 'column',

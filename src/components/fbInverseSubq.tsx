@@ -9,7 +9,7 @@ interface fbInverseSubqProps {
 
 export const fbInverseSubq: React.FC<fbInverseSubqProps> = ({ open, children, style }) => (
   <FbAnimatedSubquestion open={open}>
-    <div className="fb-subquestion" style={{ paddingLeft: 0, ...style }}>
+    <div className="fb-subquestion fb-inverse-subq" style={{ paddingLeft: 0, ...style }}>
       {children}
     </div>
   </FbAnimatedSubquestion>

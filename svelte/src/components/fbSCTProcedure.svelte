@@ -12,6 +12,7 @@
   export let coded: boolean | undefined = undefined;
   export let valueError = '';
   export let tooltip = '';
+  export let subfield = false;
   export let searchCommand: 'findProcedure' | 'findDisorder' = 'findProcedure';
   export let onChange: (value: string, coded: boolean) => void = () => {};
   export let change: (value: string, coded: boolean) => void = () => {};
@@ -162,7 +163,7 @@
 </script>
 
 {#if label}
-  <FbQuestion {label} {required} {requiredForAudit} {valueError} {tooltip}>
+  <FbQuestion {label} {required} {requiredForAudit} {valueError} {tooltip} {subfield}>
     <div class="fb-selector" bind:this={selectorElement}>
       <div class="fb-selector-input-wrap">
         <input
@@ -262,7 +263,7 @@
     </div>
   </FbQuestion>
 {:else}
-  <FbQuestion label="" {required} {requiredForAudit}>
+  <FbQuestion label="" {required} {requiredForAudit} {subfield}>
   <div class="fb-selector" bind:this={selectorElement}>
     <div class="fb-selector-input-wrap">
       <input

@@ -1359,6 +1359,7 @@
 {#snippet editableLabel(component: ComposerComponent)}
   {#if component.label}
     <div
+      class:plain-override={!!component.plainOverride}
       class="preview-label"
       contenteditable={!isReadOnlyPreview}
       suppressContentEditableWarning
@@ -1366,6 +1367,7 @@
       tabindex="0"
       onblur={(event) => updateComponent(component.id, { label: event.currentTarget.textContent?.trim() || component.label })}
       onclick={(event) => handlePreviewSelect(event, component.id)}
+      onkeydowncapture={(event) => { if (event.key === ' ') event.stopPropagation(); }}
       onkeydown={(event) => { if (event.key === 'Escape') (event.currentTarget as HTMLElement).blur(); }}
     >{component.label}{@render requiredMark(component)}</div>
   {/if}
@@ -1374,6 +1376,7 @@
 {#snippet tableTemplateLabel(template: ComposerComponent, tableId: string, columnIndex: number, rowIndex: number)}
   {#if template.label}
     <div
+      class:plain-override={!!template.plainOverride}
       class="preview-label"
       contenteditable={!isReadOnlyPreview}
       role="textbox"
@@ -1381,6 +1384,7 @@
       onblur={(event) => updateTableCellTemplate(tableId, columnIndex, { label: event.currentTarget.textContent?.trim() || template.label })}
       onclick={(event) => { event.stopPropagation(); selectTableCell(tableId, rowIndex, columnIndex); }}
       onfocus={() => { if (!isReadOnlyPreview) selectTableCell(tableId, rowIndex, columnIndex); }}
+      onkeydowncapture={(event) => { if (event.key === ' ') event.stopPropagation(); }}
       onkeydown={(event) => { if (event.key === 'Escape') (event.currentTarget as HTMLElement).blur(); }}
     >{template.label}{@render requiredMark(template)}</div>
   {/if}
@@ -1402,6 +1406,7 @@
         value={previewValues[previewId] ?? template.defaultValue ?? ''}
         fullWidth={template.fullWidth}
         readonly={isReadOnlyPreview}
+        subfield={!!template.plainOverride}
         onChange={(value) => setPreviewValue(previewId, value)}
       />
     {:else if template.type === 'fbDropdown'}
@@ -1420,7 +1425,7 @@
         units={template.type === 'fbNumberInputWithUnits' ? template.units || 'units' : ''}
         placeholder={template.placeholder || ''}
         readonly={isReadOnlyPreview}
-        subfield
+        subfield={!!template.plainOverride}
         onChange={(value) => setPreviewValue(previewId, value)}
         unitEditable={template.type === 'fbNumberInputWithUnits' && !isReadOnlyPreview}
         onUnitClick={(event) => event.stopPropagation()}
@@ -1459,7 +1464,7 @@
         name={template.key || previewId}
         placeholder={template.placeholder || ''}
         value={previewValues[previewId] ?? template.defaultValue ?? ''}
-        subfield
+        subfield={!!template.plainOverride}
         readonly={isReadOnlyPreview}
         required={false}
         onChange={(value) => setPreviewValue(previewId, value)}
@@ -1605,6 +1610,7 @@
         <h2
           contenteditable={!isReadOnlyPreview}
           suppressContentEditableWarning
+          onkeydowncapture={(event) => { if (event.key === ' ') event.stopPropagation(); }}
           onblur={(event) => updateComponent(component.id, { label: event.currentTarget.textContent?.trim() || component.label })}
         >{component.label || 'Section'}</h2>
         {@render renderChildren(component)}
@@ -1673,6 +1679,7 @@
                     <span
                       contenteditable={!isReadOnlyPreview}
                       suppressContentEditableWarning
+                      onkeydowncapture={(event) => { if (event.key === ' ') event.stopPropagation(); }}
                       onblur={(event) => updateTableColumnLabel(component.id, index, event.currentTarget.textContent || column.label)}
                     >{column.label}</span>
                   </div>
@@ -1815,6 +1822,7 @@
         value={previewValues[component.id] ?? component.defaultValue ?? ''}
         fullWidth={component.fullWidth}
         readonly={isReadOnlyPreview}
+        subfield={!!component.plainOverride}
         onChange={(value) => setPreviewValue(component.id, value)}
       />
     {:else if component.type === 'fbTextInput'}
@@ -1826,7 +1834,7 @@
         value={previewValues[component.id] ?? component.defaultValue ?? ''}
         required={false}
         readonly={isReadOnlyPreview}
-        subfield
+        subfield={!!component.plainOverride}
         onChange={(value) => setPreviewValue(component.id, value)}
       />
     {:else if component.type === 'fbDropdown'}
@@ -1845,6 +1853,7 @@
         placeholder={component.placeholder || 'Type here to search'}
         fullWidth={component.fullWidth}
         noWidthConstraint={component.noWidthConstraint}
+        subfield={!!component.plainOverride}
         onChange={(value) => setPreviewValue(component.id, value)}
       />
       {@render renderChildren(component)}
@@ -1859,9 +1868,9 @@
       />
     {:else if component.type === 'fbNotificationTypeGroup'}
       <FbNotificationTypeGroup
-        value={previewValues[component.id] ?? component.defaultValue ?? 'routine'}
+        value={previewValues[component.id] ?? component.defaultValue ?? 'inpatient-ed-non-specialist'}
         onChange={(value) => setPreviewValue(component.id, value)}
-        subfield
+        subfield={!!component.plainOverride}
       />
     {:else if component.type === 'fbNumberInput' || component.type === 'fbNumberInputWithUnits'}
       {@render editableLabel(component)}
@@ -1871,9 +1880,9 @@
         value={previewValues[component.id] ?? component.defaultValue ?? ''}
         units={component.type === 'fbNumberInputWithUnits' ? component.units || 'units' : ''}
         placeholder={component.placeholder || ''}
-        required={component.required}
+        required={false}
         readonly={isReadOnlyPreview}
-        subfield
+        subfield={!!component.plainOverride}
         onChange={(value) => setPreviewValue(component.id, value)}
         unitEditable={component.type === 'fbNumberInputWithUnits' && !isReadOnlyPreview}
         onUnitClick={(event) => {
@@ -2908,6 +2917,10 @@
     margin-bottom: 0.2rem;
     font-weight: 500;
     outline: none;
+  }
+
+  .preview-label.plain-override {
+    font-weight: 300;
   }
 
   .required {

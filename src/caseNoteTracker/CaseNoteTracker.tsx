@@ -493,6 +493,15 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
   };
 
   const goBack = () => {
+    if (!user) {
+      window.location.href = returnTo || '/formBuilder2/index.html';
+      return;
+    }
+    if (view === 'home') {
+      setView('home');
+      handleLogout();
+      return;
+    }
     scrollPositions.current[view] = mainRef.current?.scrollTop || 0;
     if (readCntNavigationStack().length > 0) {
       window.history.back();
@@ -1457,6 +1466,9 @@ export default function CaseNoteTracker({ inline = false, initialPatientUuid = '
             </div>
           </div>
         </main>
+        <footer style={styles.loginFooter}>
+          <FbButton variant="primary" onClick={goBack}>Back</FbButton>
+        </footer>
       </Shell>
     );
   }
@@ -2506,6 +2518,15 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: '0.6rem',
+    boxSizing: 'border-box',
+  } as React.CSSProperties,
+  loginFooter: {
+    minHeight: '2.8rem',
+    padding: '0.4rem 0.8rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: '0.6rem',
     boxSizing: 'border-box',
   } as React.CSSProperties,

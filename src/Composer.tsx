@@ -1987,16 +1987,16 @@ export default function Composer() {
       );
     }
     if (component.type === 'fbTextInput') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTextInput id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} showRequiredMarkers={!hasLabel} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTextInput id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} showRequiredMarkers={!hasLabel} value={value} placeholder={component.placeholder || ''} subfield={!!component.plainOverride} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbTime') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTime id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTime id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || ''} subfield={!!component.plainOverride} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbTextArea') {
-      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTextArea id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || ''} fullWidth={!!component.fullWidth} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{renderEditableLabel(component)}<FbTextArea id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || ''} fullWidth={!!component.fullWidth} subfield={!!component.plainOverride} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     }
-    if (component.type === 'fbDropdown') return <div className="fb-question-container">{renderEditableLabel(component)}<FbDropdown id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} options={component.options || []} {...controlTooltipProps(component)} /></div>;
-    if (component.type === 'fbNumberInput') return <div className="fb-question-container">{renderEditableLabel(component)}<FbNumberInput id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || ''} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
+    if (component.type === 'fbDropdown') return <div className="fb-question-container">{renderEditableLabel(component)}<FbDropdown id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} options={component.options || []} subfield={!!component.plainOverride} {...controlTooltipProps(component)} /></div>;
+    if (component.type === 'fbNumberInput') return <div className="fb-question-container">{renderEditableLabel(component)}<FbNumberInput id={component.id} name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || ''} subfield={!!component.plainOverride} onChange={(nextValue) => setPreviewValue(component.id, nextValue)} {...controlTooltipProps(component)} /></div>;
     if (component.type === 'fbNumberInputWithUnits') {
       return (
         <div className="fb-question-container">
@@ -2010,6 +2010,7 @@ export default function Composer() {
             onChange={(nextValue) => setPreviewValue(component.id, nextValue)}
             units={component.units || 'units'}
             placeholder={component.placeholder || ''}
+            subfield={!!component.plainOverride}
             unitLabelProps={{
               className: 'fb-composer-editable-units',
               contentEditable: !publicId && !readOnlyPreview,
@@ -2038,6 +2039,7 @@ export default function Composer() {
             requiredForAudit={!hasLabel && component.requiredForAudit}
             systolic={bpValue.systolic || ''}
             diastolic={bpValue.diastolic || ''}
+            subfield={!!component.plainOverride}
             onChange={(nextValue) => setPreviewValue(component.id, nextValue)}
           />
         </div>
@@ -2149,13 +2151,13 @@ export default function Composer() {
       );
     }
     if (component.type === 'fbMSISelector') {
-      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbMSISelector name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} hasLabel={hasLabel} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbMSISelector name={component.id} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} hasLabel={hasLabel} subfield={!!component.plainOverride} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbSCTDiagnosis') {
-      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbSCTDiagnosis name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbSCTDiagnosis name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} subfield={!!component.plainOverride} {...controlTooltipProps(component)} /></div>;
     }
     if (component.type === 'fbSCTProcedure') {
-      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbSCTProcedure name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} {...controlTooltipProps(component)} /></div>;
+      return <div className="fb-question-container">{component.valueError && <FbValueError message={component.valueError} />}{renderEditableLabel(component)}<FbSCTProcedure name={component.id} value={value} placeholder={component.placeholder || undefined} onChange={(nextValue, coded) => setPreviewValueWithCoding(component.id, nextValue, coded)} coded={previewCoded[component.id]} required={inputRequired} requiredForAudit={!hasLabel && component.requiredForAudit} subfield={!!component.plainOverride} {...controlTooltipProps(component)} /></div>;
     }
     return (
       <div className="fb-question-container">

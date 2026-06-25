@@ -8,6 +8,7 @@ interface fbSearchInputProps {
   placeholder?: string;
   id?: string;
   autoFocus?: boolean;
+  subfield?: boolean;
 }
 
 export const fbSearchInput: React.FC<fbSearchInputProps> = ({
@@ -17,6 +18,7 @@ export const fbSearchInput: React.FC<fbSearchInputProps> = ({
   placeholder = '',
   id,
   autoFocus = false,
+  subfield = false,
 }) => {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -93,6 +95,7 @@ export const fbSearchInput: React.FC<fbSearchInputProps> = ({
       label={label}
       required={false}
       style={{ width: '100%' }}
+      labelStyle={subfield ? { fontWeight: 300, fontSize: '1rem' } : undefined}
     >
       {renderInput()}
     </FbQuestion>

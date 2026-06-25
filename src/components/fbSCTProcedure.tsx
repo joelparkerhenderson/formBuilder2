@@ -14,6 +14,7 @@ interface fbSCTProcedureProps {
   coded?: boolean;
   valueError?: string;
   labelStyle?: React.CSSProperties;
+  subfield?: boolean;
 }
 
 export const fbSCTProcedure: React.FC<fbSCTProcedureProps> = ({
@@ -29,6 +30,7 @@ export const fbSCTProcedure: React.FC<fbSCTProcedureProps> = ({
   coded,
   valueError,
   labelStyle,
+  subfield,
 }) => (
   <FbSCTSelector
     label={label}
@@ -43,6 +45,7 @@ export const fbSCTProcedure: React.FC<fbSCTProcedureProps> = ({
     coded={coded}
     valueError={valueError}
     labelStyle={labelStyle}
+    subfield={subfield}
     searchCommand="findProcedure"
     mode="procedure"
     inputClassName="fb-sct-procedure-selector-input"

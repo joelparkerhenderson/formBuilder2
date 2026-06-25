@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { slide } from 'svelte/transition';
   import FbToolTip from './fbToolTip.svelte';
   export let name = '';
   export let value = '';
@@ -31,7 +32,7 @@
     <span class="choice-label">{label}{#if requiredForAudit}<span class="fb-required-for-audit">RfA</span>{/if}{#if required}<span class="required">*</span>{/if}</span>
   </FbToolTip>
   {#if checked}
-    <div class="fb-subquestion-wrapper"><slot /></div>
+    <div class="fb-subquestion-wrapper" transition:slide={{ duration: 500 }}><slot /></div>
   {/if}
 </div>
 

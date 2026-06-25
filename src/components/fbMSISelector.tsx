@@ -17,6 +17,7 @@ interface MSISelectorProps {
   hasLabel?: boolean;
   valueError?: string;
   labelStyle?: React.CSSProperties;
+  subfield?: boolean;
 }
 
 export const fbMSISelector: React.FC<MSISelectorProps> = ({ 
@@ -32,7 +33,8 @@ export const fbMSISelector: React.FC<MSISelectorProps> = ({
   placeholder = "Type to search staff index",
   hasLabel = true,
   valueError,
-  labelStyle
+  labelStyle,
+  subfield = false
 }) => {
   const questionOwnsRequiredMarkers = React.useContext(fbQuestionRequiredMarkerContext);
   const renderRequiredMarkers = !questionOwnsRequiredMarkers;
@@ -384,7 +386,7 @@ export const fbMSISelector: React.FC<MSISelectorProps> = ({
 
   if (label) {
     return (
-      <FbQuestion label={label} required={required} requiredForAudit={requiredForAudit} valueError={valueError} labelStyle={labelStyle}>
+      <FbQuestion label={label} required={required} requiredForAudit={requiredForAudit} valueError={valueError} labelStyle={{ ...(subfield ? { fontWeight: 300, fontSize: '1rem' } : {}), ...labelStyle }}>
         {renderContent()}
       </FbQuestion>
     );

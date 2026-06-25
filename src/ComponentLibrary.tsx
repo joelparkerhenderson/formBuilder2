@@ -2,14 +2,20 @@ import * as React from 'react';
 import { useNavigate } from 'react-router';
 import { fbBloodPressure as FbBloodPressure } from './components/fbBloodPressure';
 import { fbBoxedAlert as FbBoxedAlert, fbBoxedInfo as FbBoxedInfo, fbBoxedWarning as FbBoxedWarning } from './components/fbBoxedMessage';
+import { fbBadgeDraft as FbBadgeDraft } from './components/fbBadgeDraft';
+import { fbBadgeHighlySensitive as FbBadgeHighlySensitive } from './components/fbBadgeHighlySensitive';
+import { fbBadgeSuperseded as FbBadgeSuperseded } from './components/fbBadgeSuperseded';
 import { fbButton as FbButton } from './components/fbButton';
 import { fbCheck as FbCheck } from './components/fbCheck';
+import { fbDateHeightWeightBMIRow as FbDateHeightWeightBMIRow } from './components/fbDateHeightWeightBMIRow';
 import { fbDropdown as FbDropdown } from './components/fbDropdown';
 import { fbDateExact as FbExactDate } from './components/fbDateExact';
 import { fbGridCell as FbGridCell } from './components/fbGridCell';
 import { fbGridRow as FbGridRow } from './components/fbGridRow';
 import { fbGroup as FbGroup } from './components/fbGroup';
+import { fbInverseSubq as FbInverseSubq } from './components/fbInverseSubq';
 import { fbMSISelector as FbMSISelector } from './components/fbMSISelector';
+import { fbNotificationTypeGroup as FbNotificationTypeGroup } from './components/fbNotificationTypeGroup';
 import { fbNumberInput as FbNumberInput } from './components/fbNumberInput';
 import { fbDatePartial as FbPartialDate } from './components/fbDatePartial';
 import { fbQuestion as FbQuestion } from './components/fbQuestion';
@@ -18,6 +24,8 @@ import { fbRoVField as FbRoVField } from './components/fbRoVField';
 import { fbSCTDiagnosis as FbSCTDiagnosis } from './components/fbSCTDiagnosis';
 import { fbSCTProcedure as FbSCTProcedure } from './components/fbSCTProcedure';
 import { fbSection as FbSection } from './components/fbSection';
+import { fbSmartDropdown as FbSmartDropdown } from './components/fbSmartDropdown';
+import { fbSubqForOption as FbSubqForOption } from './components/fbSubqForOption';
 import { fbTextArea as FbTextArea } from './components/fbTextArea';
 import { fbTextInput as FbTextInput } from './components/fbTextInput';
 import { fbTime as FbTime } from './components/fbTime';
@@ -47,6 +55,13 @@ export default function ComponentLibrary() {
   const [procedureCoded, setProcedureCoded] = React.useState<boolean>(false);
   const [bloodPressure, setBloodPressure] = React.useState({ systolic: '128', diastolic: '82' });
   const [erroredBloodPressure, setErroredBloodPressure] = React.useState({ systolic: '220', diastolic: '120' });
+  const [bmiDate, setBmiDate] = React.useState('14-Jun-2026');
+  const [heightCm, setHeightCm] = React.useState('172');
+  const [weightKg, setWeightKg] = React.useState('74');
+  const [inverseCheck, setInverseCheck] = React.useState(false);
+  const [notificationType, setNotificationType] = React.useState('inpatient-ed-non-specialist');
+  const [smartDropdown, setSmartDropdown] = React.useState('option-one');
+  const [subqDropdown, setSubqDropdown] = React.useState('other');
 
   React.useEffect(() => {
     sessionStorage.setItem('fb_prev_main_page', '/components.html');
@@ -274,6 +289,55 @@ export default function ComponentLibrary() {
           <FbBoxedAlert text="This is an fbBoxedAlert message for high-priority alerts." />
           <FbBoxedInfo text="This is an fbBoxedInfo message for supporting information." />
         </div>
+      </FbSection>
+
+      <FbSection id="component-library-new-form-components" title="Form specification components">
+        <FbGridRow cols={3}>
+          <FbGridCell>
+            <FbGroup label="Badges">
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <FbBadgeDraft />
+                <FbBadgeHighlySensitive />
+                <FbBadgeSuperseded />
+              </div>
+            </FbGroup>
+          </FbGridCell>
+          <FbGridCell span={2}>
+            <FbGroup label="fbDateHeightWeightBMIRow">
+              <FbDateHeightWeightBMIRow dateRecorded={bmiDate} heightCm={heightCm} weightKg={weightKg} onDateRecordedChange={setBmiDate} onHeightCmChange={setHeightCm} onWeightKgChange={setWeightKg} />
+            </FbGroup>
+          </FbGridCell>
+        </FbGridRow>
+        <FbGridRow cols={3}>
+          <FbGridCell>
+            <FbGroup label="fbInverseSubq">
+              <FbCheck name="component-library-inverse-check" checked={inverseCheck} onChange={(event) => setInverseCheck(event.target.checked)} label="Test required on ward" />
+              <FbInverseSubq open={!inverseCheck}>
+                <FbGroup label="Transport" required subfield>
+                  <FbRadio name="component-library-transport" value="walking" checked={radio === 'walking'} onChange={() => setRadio('walking')} label="Walking" />
+                  <FbRadio name="component-library-transport" value="chair" checked={radio === 'chair'} onChange={() => setRadio('chair')} label="Chair" />
+                </FbGroup>
+              </FbInverseSubq>
+            </FbGroup>
+          </FbGridCell>
+          <FbGridCell>
+            <FbNotificationTypeGroup value={notificationType} onChange={setNotificationType} />
+          </FbGridCell>
+          <FbGridCell>
+            <FbSmartDropdown label="fbSmartDropdown" value={smartDropdown} onChange={setSmartDropdown} options={dropdownOptions} />
+          </FbGridCell>
+        </FbGridRow>
+        <FbGridRow cols={3}>
+          <FbGridCell>
+            <FbDropdown label="fbSubqForOption" value={subqDropdown} onChange={setSubqDropdown} options={[{ value: '', label: '' }, { value: 'standard', label: 'Standard' }, { value: 'other', label: 'Other' }]}>
+              <FbSubqForOption optionValue="other">
+                <FbTextInput label="Other details" value={text} onChange={setText} required subfield />
+              </FbSubqForOption>
+            </FbDropdown>
+          </FbGridCell>
+          <EmptyCell />
+          <EmptyCell />
+        </FbGridRow>
       </FbSection>
     </>
   );

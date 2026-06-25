@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import FbAuthAndSensitivity from '../components/fbAuthAndSensitivity.svelte';
   import FbBottomControlsRow from '../components/fbBottomControlsRow.svelte';
+  import FbBloodPressure from '../components/fbBloodPressure.svelte';
   import FbBoxedWarning from '../components/fbBoxedWarning.svelte';
   import FbButton from '../components/fbButton.svelte';
   import FbCheck from '../components/fbCheck.svelte';
@@ -15,6 +16,7 @@
   import FbInverseSubq from '../components/fbInverseSubq.svelte';
   import FbLayout from '../components/fbLayout.svelte';
   import FbMSISelector from '../components/fbMSISelector.svelte';
+  import FbNumberInput from '../components/fbNumberInput.svelte';
   import FbModalCancel from '../components/fbModalCancel.svelte';
   import FbModalDraft from '../components/fbModalDraft.svelte';
   import FbModalSaveError from '../components/fbModalSaveError.svelte';
@@ -24,11 +26,13 @@
   import FbQuestion from '../components/fbQuestion.svelte';
   import FbRadio from '../components/fbRadio.svelte';
   import FbRoVField from '../components/fbRoVField.svelte';
+  import FbSCTDiagnosis from '../components/fbSCTDiagnosis.svelte';
   import FbSaveCancelButtons from '../components/fbSaveCancelButtons.svelte';
   import FbSection from '../components/fbSection.svelte';
   import FbSmartDropdown from '../components/fbSmartDropdown.svelte';
   import FbTextArea from '../components/fbTextArea.svelte';
   import FbTextInput from '../components/fbTextInput.svelte';
+  import FbTime from '../components/fbTime.svelte';
   import { facilities, facilitiesForHealthBoard, healthBoards, patientLocations, specialityValuesForFacility } from '../lib/clinicalDestinations';
   import { getForm, getFormHistory, getFormVersion, getLatestVersion, getPatient, insertForm, insertFormsIndex } from '../lib/api';
   import { generateUUID } from '../lib/dateFormat';
@@ -69,12 +73,26 @@
   const organisationLabels = Object.fromEntries(healthBoards.map((item) => [item.value, item.label]));
   const hospitalLabels = Object.fromEntries(facilities.map((item) => [item.value, item.label]));
   const specialityLabels = Object.fromEntries(specialities.map((item) => [item.value, item.label]));
-  const implantCentreOptions = facilities.filter((facility) => ['ysbyty-abermawr', 'llanawel-general', 'tref-afon-hospital'].includes(facility.value));
-  const manufacturerOptions = ['Abbott', 'Biotronik', 'Boston Scientific', 'Medtronic', 'MicroPort', 'Other'];
+  const implantCentreOptions = [
+    'AB - Cardiac device clinic Neville Hall',
+    'AB - Cardiac device clinic Royal Gwent',
+    'BCU - Cardiac device clinic Ysbyty Glan Clwyd',
+    'BCU - Cardiac device clinic Ysbyty Gwynedd',
+    'BCU - Cardiac device clinic Ysbyty Wrexham Maelor',
+    'CAV - Cardiac device clinic University Hospital of Wales',
+    'CTM - Cardiac device clinic Prince Charles',
+    'CTM - Cardiac device clinic Royal Glamorgan',
+    'HDD - Cardiac device clinic Bronglais',
+    'HDD - Cardiac device clinic Glangwili',
+    'SB - Cardiac device clinic Morriston',
+    'Other',
+    'Unknown or not recorded',
+  ];
+  const manufacturerOptions = ['Abbott', 'Biotronik', 'Boston Scientific', 'Medtronic', 'Microport', 'Sorin', 'St. Jude Medical', 'Vitatron', 'Other', 'Unknown or not recorded'];
 
   const sectionsConfig: SectionSpec[] = [
     { id: 'to', name: 'To', requiredFields: ['organisation', 'hospital'] },
-    { id: 'from', name: 'From', requiredFields: ['fromOrganisation', 'fromSpeciality', 'fromHospital'] },
+    { id: 'from', name: 'From', requiredFields: ['fromOrganisation', 'fromSpeciality', 'fromHospital', 'seniorResponsibleClinician'] },
     { id: 'requestType', name: 'Request type', requiredFields: ['requestType', 'capacity'] },
     { id: 'testsRequired', name: 'Tests required', getIncompleteCount: (state) => selectedTests(state).length ? 0 : 1 },
     { id: 'pastMedicalHistory', name: 'Past medical history', requiredFields: ['cardiacDevice', 'previousCardiacSurgery'] },
@@ -95,7 +113,15 @@
     appointmentType: '',
     capacity: 'unknown',
     deferTests: 'no',
-    notificationType: 'routine',
+    notificationType: 'inpatient-ed-non-specialist',
+    patientCategory: 'nhs',
+    implantCentre: 'Unknown or not recorded',
+    manufacturer: 'Unknown or not recorded',
+    ettStopMedication: 'No',
+    ettGtnContraindications: 'Unknown or not recorded',
+    tiltSwallowingReflex: 'Unknown or not recorded',
+    tiltCarotidSinusMassage: 'Unknown or not recorded',
+    tiltGtnContraindications: 'Unknown or not recorded',
     cardiacDevice: 'unknown',
     previousCardiacSurgery: 'unknown',
     preferredLanguage: 'english',
@@ -259,15 +285,142 @@
   </FbGroup>
 {/snippet}
 
-{#snippet cardiologyIndications(prefix: string)}
-  <FbGroup label="Indications" subfield>
-    <FbCheck name={`${prefix}Symptoms`} checked={!!formState[`${prefix}Symptoms`]} label="Symptoms" onChange={(checked) => setField(`${prefix}Symptoms`, checked)} />
-    <FbCheck name={`${prefix}Surveillance`} checked={!!formState[`${prefix}Surveillance`]} label="Surveillance" onChange={(checked) => setField(`${prefix}Surveillance`, checked)} />
-    <FbCheck name={`${prefix}Medication review`} checked={!!formState[`${prefix}Medication review`]} label="Medication review" onChange={(checked) => setField(`${prefix}Medication review`, checked)} />
-    <FbCheck name={`${prefix}Other`} checked={!!formState[`${prefix}Other`]} label="Other" onChange={(checked) => setField(`${prefix}Other`, checked)}>
-      <FbTextArea label="Clinical question to be answered and relevant clinical information" value={formState[`${prefix}OtherDetails`] || ''} onChange={(value) => setField(`${prefix}OtherDetails`, value)} required subfield />
-    </FbCheck>
+{#snippet frequencyGroup(field: string, required = true)}
+  <FbGroup label="Frequency of symptoms" {required} subfield>
+    {@render radio(field, 'Daily', 'Daily')}
+    {@render radio(field, 'Weekly', 'Weekly')}
+    {@render radio(field, 'Monthly', 'Monthly')}
   </FbGroup>
+{/snippet}
+
+{#snippet dateTimeGroup(prefix: string)}
+  <FbGroup label="Date and time of last episode (if known)" subfield>
+    <FbGridRow cols={4}>
+      <FbGridCell><FbDateExact name={`${prefix}Date`} value={formState[`${prefix}Date`] || ''} onChange={(value) => setField(`${prefix}Date`, value)} /></FbGridCell>
+      <FbGridCell><FbTime name={`${prefix}Time`} value={formState[`${prefix}Time`] || ''} onChange={(value) => setField(`${prefix}Time`, value)} /></FbGridCell>
+      <FbGridCell><div aria-hidden="true"></div></FbGridCell>
+      <FbGridCell><div aria-hidden="true"></div></FbGridCell>
+    </FbGridRow>
+  </FbGroup>
+{/snippet}
+
+{#snippet abpmIndications()}
+  <FbGroup label="Indication" required subfield>
+    <FbCheck name="abpmBpControl" checked={!!formState.abpmBpControl} label="Blood pressure (BP) control" onChange={(checked) => setField('abpmBpControl', checked)}>
+      <FbGroup subfield>
+        <FbCheck name="abpmBpLying" checked={!!formState.abpmBpLying} label="Lying" onChange={(checked) => setField('abpmBpLying', checked)}><FbBloodPressure systolic={formState.abpmLyingBpSystolic || ''} diastolic={formState.abpmLyingBpDiastolic || ''} onChange={(value) => { setField('abpmLyingBpSystolic', value.systolic); setField('abpmLyingBpDiastolic', value.diastolic); }} /></FbCheck>
+        <FbCheck name="abpmBpSitting" checked={!!formState.abpmBpSitting} label="Sitting" onChange={(checked) => setField('abpmBpSitting', checked)}><FbBloodPressure systolic={formState.abpmSittingBpSystolic || ''} diastolic={formState.abpmSittingBpDiastolic || ''} onChange={(value) => { setField('abpmSittingBpSystolic', value.systolic); setField('abpmSittingBpDiastolic', value.diastolic); }} /></FbCheck>
+        <FbCheck name="abpmBpStanding" checked={!!formState.abpmBpStanding} label="Standing" onChange={(checked) => setField('abpmBpStanding', checked)}><FbBloodPressure systolic={formState.abpmStandingBpSystolic || ''} diastolic={formState.abpmStandingBpDiastolic || ''} onChange={(value) => { setField('abpmStandingBpSystolic', value.systolic); setField('abpmStandingBpDiastolic', value.diastolic); }} /></FbCheck>
+      </FbGroup>
+    </FbCheck>
+    <FbCheck name="abpmHypertension" checked={!!formState.abpmHypertension} label="Hypertension" onChange={(checked) => setField('abpmHypertension', checked)}><FbBoxedWarning text="Patients with excessive palpitations and hypertension may find this test uncomfortable or intolerable" /></FbCheck>
+    <FbCheck name="abpmHypotension" checked={!!formState.abpmHypotension} label="Hypotension" onChange={(checked) => setField('abpmHypotension', checked)} />
+    <FbCheck name="abpmOther" checked={!!formState.abpmOther} label="Other" onChange={(checked) => setField('abpmOther', checked)}><FbTextArea label="Clinical question to be answered and relevant clinical information" value={formState.abpmOtherDetails || ''} onChange={(value) => setField('abpmOtherDetails', value)} required subfield /></FbCheck>
+  </FbGroup>
+{/snippet}
+
+{#snippet aecgIndications()}
+  <FbGroup label="Indication" required subfield>
+    <FbCheck name="aecgQtc" checked={!!formState.aecgQtc} label="Assessment of QTc" onChange={(checked) => setField('aecgQtc', checked)} />
+    <FbCheck name="aecgAfRate" checked={!!formState.aecgAfRate} label="Atrial fibrillation (AF) rate" onChange={(checked) => setField('aecgAfRate', checked)}><FbGroup subfield>{@render radio('aecgAfRatePurpose', 'Burden', 'Burden')}{@render radio('aecgAfRatePurpose', 'Control', 'Control')}</FbGroup></FbCheck>
+    <FbCheck name="aecgBradyarrhythmia" checked={!!formState.aecgBradyarrhythmia} label="Bradyarrhythmia" onChange={(checked) => setField('aecgBradyarrhythmia', checked)} />
+    <FbCheck name="aecgEctopicBurden" checked={!!formState.aecgEctopicBurden} label="Ectopic burden" onChange={(checked) => setField('aecgEctopicBurden', checked)} />
+    <FbCheck name="aecgIrregularRhythm" checked={!!formState.aecgIrregularRhythm} label="Irregular rhythm" onChange={(checked) => setField('aecgIrregularRhythm', checked)}>{@render frequencyGroup('aecgIrregularRhythmFrequency', false)}</FbCheck>
+    <FbCheck name="aecgPalpitations" checked={!!formState.aecgPalpitations} label="Palpitations" onChange={(checked) => setField('aecgPalpitations', checked)}>{@render frequencyGroup('aecgPalpitationsFrequency')}</FbCheck>
+    <FbCheck name="aecgPreSyncope" checked={!!formState.aecgPreSyncope} label="Pre-syncope" onChange={(checked) => setField('aecgPreSyncope', checked)}>{@render frequencyGroup('aecgPreSyncopeFrequency')}</FbCheck>
+    <FbCheck name="aecgStAnalysis" checked={!!formState.aecgStAnalysis} label="ST analysis" onChange={(checked) => setField('aecgStAnalysis', checked)} />
+    <FbCheck name="aecgSyncope" checked={!!formState.aecgSyncope} label="Syncope" onChange={(checked) => setField('aecgSyncope', checked)}>{@render frequencyGroup('aecgSyncopeFrequency')}</FbCheck>
+    <FbCheck name="aecgTachyarrhythmia" checked={!!formState.aecgTachyarrhythmia} label="Tachyarrhythmia" onChange={(checked) => setField('aecgTachyarrhythmia', checked)} />
+    <FbCheck name="aecgClinicianRequestedMonitor" checked={!!formState.aecgClinicianRequestedMonitor} label="Clinician requested monitor (Cardiology use only)" onChange={(checked) => setField('aecgClinicianRequestedMonitor', checked)}>
+      <FbGroup subfield>
+        {@render radio('aecgMonitorDuration', '24-hour', '24-hour')}
+        <FbRadio name="aecgMonitorDuration" value="Prolonged heart rhythm monitor" checked={formState.aecgMonitorDuration === 'Prolonged heart rhythm monitor'} label="Prolonged heart rhythm monitor" onChange={() => setField('aecgMonitorDuration', 'Prolonged heart rhythm monitor')}><FbGroup subfield>{@render radio('aecgProlongedMonitorDuration', 'Weekly', 'Weekly')}{@render radio('aecgProlongedMonitorDuration', 'Fortnightly', 'Fortnightly')}{@render radio('aecgProlongedMonitorDuration', 'Monthly', 'Monthly')}</FbGroup></FbRadio>
+      </FbGroup>
+    </FbCheck>
+    <FbCheck name="aecgOther" checked={!!formState.aecgOther} label="Other" onChange={(checked) => setField('aecgOther', checked)}><FbTextArea label="Clinical question to be answered and relevant clinical information" value={formState.aecgOtherDetails || ''} onChange={(value) => setField('aecgOtherDetails', value)} required subfield /></FbCheck>
+  </FbGroup>
+{/snippet}
+
+{#snippet ettIndications()}
+  <FbGroup label="Exercise type protocol" required subfield>
+    {@render radio('ettProtocol', 'Ergometer', 'Ergometer')}
+    <FbRadio name="ettProtocol" value="Treadmill" checked={formState.ettProtocol === 'Treadmill'} label="Treadmill" onChange={() => setField('ettProtocol', 'Treadmill')}><FbGroup subfield>{@render radio('ettTreadmillProtocol', 'Bruce protocol', 'Bruce protocol')}{@render radio('ettTreadmillProtocol', 'Modified Bruce', 'Modified Bruce')}{@render radio('ettTreadmillProtocol', 'Modified Naughton', 'Modified Naughton')}{@render radio('ettTreadmillProtocol', 'Naughton', 'Naughton')}{@render radio('ettTreadmillProtocol', 'Weber', 'Weber')}</FbGroup></FbRadio>
+  </FbGroup>
+  <FbGroup label="Reason for test" required subfield>
+    <FbCheck name="ettBpResponse" checked={!!formState.ettBpResponse} label="Blood pressure (BP) response" onChange={(checked) => setField('ettBpResponse', checked)} />
+    <FbCheck name="ettChestDiscomfort" checked={!!formState.ettChestDiscomfort} label="Chest discomfort on exertion" onChange={(checked) => setField('ettChestDiscomfort', checked)} />
+    <FbCheck name="ettChronotropicIncompetence" checked={!!formState.ettChronotropicIncompetence} label="Chronotropic incompetence" onChange={(checked) => setField('ettChronotropicIncompetence', checked)} />
+    <FbCheck name="ettInducibleIschaemia" checked={!!formState.ettInducibleIschaemia} label="Evaluation of inducible ischaemia" onChange={(checked) => setField('ettInducibleIschaemia', checked)} />
+    <FbCheck name="ettExerciseInducedArrhythmia" checked={!!formState.ettExerciseInducedArrhythmia} label="Exercised induced arrhythmia" onChange={(checked) => setField('ettExerciseInducedArrhythmia', checked)}><FbGroup subfield><FbCheck name="ettAtrial" checked={!!formState.ettAtrial} label="Atrial" onChange={(checked) => setField('ettAtrial', checked)} /><FbCheck name="ettEctopy" checked={!!formState.ettEctopy} label="Ectopy" onChange={(checked) => setField('ettEctopy', checked)} /><FbCheck name="ettVentricular" checked={!!formState.ettVentricular} label="Ventricular" onChange={(checked) => setField('ettVentricular', checked)} /></FbGroup></FbCheck>
+    <FbCheck name="ettExerciseCapacity" checked={!!formState.ettExerciseCapacity} label="Exercise capacity" onChange={(checked) => setField('ettExerciseCapacity', checked)} />
+    <FbCheck name="ettInheritedCardiacConditions" checked={!!formState.ettInheritedCardiacConditions} label="Inherited cardiac conditions" onChange={(checked) => setField('ettInheritedCardiacConditions', checked)}><FbGroup subfield><FbCheck name="ettBrugada" checked={!!formState.ettBrugada} label="Brugada" onChange={(checked) => setField('ettBrugada', checked)} /><FbCheck name="ettCpvt" checked={!!formState.ettCpvt} label="Catecholaminergic polymorphic condition (CPVT)" onChange={(checked) => setField('ettCpvt', checked)} /><FbCheck name="ettHcm" checked={!!formState.ettHcm} label="Hypertrophic cardiomyopathy (HCM)" onChange={(checked) => setField('ettHcm', checked)} /><FbCheck name="ettLongQt" checked={!!formState.ettLongQt} label="Long QT syndrome" onChange={(checked) => setField('ettLongQt', checked)} /></FbGroup></FbCheck>
+    <FbCheck name="ettOther" checked={!!formState.ettOther} label="Other" onChange={(checked) => setField('ettOther', checked)}><FbTextArea label="Clinical question to be answered and relevant clinical information" value={formState.ettOtherDetails || ''} onChange={(value) => setField('ettOtherDetails', value)} required subfield /></FbCheck>
+  </FbGroup>
+  <FbGroup label="Does the patient need to stop any medication?" required subfield>
+    <FbRadio name="ettStopMedication" value="Yes" checked={formState.ettStopMedication === 'Yes'} label="Yes" onChange={() => setField('ettStopMedication', 'Yes')}><FbTextArea label="What medication?" value={formState.ettMedicationToStop || ''} onChange={(value) => setField('ettMedicationToStop', value)} subfield /><FbGroup label="How long should it be stopped for?" subfield>{@render radio('ettMedicationStopDuration', '24 hours', '24 hours')}{@render radio('ettMedicationStopDuration', '48 hours', '48 hours')}<FbRadio name="ettMedicationStopDuration" value="Other" checked={formState.ettMedicationStopDuration === 'Other'} label="Other" onChange={() => setField('ettMedicationStopDuration', 'Other')}><FbTextInput value={formState.ettMedicationStopDurationOther || ''} onChange={(value) => setField('ettMedicationStopDurationOther', value)} subfield /></FbRadio></FbGroup></FbRadio>
+    {@render radio('ettStopMedication', 'No', 'No')}
+  </FbGroup>
+  <FbGroup label="Does the patient have any of the contraindications for using glyceryl trinitrate (GTN) spray?" subfield>{@render radio('ettGtnContraindications', 'Yes', 'Yes')}{@render radio('ettGtnContraindications', 'No', 'No')}{@render radio('ettGtnContraindications', 'Unknown or not recorded', 'Unknown or not recorded')}</FbGroup>
+{/snippet}
+
+{#snippet ilrIndications()}
+  <FbGroup label="Reason for test" required subfield>
+    <FbCheck name="ilrClinicalSymptoms" checked={!!formState.ilrClinicalSymptoms} label="Clinical symptoms" onChange={(checked) => setField('ilrClinicalSymptoms', checked)}><FbTextArea value={formState.ilrClinicalSymptomsDetails || ''} onChange={(value) => setField('ilrClinicalSymptomsDetails', value)} subfield /></FbCheck>
+    <FbCheck name="ilrPalpitations" checked={!!formState.ilrPalpitations} label="Palpitations" onChange={(checked) => setField('ilrPalpitations', checked)}>{@render dateTimeGroup('ilrPalpitationsLastEpisode')}</FbCheck>
+    <FbCheck name="ilrPreMri" checked={!!formState.ilrPreMri} label="Pre-MRI" onChange={(checked) => setField('ilrPreMri', checked)} />
+    <FbCheck name="ilrPreSyncope" checked={!!formState.ilrPreSyncope} label="Pre-syncope" onChange={(checked) => setField('ilrPreSyncope', checked)}>{@render dateTimeGroup('ilrPreSyncopeLastEpisode')}</FbCheck>
+    <FbCheck name="ilrSyncope" checked={!!formState.ilrSyncope} label="Syncope" onChange={(checked) => setField('ilrSyncope', checked)}>{@render dateTimeGroup('ilrSyncopeLastEpisode')}</FbCheck>
+  </FbGroup>
+{/snippet}
+
+{#snippet ciedIndications()}
+  <FbGroup label="Reason for test" required subfield>
+    <FbCheck name="ciedAfBurden" checked={!!formState.ciedAfBurden} label="Atrial fibrillation (AF) burden" onChange={(checked) => setField('ciedAfBurden', checked)} />
+    <FbCheck name="ciedPacemakerMalfunction" checked={!!formState.ciedPacemakerMalfunction} label="Evidence of pacemaker malfunction (ECG recording)" onChange={(checked) => setField('ciedPacemakerMalfunction', checked)}><FbTextArea value={formState.ciedPacemakerMalfunctionDetails || ''} onChange={(value) => setField('ciedPacemakerMalfunctionDetails', value)} subfield /></FbCheck>
+    <FbCheck name="ciedPalpitations" checked={!!formState.ciedPalpitations} label="Palpitations" onChange={(checked) => setField('ciedPalpitations', checked)}>{@render dateTimeGroup('ciedPalpitationsLastEpisode')}</FbCheck>
+    <FbCheck name="ciedIcdDeactivation" checked={!!formState.ciedIcdDeactivation} label="Patient end of life ICD deactivation" onChange={(checked) => setField('ciedIcdDeactivation', checked)}><FbBoxedWarning text="You MUST print and complete the departmental policy deactivation form, receive approval from a cardiologist and discuss directly with the department to arrange." /></FbCheck>
+    <FbCheck name="ciedPostChemotherapy" checked={!!formState.ciedPostChemotherapy} label="Post chemotherapy" onChange={(checked) => setField('ciedPostChemotherapy', checked)}><FbTextArea label="Enter details of who can be contacted for further information when this request is processed" value={formState.ciedPostChemotherapyContact || ''} onChange={(value) => setField('ciedPostChemotherapyContact', value)} subfield /></FbCheck>
+    <FbCheck name="ciedPrePostMri" checked={!!formState.ciedPrePostMri} label="Pre or post MRI" onChange={(checked) => setField('ciedPrePostMri', checked)}><FbTextArea label="Enter details of who can be contacted for further information when this request is processed" value={formState.ciedPrePostMriContact || ''} onChange={(value) => setField('ciedPrePostMriContact', value)} subfield /></FbCheck>
+    <FbCheck name="ciedPrePostSurgery" checked={!!formState.ciedPrePostSurgery} label="Pre or post surgery" onChange={(checked) => setField('ciedPrePostSurgery', checked)}><FbTextArea label="Enter details of who can be contacted for further information when this request is processed" value={formState.ciedPrePostSurgeryContact || ''} onChange={(value) => setField('ciedPrePostSurgeryContact', value)} subfield /></FbCheck>
+    <FbCheck name="ciedPrePostRadiotherapy" checked={!!formState.ciedPrePostRadiotherapy} label="Pre or post radiotherapy" onChange={(checked) => setField('ciedPrePostRadiotherapy', checked)}><FbTextArea label="Enter details of who can be contacted for further information when this request is processed" value={formState.ciedPrePostRadiotherapyContact || ''} onChange={(value) => setField('ciedPrePostRadiotherapyContact', value)} subfield /></FbCheck>
+    <FbCheck name="ciedPreSyncope" checked={!!formState.ciedPreSyncope} label="Pre-syncope" onChange={(checked) => setField('ciedPreSyncope', checked)}>{@render dateTimeGroup('ciedPreSyncopeLastEpisode')}<FbBoxedWarning text="Not appropriate if there has been a pacemaker check within six months" /></FbCheck>
+    <FbCheck name="ciedShockTherapyDelivered" checked={!!formState.ciedShockTherapyDelivered} label="Shock therapy delivered" onChange={(checked) => setField('ciedShockTherapyDelivered', checked)}><FbGroup label="Date and time" subfield><FbGridRow cols={4}><FbGridCell><FbDateExact name="ciedShockDate" value={formState.ciedShockDate || ''} onChange={(value) => setField('ciedShockDate', value)} /></FbGridCell><FbGridCell><FbTime name="ciedShockTime" value={formState.ciedShockTime || ''} onChange={(value) => setField('ciedShockTime', value)} /></FbGridCell><FbGridCell><div aria-hidden="true"></div></FbGridCell><FbGridCell><div aria-hidden="true"></div></FbGridCell></FbGridRow></FbGroup></FbCheck>
+    <FbCheck name="ciedSymptomReview" checked={!!formState.ciedSymptomReview} label="Symptom review" onChange={(checked) => setField('ciedSymptomReview', checked)} />
+    <FbCheck name="ciedSyncope" checked={!!formState.ciedSyncope} label="Syncope" onChange={(checked) => setField('ciedSyncope', checked)}>{@render dateTimeGroup('ciedSyncopeLastEpisode')}</FbCheck>
+    <FbCheck name="ciedBiventricularPacing" checked={!!formState.ciedBiventricularPacing} label="% of biventricular pacing" onChange={(checked) => setField('ciedBiventricularPacing', checked)} />
+    <FbCheck name="ciedOther" checked={!!formState.ciedOther} label="Other" onChange={(checked) => setField('ciedOther', checked)}><FbTextArea label="Clinical question to be answered and relevant clinical information" value={formState.ciedOtherDetails || ''} onChange={(value) => setField('ciedOtherDetails', value)} subfield /></FbCheck>
+  </FbGroup>
+{/snippet}
+
+{#snippet tiltIndications()}
+  <FbGroup label="Reason for test" required subfield>
+    <FbCheck name="tiltPots" checked={!!formState.tiltPots} label="Postural orthostatic tachycardia syndrome (PoTS)" onChange={(checked) => setField('tiltPots', checked)} />
+    <FbCheck name="tiltSyncope" checked={!!formState.tiltSyncope} label="Syncope" onChange={(checked) => setField('tiltSyncope', checked)} />
+    <FbCheck name="tiltBpResponse" checked={!!formState.tiltBpResponse} label="Blood pressure (BP) response" onChange={(checked) => setField('tiltBpResponse', checked)} />
+    <FbCheck name="tiltOther" checked={!!formState.tiltOther} label="Other" onChange={(checked) => setField('tiltOther', checked)}><FbTextArea label="Clinical question to be answered and relevant clinical information" value={formState.tiltOtherDetails || ''} onChange={(value) => setField('tiltOtherDetails', value)} required subfield /></FbCheck>
+  </FbGroup>
+  <FbCheck name="tiltCanStand45Minutes" checked={!!formState.tiltCanStand45Minutes} label="The patient can stand for 45 minutes" onChange={(checked) => setField('tiltCanStand45Minutes', checked)} />
+  <FbGroup label="Is swallowing reflex required?" subfield>{@render radio('tiltSwallowingReflex', 'Yes', 'Yes')}{@render radio('tiltSwallowingReflex', 'No', 'No')}{@render radio('tiltSwallowingReflex', 'Unknown or not recorded', 'Unknown or not recorded')}</FbGroup>
+  <FbGroup label="Is carotid sinus massage required?" subfield>{@render radio('tiltCarotidSinusMassage', 'Yes', 'Yes')}{@render radio('tiltCarotidSinusMassage', 'No', 'No')}{@render radio('tiltCarotidSinusMassage', 'Unknown or not recorded', 'Unknown or not recorded')}</FbGroup>
+  <FbGroup label="Are there any contraindications to GTN spray?" subfield>{@render radio('tiltGtnContraindications', 'Yes', 'Yes')}{@render radio('tiltGtnContraindications', 'No', 'No')}{@render radio('tiltGtnContraindications', 'Unknown or not recorded', 'Unknown or not recorded')}</FbGroup>
+{/snippet}
+
+{#snippet tteIndications()}
+  <FbGroup subfield>{@render radio('tteStudyKind', 'New study', 'New study')}{@render radio('tteStudyKind', 'Re-assessment', 'Re-assessment')}</FbGroup>
+  <FbGroup subfield>
+    {@render radio('tteStudyScope', 'Full study', 'Full study')}
+    <FbRadio name="tteStudyScope" value="Focussed study" checked={formState.tteStudyScope === 'Focussed study'} label="Focussed study" onChange={() => setField('tteStudyScope', 'Focussed study')}>
+      <FbGroup subfield>
+        <FbCheck name="tteLeftVentricle" checked={!!formState.tteLeftVentricle} label="Left ventricle" onChange={(checked) => setField('tteLeftVentricle', checked)}><FbCheck name="tteLeftVentricleDesynchrony" checked={!!formState.tteLeftVentricleDesynchrony} label="Desynchrony" onChange={(checked) => setField('tteLeftVentricleDesynchrony', checked)} /></FbCheck>
+        <FbCheck name="tteRightVentricle" checked={!!formState.tteRightVentricle} label="Right ventricle" onChange={(checked) => setField('tteRightVentricle', checked)} />
+        <FbCheck name="tteValveDisease" checked={!!formState.tteValveDisease} label="Valve disease" onChange={(checked) => setField('tteValveDisease', checked)} />
+        <FbCheck name="ttePulmonaryArteryPressure" checked={!!formState.ttePulmonaryArteryPressure} label="Pulmonary artery pressure" onChange={(checked) => setField('ttePulmonaryArteryPressure', checked)} />
+        <FbCheck name="ttePericardium" checked={!!formState.ttePericardium} label="Pericardium" onChange={(checked) => setField('ttePericardium', checked)} />
+        <FbCheck name="tteStructuralHeartDisease" checked={!!formState.tteStructuralHeartDisease} label="Structural heart disease" onChange={(checked) => setField('tteStructuralHeartDisease', checked)} />
+      </FbGroup>
+    </FbRadio>
+  </FbGroup>
+  <FbTextArea label="Clinical question to be answered and relevant clinical information" value={formState.tteClinicalQuestion || ''} onChange={(value) => setField('tteClinicalQuestion', value)} required subfield />
 {/snippet}
 
 {#if loadingData}
@@ -359,14 +512,14 @@
         <FbGridCell><FbDropdown label="Health board" value={formState.fromOrganisation || ''} onChange={(value) => { setField('fromOrganisation', value); setField('fromHospital', ''); }} options={healthBoards} required /></FbGridCell>
         <FbGridCell><FbDropdown label="Hospital" value={formState.fromHospital || ''} onChange={(value) => setField('fromHospital', value)} options={facilitiesForHealthBoard(formState.fromOrganisation || '')} placeholder="Select" required /></FbGridCell>
         <FbGridCell><FbDropdown label="Speciality" value={formState.fromSpeciality || ''} onChange={(value) => setField('fromSpeciality', value)} options={filteredSpecialities} placeholder="Select" required /></FbGridCell>
-        <FbGridCell><FbTextInput label="Senior responsible clinician" value={formState.seniorResponsibleClinician || ''} onChange={(value) => setField('seniorResponsibleClinician', value)} /></FbGridCell>
+        <FbGridCell><FbMSISelector label="Senior responsible clinician" name="seniorResponsibleClinician" value={formState.seniorResponsibleClinician || ''} coded={!!formState.seniorResponsibleClinicianCoded} onChange={(value, coded) => { setField('seniorResponsibleClinician', value); setField('seniorResponsibleClinicianCoded', coded); }} required /></FbGridCell>
       </FbGridRow>
     </FbSection>
     <FbSection id="requestType" title="Request type">
       <FbGroup label="Request type" required>
         <FbRadio name="requestType" value="inpatient-ed" checked={formState.requestType === 'inpatient-ed'} label="Inpatient / ED" onChange={() => setField('requestType', 'inpatient-ed')}>
           <FbSmartDropdown label="Patient location" value={formState.patientLocation || ''} onChange={(value) => setField('patientLocation', value)} options={patientLocations} required subfield />
-          <FbCheck name="uscPathway" checked={!!formState.uscPathway} label="USC pathway" onChange={(checked) => setField('uscPathway', checked)} />
+          <FbCheck name="uscPathway" checked={!!formState.uscPathway} label="USC pathway" onChange={(checked) => setField('uscPathway', checked)}><FbDropdown label="Cancer pathway" value={formState.inpatientCancerPathway || ''} onChange={(value) => setField('inpatientCancerPathway', value)} options={['', 'Suspected cancer', 'Confirmed cancer', 'Cancer follow-up']} subfield /></FbCheck>
           <FbCheck name="wardTest" checked={!!formState.wardTest} label="Test(s) required on ward" onChange={(checked) => setField('wardTest', checked)} />
           <FbInverseSubq open={!formState.wardTest}>
             <FbGroup label="Transport" required subfield>
@@ -387,7 +540,7 @@
             <FbRadio name="urgency" value="urgent" checked={formState.urgency === 'urgent'} label="Urgent" onChange={() => setField('urgency', 'urgent')}>
               <FbTextArea label="Why is this request urgent?" value={formState.urgentReason || ''} onChange={(value) => setField('urgentReason', value)} required subfield />
             </FbRadio>
-            {@render radio('urgency', 'usc', 'USC')}
+            <FbRadio name="urgency" value="usc" checked={formState.urgency === 'usc'} label="USC" onChange={() => setField('urgency', 'usc')}><FbDropdown label="Cancer pathway" value={formState.outpatientCancerPathway || ''} onChange={(value) => setField('outpatientCancerPathway', value)} options={['', 'Suspected cancer', 'Confirmed cancer', 'Cancer follow-up']} subfield /></FbRadio>
           </FbGroup>
           <FbGroup label="Appointment type" required subfield>
             {@render radio('appointmentType', 'walk-around', 'Walk around')}{@render radio('appointmentType', 'send-out-appointment', 'Send out appointment')}
@@ -397,7 +550,7 @@
         </FbRadio>
       </FbGroup>
       <FbGridRow cols={4}>
-        <FbGridCell><FbGroup label="Patient category" required>{@render radio('patientCategory', 'nhs', 'NHS')}{@render radio('patientCategory', 'clinical-trial', 'Clinical trial')}</FbGroup></FbGridCell>
+        <FbGridCell><FbGroup label="Patient category" required>{@render radio('patientCategory', 'nhs', 'NHS')}{@render radio('patientCategory', 'fee-paying-nhs', 'Fee-paying NHS (cat II)')}{@render radio('patientCategory', 'private', 'Private (cat III)')}<FbRadio name="patientCategory" value="clinical-trial" checked={formState.patientCategory === 'clinical-trial'} label="Clinical trial" onChange={() => setField('patientCategory', 'clinical-trial')}><FbTextArea label="Trial name" value={formState.trialName || ''} onChange={(value) => setField('trialName', value)} required subfield /></FbRadio></FbGroup></FbGridCell>
         <FbGridCell><FbGroup label="Does the patient have capacity to consent to the test(s)?" required>{@render radio('capacity', 'yes', 'Yes')}{@render radio('capacity', 'no', 'No')}{@render radio('capacity', 'unknown', 'Unknown or not recorded')}</FbGroup></FbGridCell>
         <FbGridCell><FbGroup label="Defer test(s)?"><FbRadio name="deferTests" value="yes" checked={formState.deferTests === 'yes'} label="Yes" onChange={() => setField('deferTests', 'yes')}><FbQuestion label="Defer test(s) until" subfield><FbDateExact name="deferTestsUntil" value={formState.deferTestsUntil || ''} onChange={(value) => setField('deferTestsUntil', value)} /></FbQuestion><FbTextArea label="Reason for deferral" value={formState.deferReason || ''} onChange={(value) => setField('deferReason', value)} required subfield /></FbRadio>{@render radio('deferTests', 'no', 'No')}</FbGroup></FbGridCell>
         <FbGridCell><FbQuestion label="Report required by"><FbDateExact name="reportRequiredBy" value={formState.reportRequiredBy || ''} onChange={(value) => setField('reportRequiredBy', value)}><FbTextArea label="Reason required by" value={formState.reportRequiredByReason || ''} onChange={(value) => setField('reportRequiredByReason', value)} required subfield /></FbDateExact></FbQuestion></FbGridCell>
@@ -405,18 +558,19 @@
     </FbSection>
     <FbSection id="testsRequired" title="Tests required">
       <FbGroup>
-        <FbCheck name="testAbpm" checked={!!formState.testAbpm} label="Ambulatory BP monitoring" onChange={(checked) => setField('testAbpm', checked)}>{@render cardiologyIndications('abpm')}</FbCheck>
-        <FbCheck name="testAecg" checked={!!formState.testAecg} label="Ambulatory ECG" onChange={(checked) => setField('testAecg', checked)}>{@render cardiologyIndications('aecg')}</FbCheck>
-        <FbCheck name="testEtt" checked={!!formState.testEtt} label="Exercise tolerance test" onChange={(checked) => setField('testEtt', checked)}><FbBoxedWarning text="This test is NOT available in St Elsewhere UHB." />{@render cardiologyIndications('ett')}</FbCheck>
-        <FbCheck name="testIlrDownload" checked={!!formState.testIlrDownload} label="Implantable loop recorder (ILR) download" onChange={(checked) => setField('testIlrDownload', checked)}>{@render cardiologyIndications('ilr')}</FbCheck>
+        <FbCheck name="testAbpm" checked={!!formState.testAbpm} label="Ambulatory BP monitoring" onChange={(checked) => setField('testAbpm', checked)}>{@render abpmIndications()}</FbCheck>
+        <FbCheck name="testAecg" checked={!!formState.testAecg} label="Ambulatory ECG" onChange={(checked) => setField('testAecg', checked)}>{@render aecgIndications()}</FbCheck>
+        <FbCheck name="testEtt" checked={!!formState.testEtt} label="Exercise tolerance test" onChange={(checked) => setField('testEtt', checked)}><FbBoxedWarning text="This test is NOT available in St Elsewhere UHB." />{@render ettIndications()}</FbCheck>
+        <FbCheck name="testIlrDownload" checked={!!formState.testIlrDownload} label="Implantable loop recorder (ILR) download" onChange={(checked) => setField('testIlrDownload', checked)}>{@render ilrIndications()}</FbCheck>
         <FbCheck name="testCiedCheck" checked={!!formState.testCiedCheck} label="Cardiac implanted electronic device (CIED) check" onChange={(checked) => setField('testCiedCheck', checked)}>
-          <FbDropdown label="Implant centre" value={formState.implantCentre || ''} onChange={(value) => setField('implantCentre', value)} options={implantCentreOptions} placeholder="Select" subfield />
-          <FbDropdown label="Manufacturer" value={formState.manufacturer || ''} onChange={(value) => setField('manufacturer', value)} options={manufacturerOptions} placeholder="Select" subfield />
-          {#if formState.manufacturer === 'Other'}<div class="dropdown-subq"><FbTextInput label="Other manufacturer" value={formState.manufacturerOther || ''} onChange={(value) => setField('manufacturerOther', value)} required subfield /></div>{/if}
-          {@render cardiologyIndications('cied')}
+          <FbDropdown label="Follow-up implant centre" value={formState.implantCentre || 'Unknown or not recorded'} onChange={(value) => setField('implantCentre', value)} options={implantCentreOptions} placeholder="Select" subfield />
+          {#if formState.implantCentre === 'Other'}<div class="dropdown-subq"><FbTextArea label="Please specify" value={formState.implantCentreOther || ''} onChange={(value) => setField('implantCentreOther', value)} required subfield /></div>{/if}
+          <FbDropdown label="Manufacturer" value={formState.manufacturer || 'Unknown or not recorded'} onChange={(value) => setField('manufacturer', value)} options={manufacturerOptions} placeholder="Select" subfield />
+          {#if formState.manufacturer === 'Other'}<div class="dropdown-subq"><FbTextArea label="Please specify" value={formState.manufacturerOther || ''} onChange={(value) => setField('manufacturerOther', value)} required subfield /></div>{/if}
+          {@render ciedIndications()}
         </FbCheck>
-        <FbCheck name="testTilt" checked={!!formState.testTilt} label="Tilt test" onChange={(checked) => setField('testTilt', checked)}><FbBoxedWarning text="This test is only available in St Elsewhere UHB." />{@render cardiologyIndications('tilt')}</FbCheck>
-        <FbCheck name="testTte" checked={!!formState.testTte} label="Transthoracic echocardiogram" onChange={(checked) => setField('testTte', checked)}>{@render cardiologyIndications('tte')}</FbCheck>
+        <FbCheck name="testTilt" checked={!!formState.testTilt} label="Tilt test" onChange={(checked) => setField('testTilt', checked)}><FbBoxedWarning text="This test is only available in St Elsewhere UHB." />{@render tiltIndications()}</FbCheck>
+        <FbCheck name="testTte" checked={!!formState.testTte} label="Transthoracic echocardiogram" onChange={(checked) => setField('testTte', checked)}>{@render tteIndications()}</FbCheck>
       </FbGroup>
     </FbSection>
     <FbSection id="pastMedicalHistory" title="Past medical history">
@@ -460,14 +614,14 @@
         {@render radio('previousCardiacSurgery', 'no', 'No')}{@render radio('previousCardiacSurgery', 'unknown', 'Unknown or not recorded')}
       </FbGroup>
       <FbGroup label="Tick all of the following that apply">
-        <FbCheck name="pmhAortopathy" checked={!!formState.pmhAortopathy} label="Aortopathy" onChange={(checked) => setField('pmhAortopathy', checked)}>{@render statusRadios('pmhAortopathyStatus')}<FbTextInput label="Diagnosis" value={formState.pmhAortopathyDiagnosis || ''} onChange={(value) => setField('pmhAortopathyDiagnosis', value)} subfield /></FbCheck>
+        <FbCheck name="pmhAortopathy" checked={!!formState.pmhAortopathy} label="Aortopathy" onChange={(checked) => setField('pmhAortopathy', checked)}><FbGroup subfield>{@render radio('pmhAortopathyStatus', 'Confirmed', 'Confirmed')}{@render radio('pmhAortopathyStatus', 'Suspected', 'Suspected')}<FbSCTDiagnosis label="Diagnosis" name="pmhAortopathyDiagnosis" value={formState.pmhAortopathyDiagnosis || ''} coded={!!formState.pmhAortopathyDiagnosisCoded} onChange={(value, coded) => { setField('pmhAortopathyDiagnosis', value); setField('pmhAortopathyDiagnosisCoded', coded); }} subfield /></FbGroup></FbCheck>
         <FbCheck name="pmhArrhythmia" checked={!!formState.pmhArrhythmia} label="Arrhythmia or palpitations" onChange={(checked) => setField('pmhArrhythmia', checked)}><FbGroup subfield><FbCheck name="pmhAtrialFibrillation" checked={!!formState.pmhAtrialFibrillation} label="Atrial fibrillation" onChange={(checked) => setField('pmhAtrialFibrillation', checked)}>{@render statusRadios('pmhAtrialFibrillationStatus')}</FbCheck><FbCheck name="pmhBradyarrhythmia" checked={!!formState.pmhBradyarrhythmia} label="Bradyarrhythmia" onChange={(checked) => setField('pmhBradyarrhythmia', checked)}>{@render statusRadios('pmhBradyarrhythmiaStatus')}</FbCheck><FbCheck name="pmhSvt" checked={!!formState.pmhSvt} label="Supraventricular tachycardia" onChange={(checked) => setField('pmhSvt', checked)}>{@render statusRadios('pmhSvtStatus')}</FbCheck><FbCheck name="pmhVentricularTachycardia" checked={!!formState.pmhVentricularTachycardia} label="Ventricular tachycardia" onChange={(checked) => setField('pmhVentricularTachycardia', checked)}>{@render statusRadios('pmhVentricularTachycardiaStatus')}</FbCheck></FbGroup></FbCheck>
-        <FbCheck name="pmhCardiomyopathy" checked={!!formState.pmhCardiomyopathy} label="Cardiomyopathy" onChange={(checked) => setField('pmhCardiomyopathy', checked)}><FbGroup subfield><FbCheck name="pmhArvc" checked={!!formState.pmhArvc} label="Arrythmogenic right ventricular cardiomyopathy (ARVC)" onChange={(checked) => setField('pmhArvc', checked)}>{@render statusRadios('pmhArvcStatus')}<FbCheck name="pmhArvcStatusFamilyHistory" checked={!!formState.pmhArvcStatusFamilyHistory} label="Family history screening" onChange={(checked) => setField('pmhArvcStatusFamilyHistory', checked)} /></FbCheck><FbCheck name="pmhDilatedCardiomyopathy" checked={!!formState.pmhDilatedCardiomyopathy} label="Dilated cardiomyopathy" onChange={(checked) => setField('pmhDilatedCardiomyopathy', checked)}>{@render statusRadios('pmhDilatedCardiomyopathyStatus')}</FbCheck><FbCheck name="pmhHypertrophicCardiomyopathy" checked={!!formState.pmhHypertrophicCardiomyopathy} label="Hypertrophic cardiomyopathy" onChange={(checked) => setField('pmhHypertrophicCardiomyopathy', checked)}>{@render statusRadios('pmhHypertrophicCardiomyopathyStatus')}</FbCheck><FbCheck name="pmhOtherCardiomyopathy" checked={!!formState.pmhOtherCardiomyopathy} label="Other" onChange={(checked) => setField('pmhOtherCardiomyopathy', checked)}><FbTextInput label="Diagnosis" value={formState.pmhOtherCardiomyopathyDiagnosis || ''} onChange={(value) => setField('pmhOtherCardiomyopathyDiagnosis', value)} subfield />{@render statusRadios('pmhOtherCardiomyopathyStatus')}</FbCheck></FbGroup></FbCheck>
+        <FbCheck name="pmhCardiomyopathy" checked={!!formState.pmhCardiomyopathy} label="Cardiomyopathy" onChange={(checked) => setField('pmhCardiomyopathy', checked)}><FbGroup subfield><FbCheck name="pmhArvc" checked={!!formState.pmhArvc} label="Arrythmogenic right ventricular cardiomyopathy (ARVC)" onChange={(checked) => setField('pmhArvc', checked)}>{@render statusRadios('pmhArvcStatus')}<FbCheck name="pmhArvcStatusFamilyHistory" checked={!!formState.pmhArvcStatusFamilyHistory} label="Family history screening" onChange={(checked) => setField('pmhArvcStatusFamilyHistory', checked)} /></FbCheck><FbCheck name="pmhDilatedCardiomyopathy" checked={!!formState.pmhDilatedCardiomyopathy} label="Dilated cardiomyopathy" onChange={(checked) => setField('pmhDilatedCardiomyopathy', checked)}>{@render statusRadios('pmhDilatedCardiomyopathyStatus')}<FbCheck name="pmhDilatedCardiomyopathyStatusFamilyHistory" checked={!!formState.pmhDilatedCardiomyopathyStatusFamilyHistory} label="Family history screening" onChange={(checked) => setField('pmhDilatedCardiomyopathyStatusFamilyHistory', checked)} /></FbCheck><FbCheck name="pmhHypertrophicCardiomyopathy" checked={!!formState.pmhHypertrophicCardiomyopathy} label="Hypertrophic cardiomyopathy" onChange={(checked) => setField('pmhHypertrophicCardiomyopathy', checked)}>{@render statusRadios('pmhHypertrophicCardiomyopathyStatus')}<FbCheck name="pmhHypertrophicCardiomyopathyStatusFamilyHistory" checked={!!formState.pmhHypertrophicCardiomyopathyStatusFamilyHistory} label="Family history screening" onChange={(checked) => setField('pmhHypertrophicCardiomyopathyStatusFamilyHistory', checked)} /></FbCheck><FbCheck name="pmhOtherCardiomyopathy" checked={!!formState.pmhOtherCardiomyopathy} label="Other" onChange={(checked) => setField('pmhOtherCardiomyopathy', checked)}><FbSCTDiagnosis label="Diagnosis" name="pmhOtherCardiomyopathyDiagnosis" value={formState.pmhOtherCardiomyopathyDiagnosis || ''} coded={!!formState.pmhOtherCardiomyopathyDiagnosisCoded} onChange={(value, coded) => { setField('pmhOtherCardiomyopathyDiagnosis', value); setField('pmhOtherCardiomyopathyDiagnosisCoded', coded); }} subfield />{@render statusRadios('pmhOtherCardiomyopathyStatus')}<FbCheck name="pmhOtherCardiomyopathyStatusFamilyHistory" checked={!!formState.pmhOtherCardiomyopathyStatusFamilyHistory} label="Family history screening" onChange={(checked) => setField('pmhOtherCardiomyopathyStatusFamilyHistory', checked)} /></FbCheck></FbGroup></FbCheck>
         <FbCheck name="pmhChemotherapy" checked={!!formState.pmhChemotherapy} label="Chemotherapy" onChange={(checked) => setField('pmhChemotherapy', checked)} />
-        <FbCheck name="pmhCongenitalHeartDisease" checked={!!formState.pmhCongenitalHeartDisease} label="Congenital heart disease" onChange={(checked) => setField('pmhCongenitalHeartDisease', checked)}><FbGroup subfield>{@render radio('pmhCongenitalHeartDiseaseStatus', 'Confirmed', 'Confirmed')}{@render radio('pmhCongenitalHeartDiseaseStatus', 'Suspected', 'Suspected')}<FbCheck name="pmhCongenitalHeartDiseaseOperated" checked={!!formState.pmhCongenitalHeartDiseaseOperated} label="Operated" onChange={(checked) => setField('pmhCongenitalHeartDiseaseOperated', checked)} /><FbTextInput label="Diagnosis" value={formState.pmhCongenitalHeartDiseaseDiagnosis || ''} onChange={(value) => setField('pmhCongenitalHeartDiseaseDiagnosis', value)} subfield /></FbGroup></FbCheck>
+        <FbCheck name="pmhCongenitalHeartDisease" checked={!!formState.pmhCongenitalHeartDisease} label="Congenital heart disease" onChange={(checked) => setField('pmhCongenitalHeartDisease', checked)}><FbGroup subfield>{@render radio('pmhCongenitalHeartDiseaseStatus', 'Confirmed', 'Confirmed')}{@render radio('pmhCongenitalHeartDiseaseStatus', 'Suspected', 'Suspected')}<FbCheck name="pmhCongenitalHeartDiseaseOperated" checked={!!formState.pmhCongenitalHeartDiseaseOperated} label="Operated" onChange={(checked) => setField('pmhCongenitalHeartDiseaseOperated', checked)} /><FbSCTDiagnosis label="Diagnosis" name="pmhCongenitalHeartDiseaseDiagnosis" value={formState.pmhCongenitalHeartDiseaseDiagnosis || ''} coded={!!formState.pmhCongenitalHeartDiseaseDiagnosisCoded} onChange={(value, coded) => { setField('pmhCongenitalHeartDiseaseDiagnosis', value); setField('pmhCongenitalHeartDiseaseDiagnosisCoded', coded); }} subfield /></FbGroup></FbCheck>
         <FbCheck name="pmhCoronaryArteryDisease" checked={!!formState.pmhCoronaryArteryDisease} label="Coronary artery disease" onChange={(checked) => setField('pmhCoronaryArteryDisease', checked)}><FbGroup subfield><FbCheck name="pmhMyocardialInfarction" checked={!!formState.pmhMyocardialInfarction} label="Myocardial infarction" onChange={(checked) => setField('pmhMyocardialInfarction', checked)}>{@render statusRadios('pmhMyocardialInfarctionStatus')}</FbCheck><FbCheck name="pmhAcuteCoronarySyndrome" checked={!!formState.pmhAcuteCoronarySyndrome} label="Acute coronary syndrome" onChange={(checked) => setField('pmhAcuteCoronarySyndrome', checked)}>{@render statusRadios('pmhAcuteCoronarySyndromeStatus')}</FbCheck><FbCheck name="pmhExerciseInducedAngina" checked={!!formState.pmhExerciseInducedAngina} label="Exercise induced angina" onChange={(checked) => setField('pmhExerciseInducedAngina', checked)}>{@render statusRadios('pmhExerciseInducedAnginaStatus')}</FbCheck></FbGroup></FbCheck>
         <FbCheck name="pmhEndocarditis" checked={!!formState.pmhEndocarditis} label="Endocarditis" onChange={(checked) => setField('pmhEndocarditis', checked)}>{@render statusRadios('pmhEndocarditisStatus')}</FbCheck>
-        <FbCheck name="pmhHeartFailure" checked={!!formState.pmhHeartFailure} label="Heart failure or breathlessness" onChange={(checked) => setField('pmhHeartFailure', checked)}><FbGroup subfield>{@render radio('pmhHeartFailureStatus', 'Confirmed', 'Confirmed')}<FbRadio name="pmhHeartFailureStatus" value="Suspected" checked={formState.pmhHeartFailureStatus === 'Suspected'} label="Suspected" onChange={() => setField('pmhHeartFailureStatus', 'Suspected')}><FbTextInput label="BNP" value={formState.pmhHeartFailureBnp || ''} onChange={(value) => setField('pmhHeartFailureBnp', value)} subfield /></FbRadio><FbCheck name="pmhHeartFailureFamilyHistory" checked={!!formState.pmhHeartFailureFamilyHistory} label="Family history" onChange={(checked) => setField('pmhHeartFailureFamilyHistory', checked)} /></FbGroup></FbCheck>
+        <FbCheck name="pmhHeartFailure" checked={!!formState.pmhHeartFailure} label="Heart failure or breathlessness" onChange={(checked) => setField('pmhHeartFailure', checked)}><FbGroup subfield>{@render radio('pmhHeartFailureStatus', 'Confirmed', 'Confirmed')}<FbRadio name="pmhHeartFailureStatus" value="Suspected" checked={formState.pmhHeartFailureStatus === 'Suspected'} label="Suspected" onChange={() => setField('pmhHeartFailureStatus', 'Suspected')}><FbNumberInput label="BNP" value={formState.pmhHeartFailureBnp || ''} units="pg/ml" onChange={(value) => setField('pmhHeartFailureBnp', value)} subfield /></FbRadio><FbCheck name="pmhHeartFailureFamilyHistory" checked={!!formState.pmhHeartFailureFamilyHistory} label="Family history" onChange={(checked) => setField('pmhHeartFailureFamilyHistory', checked)} /></FbGroup></FbCheck>
         <FbCheck name="pmhInheritedCardiacConditions" checked={!!formState.pmhInheritedCardiacConditions} label="Inherited cardiac conditions" onChange={(checked) => setField('pmhInheritedCardiacConditions', checked)}><FbGroup subfield><FbCheck name="pmhLongQt" checked={!!formState.pmhLongQt} label="Long QT syndrome" onChange={(checked) => setField('pmhLongQt', checked)} /><FbCheck name="pmhBrugada" checked={!!formState.pmhBrugada} label="Brugada" onChange={(checked) => setField('pmhBrugada', checked)} /><FbCheck name="pmhCpvt" checked={!!formState.pmhCpvt} label="Catecholaminergic polymorphic condition (CPVT)" onChange={(checked) => setField('pmhCpvt', checked)} /></FbGroup></FbCheck>
         <FbCheck name="pmhStroke" checked={!!formState.pmhStroke} label="Stroke or embolic event" onChange={(checked) => setField('pmhStroke', checked)}>{@render statusRadios('pmhStrokeStatus')}</FbCheck>
         <FbCheck name="pmhPericardialDisease" checked={!!formState.pmhPericardialDisease} label="Pericardial disease" onChange={(checked) => setField('pmhPericardialDisease', checked)}>{@render statusRadios('pmhPericardialDiseaseStatus')}</FbCheck>

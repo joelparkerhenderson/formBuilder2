@@ -10,6 +10,7 @@
   export let requiredForAudit = false;
   export let valueError = '';
   export let tooltip = '';
+  export let subfield = false;
   export let onChange: (value: string) => void = () => {};
   export let change: (value: string) => void = () => {};
 
@@ -23,7 +24,7 @@
   }
 </script>
 
-<FbQuestion {label} {required} {requiredForAudit} {valueError} {tooltip}>
+<FbQuestion {label} {required} {requiredForAudit} {valueError} {tooltip} {subfield}>
   <input
     type="time"
     {id}
