@@ -1,0 +1,252 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,300;1,500&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+:root {
+  --fb-red: #d50000;
+  --fb-green: #008000;
+  --fb-blue: #1b6ec2;
+  --fb-active-lighter-yellow: #ffffcc;
+  --fb-active-darker-yellow: #fee715;
+  --fb-silver: #c0c0c0;
+  --fb-orange: #fd8a10;
+  --fb-white: #ffffff;
+  --fb-black: #000000;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+}
+
+body,
+input,
+textarea,
+select,
+button,
+label,
+div,
+span:not(.material-icons):not(.material-icons-outlined),
+p,
+a,
+option,
+header,
+footer,
+section,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+html,
+::placeholder,
+.placeholder {
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.material-icons,
+.material-icons-outlined {
+  font-family: 'Material Icons' !important;
+}
+
+.fb-addressograph-card,
+.fb-addressograph-card *,
+.fb-addressograph-card span,
+.fb-addressograph-card span:not(.material-icons):not(.material-icons-outlined) {
+  font-family: Arial, Helvetica, sans-serif !important;
+  line-height: normal !important;
+}
+
+textarea,
+input:not([type="radio"]):not([type="checkbox"]),
+select {
+  background-color: white !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+textarea:focus,
+textarea:focus-visible,
+input:not([type="radio"]):not([type="checkbox"]):not(.fb-blood-pressure-input):not(.fb-number-input-with-units-input):not(.fbcp-text-input):focus,
+input:not([type="radio"]):not([type="checkbox"]):not(.fb-blood-pressure-input):not(.fb-number-input-with-units-input):not(.fbcp-text-input):focus-visible,
+select:focus,
+select:focus-visible {
+  outline: none !important;
+  border-color: silver !important;
+  border: 0.1rem solid silver !important;
+  box-shadow: none !important;
+  background-color: white !important;
+}
+
+input[type="radio"]:focus,
+input[type="checkbox"]:focus,
+input[type="radio"]:focus-visible,
+input[type="checkbox"]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+.fb-question-container,
+.fb-radio-checkbox-item,
+.fb-subquestion {
+  transition: background-color 0.1s ease;
+}
+
+.fb-question-container:hover,
+.fb-question-container:focus-within {
+  background-color: var(--fb-active-lighter-yellow);
+}
+
+.fb-question-container .fb-question-container:hover,
+.fb-question-container .fb-question-container:focus-within,
+.fb-question-container .fb-radio-checkbox-group-container:hover,
+.fb-question-container .fb-radio-checkbox-group-container:focus-within {
+  background-color: var(--fb-active-darker-yellow);
+}
+
+.fb-radio-checkbox-item:hover,
+.fb-radio-checkbox-item:focus-within {
+  background-color: var(--fb-active-darker-yellow) !important;
+}
+
+.fb-subquestion .fb-radio-checkbox-item:hover,
+.fb-subquestion .fb-radio-checkbox-item:focus-within {
+  background-color: var(--fb-active-lighter-yellow) !important;
+}
+
+.fb-radio-checkbox-group-container .fb-radio-checkbox-group-container .fb-radio-checkbox-item:hover,
+.fb-radio-checkbox-group-container .fb-radio-checkbox-group-container .fb-radio-checkbox-item:focus-within {
+  background-color: var(--fb-active-lighter-yellow) !important;
+}
+
+.fb-question-container .fb-radio-checkbox-group-container .fb-radio-checkbox-item:hover,
+.fb-question-container .fb-radio-checkbox-group-container .fb-radio-checkbox-item:focus-within {
+  background-color: var(--fb-active-lighter-yellow) !important;
+}
+
+.fb-subquestion:hover,
+.fb-subquestion:focus-within {
+  background-color: var(--fb-active-darker-yellow);
+}
+
+.fb-layout-edit-view-form .fb-grid-row {
+  column-gap: 1rem !important;
+  row-gap: 0.4rem !important;
+}
+
+.fb-date-control-input,
+.fb-date-control-input:focus {
+  border: 0.1rem solid silver !important;
+  border-radius: 0.4rem !important;
+}
+
+.fb-read-only-label {
+  font-weight: 300;
+  font-size: 0.8rem;
+}
+
+.fb-read-only-value {
+  font-weight: 500;
+  margin-left: 0.4rem;
+  white-space: pre-line;
+}
+
+.fb-read-only-value-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.fb-read-only-coded-icon {
+  font-size: 1.2rem;
+  flex: 0 0 auto;
+  line-height: 1;
+  margin-top: 0;
+  vertical-align: top;
+}
+
+.fb-read-only-coded-icon[title="Coded"] {
+  color: var(--fb-green);
+}
+
+.fb-read-only-coded-icon[title="Not coded"] {
+  color: var(--fb-orange);
+}
+
+.fb-number-input-with-units input:focus {
+  border: none !important;
+  border-width: 0 !important;
+}
+
+.fb-blood-pressure-control input,
+.fb-blood-pressure-control input:focus,
+.fb-blood-pressure-control input:focus-visible {
+  border: none !important;
+  border-width: 0 !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: white !important;
+}
+
+.fb-blood-pressure-control input::-webkit-outer-spin-button,
+.fb-blood-pressure-control input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.fb-blood-pressure-control input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.fb-home {
+  min-height: 100vh;
+  width: 100%;
+  background: white;
+}
+
+.fb-home-header {
+  border-bottom: 0.2rem solid var(--fb-blue);
+  padding: 0.8rem;
+}
+
+.fb-home-main {
+  width: 100%;
+  max-width: none;
+  padding: 0.8rem;
+  box-sizing: border-box;
+}
+
+.fb-home-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.8rem;
+  background: var(--fb-blue);
+  color: white;
+  border-radius: 0.4rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.fb-home-link:hover,
+.fb-home-link:focus {
+  background: var(--fb-active-darker-yellow);
+  color: black;
+}
+
+@media (max-width: 767px) {
+  .fb-grid-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .fb-layout-nav {
+    display: none !important;
+  }
+}

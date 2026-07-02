@@ -138,7 +138,7 @@
   <header>
     <div>NHS Wales - formBuilder2</div>
     <h1>Case note tracker specification and user guide</h1>
-    <p class="intro">Case note tracker is a prototype for tracking paper case-note volumes, requests, pick lists, batches, tags, and custodial locations. The React implementation is canonical; the Svelte entry at <code>/formBuilder2/svelte/caseNoteTracker.html</code> now uses Svelte-owned CNT source rather than mounting the React implementation, including basic request creation, with remaining native parity gaps tracked in <code>spec.md</code> and <code>reactToSvelte.md</code>. It uses the formBuilder2 visual language and components so the tracker feels consistent with the forms application. This guide describes how users complete the supported tasks and records the current implementation contract.</p>
+    <p class="intro">Case note tracker is a prototype for tracking paper case-note volumes, requests, pick lists, batches, tags, and custodial locations. The React implementation is canonical; the Svelte entry at <code>/formBuilder2/svelteOrig/caseNoteTracker.html</code> now uses Svelte-owned CNT source rather than mounting the React implementation, including basic request creation, with remaining native parity gaps tracked in <code>spec.md</code> and <code>reactToSvelte.md</code>. It uses the formBuilder2 visual language and components so the tracker feels consistent with the forms application. This guide describes how users complete the supported tasks and records the current implementation contract.</p>
   </header>
   <main>
     <p class="note">The shared eForms visual vocabulary is specified in <a href="wcp-eForms-designSystem-specification.html">WCP eForms design system specification</a>. CNT-specific behaviour is maintained in <code>cnt.spec.md</code> and future server endpoints are listed in <code>docs/cnt.restAPI.md</code>.</p>
@@ -169,7 +169,7 @@
       <div class="task-card">Set up and use Picklist for clinic retrieval.</div>
       <div class="task-card">Maintain Clinics and Select clinic(s).</div>
       <div class="task-card">Use System clinic schedule, All clinics, clinic list, and location lists.</div>
-      <div class="task-card">Maintain Libraries and custodial locations.</div>
+      <div class="task-card">Maintain assigned libraries from Preferences and use custodial locations.</div>
       <div class="task-card">Use Return list for notes that should be sent back.</div>
       <div class="task-card">Simulate NHS number, hospital number, volume number, and batch number scans.</div>
       <div class="task-card">Review volume movement history.</div>
@@ -178,13 +178,13 @@
 
     <h2 id="user-guide">User guide</h2>
     <h3>Logging in and setting preferences</h3>
-    <p>Open <code>/formBuilder2/caseNoteTracker.html</code> or the native Svelte entry <code>/formBuilder2/svelte/caseNoteTracker.html</code>, choose a simulated user, then confirm Health board, Locality, and Facility preferences. These preferences prefill filters such as Select clinic(s), Clinic schedule, All clinics, Locations, and workflow defaults such as Register volume locations. The fictitious Health board, Facility, and Speciality vocabulary is shared with patient-form clinical destination selectors, including Cardiology test request. Changing those system filters also updates the saved preferences. CNT Home replaces the standard header with a full-width blue title tile, then shows a fieldset labelled with the signed-in user's name and a System fieldset for administrative lists and documentation.</p>
+    <p>Open <code>/formBuilder2/caseNoteTracker.html</code> or the native Svelte entry <code>/formBuilder2/svelteOrig/caseNoteTracker.html</code>, choose a simulated user, then confirm Health board, Locality, and Facility preferences. These preferences prefill filters such as Select clinic(s), Clinic schedule, All clinics, Locations, and workflow defaults such as Register volume locations. The fictitious Health board, Facility, and Speciality vocabulary is shared with patient-form clinical destination selectors, including Cardiology test request. Changing those system filters also updates the saved preferences. CNT Home replaces the standard header with a full-width blue title tile, then shows a fieldset labelled with the signed-in user's name and a System fieldset for administrative lists and documentation.</p>
 
     <h3>Searching for a patient</h3>
-    <p>From formBuilder2 Patient search or Patient registry, use the Case notes action to open the patient's Case notes locator. From the CNT home page, simulated NHS number and hospital number scan buttons open a random patient locator.</p>
+    <p>From formBuilder2 Patient search or Patient registry, use the Case notes action to open the patient's Case notes locator. SvelteKit CNT Patient search uses the same <code>/patients/search</code> REST endpoint as the app home Patient search, so both search the same patient registry data. If the selected patient is not yet in the browser-local CNT store, the tracker creates a temporary CNT patient record plus review volumes so the locator is not empty. From the CNT home page, simulated NHS number and hospital number scan buttons open a random patient locator.</p>
 
     <h3>Opening a case notes locator</h3>
-    <p>The locator groups volumes by Health board, Locality, Type, and Volume number. Use checkboxes to select volumes, expand/collapse group headings, and History to inspect a volume's movement events. Selected enclosing groups remain open until their selected volumes are cleared.</p>
+    <p>The locator groups volumes by Health board, Locality, Type, and Volume number. Use checkboxes to select volumes, expand/collapse group headings with the React-matching disclosure triangles, and History to inspect a volume's movement events. Selected enclosing groups remain open until their selected volumes are cleared.</p>
 
     <h3>Requesting a volume or set of volumes</h3>
     <p>On Case notes locator or Case notes selector, tick one or more volumes and choose Request selected. The request workflow is only allowed when every selected volume is in a location with at least one custodian; otherwise an Error popup explains the problem. The Request page is prefilled with the patient, selected volumes, source, and destination, then Request creates Outbox rows and matching Inbox rows for custodians.</p>
@@ -193,16 +193,16 @@
     <p>Open Outbox and choose New request. Select patient opens a search-like page. Select opens the volume selector for the chosen patient. Complete Required for, From, and To, then choose Request. Cancel returns without saving.</p>
 
     <h3>Using Outbox</h3>
-    <p>Outbox lists requests made by the current user. It shows the patient with <code>fbAddressograph</code>, requested volumes with <code>fbcntSelectedVolumes</code>, request details, source, destination, status, and actions. Cancel cancels and hides a row. Locator opens the patient locator with those volumes selected. Done actions in Inbox update Outbox status to actioned.</p>
+    <p>Outbox lists requests made by the current user. The initial fictitious store seeds at least one open review request for checking this page. It shows the patient with <code>fbAddressograph</code>, requested volumes with <code>fbcntSelectedVolumes</code>, request details, source, destination, status, and actions. Cancel cancels and hides a row. Locator opens the patient locator with those volumes selected. Done actions in Inbox update Outbox status to actioned.</p>
 
     <h3>Using Inbox</h3>
-    <p>Inbox lists open requests for locations where the current user is a custodian. Send opens the same send workflow used by the locator. Done marks the request as actioned and removes it from Inbox.</p>
+    <p>Inbox lists open requests for locations where the current user is a custodian. The initial fictitious store seeds at least one open review request for checking this page. Send opens the same send workflow used by the locator. Done marks the request as actioned and removes it from Inbox.</p>
 
     <h3>Setting up a pick list</h3>
     <p>Open Clinics, choose Add clinic(s), filter future clinics by Health board, Locality, Facility, and Speciality, tick clinics, and choose Ok. The filter starts from the saved login preferences. Clinics then lists the clinic instances the user retrieves for.</p>
 
     <h3>Using a pick list</h3>
-    <p>Open Picklist. Each row identifies a clinic, active appointment, patient, and required volumes. Cancelled and rescheduled appointments are not shown in Picklist. Fictitious data allows only one appointment per patient per clinic instance. Select opens Case notes selector for that patient and clinic instance; Ok saves the selected required volumes and returns through the navigation workspace. Receive opens a popup for marking selected required volumes as received. Requested-but-not-received volumes show the Req badge. The Include patients whose case notes have been retrieved checkbox is in the header area under the page title; unchecked hides rows whose selected volumes are already in the clinic holding location, and checked shows them.</p>
+    <p>Open Picklist. Each row identifies a clinic, active appointment, patient, and required volumes. Cancelled and rescheduled appointments are not shown in Picklist. The initial fictitious store seeds selected and received rows so Picklist is populated before manual interaction. Fictitious data allows only one appointment per patient per clinic instance. Select opens Case notes selector for that patient and clinic instance; Ok saves the selected required volumes and returns through the navigation workspace. Receive opens a popup for marking selected required volumes as received. Requested-but-not-received volumes show the Req badge. The Include patients whose case notes have been retrieved checkbox is in the header area under the page title; unchecked hides rows whose selected volumes are already in the clinic holding location, and checked shows them.</p>
 
     <h3>Using System clinic lists</h3>
     <p>Clinic schedule lists clinic definitions with filter controls, a holding-location column, and an Include historic clinics checkbox. Dates opens matching clinic instances in the next six weeks. All clinics lists all clinic instances in the next six weeks. Clinic schedule, All clinics, and Locations use the standard CNT header and default their Health board, Locality, and Facility filters from the logged-in user's preferences. Clinic list shows appointments sorted by time, displays Active, Rescheduled, or Cancelled badges, and provides Open record, Select case notes, and Receive case notes actions. Show rescheduled appointments and Show cancelled appointments sit in the page header above the blue divider, stacked vertically, with normal-weight labels. Open record and Select case notes return to Clinic list through the navigation workspace.</p>
@@ -211,7 +211,7 @@
     <p>Return list looks like Picklist and lists patient volume groups that should be returned. Send opens a row-volume selection popup, then opens the send workflow for the checked volumes. Remove hides that row from the current return list.</p>
 
     <h3>Registering a volume</h3>
-    <p>From Case notes locator choose Register volume. The patient addressograph appears in the header top right; the page body does not show Patient NHS number, Patient hospital number, or Volume UUID. Enter Health board, Locality, Type, Permanent/Temporary, Status, Date created, optional Date closed, optional Date destroyed, optional Reason destroyed, Location, Bar code, RfID, and optional Batch UUID. Register creates and selects the new volume unless it is registered as Destroyed; blank identifiers are generated safely. Closed volumes require Date closed, and Destroyed volumes require Date destroyed plus Reason destroyed.</p>
+    <p>From Case notes locator choose Register volume. The patient addressograph appears in the header top right; the page body does not show Patient NHS number, Patient hospital number, or Volume UUID. Enter Health board, Locality, Type, Permanent/Temporary, Status, Date created, optional Date closed, optional Date destroyed, optional Reason destroyed, Location, Bar code, RfID, and optional Batch UUID. Date created defaults to today's date in <code>dd-Mmm-yyyy</code> format. Register creates and selects the new volume unless it is registered as Destroyed; blank identifiers are generated safely. Closed volumes require Date closed, and Destroyed volumes require Date destroyed plus Reason destroyed.</p>
 
     <h3>Sending selected volumes</h3>
     <p>Select one or more volumes and choose Send selected. The popup collects From and To using CNT location selectors. Send updates each volume's current location, appends movement history, and saves the user's send-location preference.</p>
@@ -220,7 +220,7 @@
     <p>Select one or more volumes and choose Receive selected. The popup infers a From location from a recent send where possible, requires To, and appends received movement history.</p>
 
     <h3>Managing batches</h3>
-    <p>Batches lists favourite batches. Open shows the Batch page grouped by patient with addressographs and removable volume rows. Remove removes a favourite from the user's list. Find batch opens a filterable list of existing batches. Create batch captures Purpose, Current location, Intended destination, and Barcode.</p>
+    <p>Batches lists favourite batches. Open shows the Batch page grouped by patient with addressographs and removable volume rows. Remove removes only the current user's favourite-batch link and does not delete the batch. Find batch opens a filterable list of existing batches. Create batch captures Purpose, Current location, Intended destination, and Barcode.</p>
 
     <h3>Adding selected volumes to a batch</h3>
     <p>On Case notes locator choose Batch selected. The popup lists the user's favourite batches. Choosing one adds the selected volumes to that batch.</p>
@@ -232,7 +232,7 @@
     <p>On Case notes locator choose Tag selected. Enter Purpose and Location, then Create tag. Active tags display under volume location strings as an abbreviated single line; hovering or focusing the tag summary opens an <code>fbToolTip</code> with each tag field on its own line.</p>
 
     <h3>Managing libraries</h3>
-    <p>Libraries lists favourite library locations and their custodians. Remove removes a library from the user's favourites. Add library asks for a location through <code>fbcntLocation</code> and stores it as a favourite. System Locations lists all locations and custodians with Health board, Locality, and Facility filters only; locations do not have Speciality. Users can select an office/department without choosing the additional-info sublocation; custodians apply to the office/department parent location.</p>
+    <p>Preferences lists favourite assigned library locations and their custodians. Remove removes a library from the user's favourites. Add library asks for a location through <code>fbcntLocation</code> and stores it as a favourite. There is no separate Libraries home tile or direct Libraries list route. System Locations lists all locations and custodians with Health board, Locality, and Facility filters only; locations do not have Speciality. Users can select an office/department without choosing the additional-info sublocation; custodians apply to the office/department parent location.</p>
 
     <h3>Using identifier scanning</h3>
     <p>The CNT home scan bar accepts patient NHS numbers, hospital numbers, volume barcodes or RFIDs, batch barcodes, and location codes. Open resolves the identifier and opens the appropriate target or sets a send/receive destination for locations. Empty or unknown identifiers display an Error popup.</p>
@@ -255,7 +255,7 @@
         <tr><td><code>cnt_requests</code></td><td>Retrieve requests from a source location to a destination location.</td></tr>
         <tr><td><code>cnt_pick_list</code></td><td>Selected pick-list volumes for a clinic instance and received status.</td></tr>
         <tr><td><code>cnt_preferences</code></td><td>Preferences, favourite batches/libraries, filters, and recent workflow choices.</td></tr>
-        <tr><td><code>search_patients_fuzzy(search_term)</code></td><td>Main formBuilder2 fuzzy patient query used before opening CNT from Patient search.</td></tr>
+        <tr><td><code>search_patients_fuzzy(search_term)</code></td><td>Main formBuilder2 fuzzy patient query used by app Patient search and SvelteKit CNT Patient search before opening CNT.</td></tr>
         <tr><td><code>cnt location search</code></td><td>Future server query for <code>fbcntLocation</code>, matching health board, locality, facility, department, extra, and code.</td></tr>
         <tr><td><code>cnt clinic instance search</code></td><td>Future server query for Select clinic(s), filtering future non-cancelled instances.</td></tr>
         <tr><td><code>cnt request inbox query</code></td><td>Future server query for requests sent to locations where the user is a custodian.</td></tr>
@@ -267,31 +267,31 @@
     <div class="page-spec">
       <h3>Login</h3>
       <p><strong>Component:</strong> top-level <code>CaseNoteTracker</code>. <strong>Source:</strong> <code>src/caseNoteTracker/CaseNoteTracker.tsx</code>.</p>
-      <p>Contains the CNT title, an <code>fbBoxedInfo</code> simulated-login note, and colourful identity buttons. Choosing a user stores the simulated session and opens Preferences before Home.</p>
+      <p>Contains the CNT title, an <code>fbBoxedInfo</code> simulated-login note, colourful identity buttons, and a bottom-right Back button below a blue horizontal divider line. Choosing a user stores the simulated session and opens Preferences before Home.</p>
     </div>
 
     <div class="page-spec">
       <h3>Home</h3>
       <p><strong>Component:</strong> <code>FbcntPageHome</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPageHome.tsx</code>.</p>
-      <p>The shell replaces <code>fbcntHeader</code> with the full-width blue <code>NHS Wales</code> / <code>Case note tracker</code> title tile. The page body contains <code>fbcntScan</code>, simulated scan buttons, a user fieldset with Patient search, Batches, Outbox, Inbox, Return list, Picklist, Clinics, Libraries, and Preferences tiles, plus a System fieldset with Clinic schedule, All clinics, Locations, Admin, CNT specification, and Show offline warning tiles.</p>
+      <p>The shell replaces <code>fbcntHeader</code> with the full-width blue <code>NHS Wales</code> / <code>Case note tracker</code> title tile. The page body contains <code>fbcntScan</code>, simulated scan buttons, a user fieldset with Patient search, Batches, Outbox, Inbox, Return list, Picklist, and Preferences tiles, plus a System fieldset with Clinic schedule, All clinics, Locations, Admin, CNT specification, and Show offline warning tiles. Clinic assignments and Libraries are managed from Preferences and are not exposed as separate home tiles.</p>
     </div>
 
     <div class="page-spec">
       <h3>Preferences</h3>
       <p><strong>Component:</strong> <code>FbcntPagePreferences</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPagePreferences.tsx</code>.</p>
-      <p>Contains <code>fbDropdown</code> controls for Health board, Locality, and Facility. Ok saves preferences. Logout and Back are replaced by a bottom-right Ok pattern when opened after login.</p>
+      <p>Contains the <code>fbBoxedInfo</code> demo-version note, <code>fbHBSelector</code> for Health board, <code>fbDropdown</code> controls for Locality and Facility, an <code>Assigned libraries</code> <code>fbTable</code> with an <code>fbAddButton</code> labelled Add library, and an <code>Assigned clinics</code> <code>fbTable</code> with an <code>fbAddButton</code> labelled Add clinic(s). The assigned-libraries table preserves the favourite-library assignment machinery inside Preferences; assigned clinics use the same simulated content as the Clinics page. Ok saves preferences. Logout and Back are replaced by a bottom-right Ok pattern when opened after login.</p>
     </div>
 
     <div class="page-spec">
       <h3>Case notes locator</h3>
       <p><strong>Component:</strong> <code>FbcntPageLocator</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPageLocator.tsx</code>.</p>
-        <p>Contains the grouped volume tree, checkboxes, history shortcuts, current location strings, active tag summaries, and footer actions Register volume, Send selected, Receive selected, Batch selected, Tag selected, and Request selected. Destroyed volumes are visible but disabled for selection. Volume rows use a fixed status-badge column so the Destroyed badge does not shift the location column. CNT location dropdowns are absolutely anchored to the input wrapper, choose above or below the field from available viewport space, and recalculate placement on open, typing, scroll, and resize.</p>
+        <p>Contains the grouped volume tree, checkboxes, history shortcuts, current location strings, active tag summaries, and footer actions Register volume, Send selected, Receive selected, Batch selected, Tag selected, and Request selected. Manage and History are stacked vertically in one action column, use the same rendered width, and do not expand to the full tree width on narrow pages. Select all and Clear all controls use the small blue-on-white <code>fbAddButtonSmall</code> style with 0.6 rem text and reduced padding. Group disclosure triangles match the React locator and selector behaviour. Destroyed volumes are visible but disabled for selection. Volume rows use a compact status-badge column so the Destroyed badge does not shift the location column, and grid-cell content is top-aligned. CNT location dropdowns are absolutely anchored to the input wrapper, choose above or below the field from available viewport space, and recalculate placement on open, typing, scroll, and resize.</p>
     </div>
 
     <div class="page-spec">
       <h3>Case notes selector</h3>
       <p><strong>Component:</strong> <code>FbcntPageSelector</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPageSelector.tsx</code>.</p>
-        <p>Contains the locator tree without history and movement buttons. Destroyed volumes are visible but disabled for selection, and the fixed status-badge column keeps locations aligned across Active, Closed, and Destroyed rows. Ok saves selection for the calling workflow and returns through the navigation workspace. Health-board / locality / type groups with more than one selectable non-destroyed volume show a white-on-blue Select all button aligned with the checkbox column. Request selected opens a prefilled Request page when used as a standalone selector.</p>
+        <p>Contains the locator tree without history and movement buttons, using the same working disclosure triangle toggles as the locator. Destroyed volumes are visible but disabled for selection, and the fixed status-badge column keeps locations aligned across Active, Closed, and Destroyed rows. Grid-cell content is top-aligned. Ok saves selection for the calling workflow and returns through the navigation workspace. Health-board / locality / type groups with more than one selectable non-destroyed volume show a small blue-on-white Select all or Clear all button aligned with the checkbox column; the button uses 0.6 rem text and reduced padding. Request selected opens a prefilled Request page when used as a standalone selector.</p>
     </div>
 
     <div class="page-spec">
@@ -303,13 +303,13 @@
     <div class="page-spec">
       <h3>Register volume</h3>
       <p><strong>Component:</strong> <code>FbcntPageRegisterVolume</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPageRegisterVolume.tsx</code>.</p>
-      <p>Uses <code>fbcntManageVolume</code> for Health board, Locality, Type, Permanent/Temporary, Active/Closed/Destroyed Status, Date created, Date closed, Date destroyed, Reason destroyed, Location, Bar code, RfID, and Batch UUID. The patient addressograph appears in the header top right, and the page body omits Patient NHS number, Patient hospital number, and Volume UUID. Register validates the status/date rules, creates a volume, and Cancel returns unchanged.</p>
+      <p>Uses <code>fbcntManageVolume</code> for Health board through <code>fbHBSelector</code>, Locality, Type, Permanent/Temporary, Active/Closed/Destroyed Status, Date created, Date closed, Date destroyed, Reason destroyed, Location, Bar code, RfID, and Batch UUID. Date fields display and accept <code>dd-Mmm-yyyy</code>, converting persisted ISO dates for editing. The patient addressograph appears in the header top right, and the page body omits Patient NHS number, Patient hospital number, and Volume UUID. Register validates the status/date rules, creates a volume, and Cancel returns unchanged.</p>
     </div>
 
     <div class="page-spec">
       <h3>Manage volume</h3>
       <p><strong>Component:</strong> <code>FbcntPageManageVolume</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPageManageVolume.tsx</code>.</p>
-      <p>The header shows <code>Manage volume</code> at 1 rem, the health board, locality, type, and volume number underneath at 2 rem and 500 weight, and the patient addressograph in the top right. The body uses <code>fbcntManageVolume</code> and does not repeat the title, addressograph, or bordered card. It shows Volume UUID as a compact <code>fbRoVField</code> and includes any active tag for the volume, without repeating Patient NHS number or Patient hospital number. The footer uses Ok and Cancel <code>fbButton</code> controls. Ok validates and saves the draft; Cancel returns unchanged. Existing volumes saved as Closed require Date closed plus the merge target volume, and write a <code>merged</code> history row whose Note records the target volume. Destroyed volumes require Date destroyed plus Reason destroyed. Users can change an existing Closed or Destroyed volume back to Active; those reversals write <code>unclosed</code> or <code>undestroyed</code> history rows.</p>
+      <p>The header shows <code>Manage volume</code> at 1 rem, the health board, locality, type, and volume number underneath at 2 rem and 500 weight, and the patient addressograph in the top right. The body uses <code>fbcntManageVolume</code> and does not repeat the title, addressograph, or bordered card. It shows Volume UUID as a compact <code>fbRoVField</code> and includes any active tag for the volume, without repeating Patient NHS number or Patient hospital number. Existing volume dates are displayed in <code>dd-Mmm-yyyy</code> format for editing. The footer uses Ok and Cancel <code>fbButton</code> controls. Ok validates and saves the draft; Cancel returns unchanged. Existing volumes saved as Closed require Date closed plus the merge target volume, and write a <code>merged</code> history row whose Note records the target volume. Destroyed volumes require Date destroyed plus Reason destroyed. Users can change an existing Closed or Destroyed volume back to Active; those reversals write <code>unclosed</code> or <code>undestroyed</code> history rows.</p>
     </div>
 
     <div class="page-spec">
@@ -385,9 +385,9 @@
     </div>
 
     <div class="page-spec">
-      <h3>Libraries</h3>
+      <h3>Assigned libraries</h3>
       <p><strong>Component:</strong> <code>FbcntPageLibraries</code>. <strong>Source:</strong> <code>src/caseNoteTracker/fbcntPageLibraries.tsx</code>.</p>
-      <p>Contains favourite library locations, custodians, request acceptance, Remove buttons, and an Add library popup. Custodian entries use <code>fbcntUserBadge</code> hover highlighting and tooltips.</p>
+      <p>Embedded in Preferences only. Contains favourite library locations, custodians, request acceptance, Remove buttons, and the Add library popup machinery. Custodian entries use <code>fbcntUserBadge</code> hover highlighting and tooltips.</p>
     </div>
 
     <div class="page-spec">
@@ -518,8 +518,8 @@
 
     <div class="control-spec">
       <h3><code>fbcntHeader</code>, <code>fbcntHeaderForUser</code>, <code>fbcntSmallButton</code>, <code>fbGroupWithBorder</code>, <code>fbcntClinicFilter</code>, and <code>fbcntLocationFilter</code></h3>
-      <p><strong>Sources:</strong> <code>fbcntHeader.tsx</code>, <code>fbcntHeaderForUser.tsx</code>, <code>fbcntSmallButton.tsx</code>, <code>fbGroupWithBorder.tsx</code>, <code>fbcntClinicFilter.tsx</code>, and <code>fbcntLocationFilter.tsx</code>. Header, user-specific list header with 500-weight user line, compact row actions, bordered filter group, clinic filter controls, and location-only filter controls used across CNT pages. The 2 rem header title/title-details text uses <code>lineHeight: 1.05</code> for tighter wrapping.</p>
-      <p><strong>Status/tag additions:</strong> <code>fbcntBadge</code>, <code>fbcntBadgeActive</code>, <code>fbcntBadgeClosed</code>, <code>fbcntBadgeDestroyed</code>, <code>fbcntBadgeRequested</code>, <code>fbcntBadgeRescheduled</code>, <code>fbcntBadgeCancelled</code>, <code>fbcntTag</code>, and <code>fbcntButtonManageVolume</code> provide 500-weight volume state, appointment state, request, tag, and Manage actions in locator, selector, selected-volume, clinic-list, and pick-list displays. <code>fbcntTag</code> uses the Material Icons <code>sell</code> glyph. CNT location displays use tightly stacked additional-info, office/department, facility, and health-board lines with <code>0.04rem</code> between lines; they size to the displayed text up to the available column width and wrap at normal word boundaries, with emergency breaks only for otherwise unbroken tokens. Locality is always omitted from location displays, and selector/locator/selected-volume location blocks are prefixed by a small <code>view_list</code> icon.</p>
+      <p><strong>Sources:</strong> <code>fbcntHeader.tsx</code>, <code>fbcntHeaderForUser.tsx</code>, <code>fbcntSmallButton.tsx</code>, <code>fbGroupWithBorder.tsx</code>, <code>fbcntClinicFilter.tsx</code>, and <code>fbcntLocationFilter.tsx</code>. Header, user-specific list header with 500-weight user line, compact row actions, bordered filter group, clinic filter controls, and location-only filter controls used across CNT pages. SvelteKit CNT health-board filter positions use <code>fbHBSelector</code>; Locality, Facility, Speciality, and Purpose remain ordinary dropdowns. The 2 rem header title/title-details text uses <code>lineHeight: 1.05</code> for tighter wrapping.</p>
+      <p><strong>Status/tag additions:</strong> <code>fbcntBadge</code>, <code>fbcntBadgeActive</code>, <code>fbcntBadgeClosed</code>, <code>fbcntBadgeDestroyed</code>, <code>fbcntBadgeRequested</code>, <code>fbcntBadgeRescheduled</code>, <code>fbcntBadgeCancelled</code>, <code>fbcntTag</code>, and <code>fbcntButtonManageVolume</code> provide 500-weight volume state, appointment state, request, tag, and Manage actions in locator, selector, selected-volume, clinic-list, and pick-list displays. Locator Manage and History controls are stacked vertically in one action column and share the same rendered width. <code>fbcntTag</code> uses the Material Icons <code>sell</code> glyph. CNT location displays use tightly stacked additional-info, office/department, facility, and health-board lines with <code>0.04rem</code> between lines; they size to the displayed text up to the available column width and wrap at normal word boundaries, with emergency breaks only for otherwise unbroken tokens. Locality is always omitted from location displays, and selector/locator/selected-volume location blocks are prefixed by a small <code>view_list</code> icon or an equivalent text-safe blue list glyph where Material Icons are not loaded. Icon fallback names such as <code>view_list</code>, <code>expand_more</code>, and <code>chevron_right</code> must not appear visibly.</p>
 <pre><code class="language-html">&lt;header&gt;
   &lt;div&gt;NHS Wales - Case note tracker&lt;/div&gt;
   &lt;h1&gt;Page title&lt;/h1&gt;
@@ -541,7 +541,7 @@
 
     <div class="control-spec">
       <h3><code>fbcntUserBadge</code></h3>
-      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntUserBadge.tsx</code>. Compact retriever/custodian identity display used in Clinics, Select clinic(s), and Libraries.</p>
+      <p><strong>Source:</strong> <code>src/caseNoteTracker/fbcntUserBadge.tsx</code>. Compact retriever/custodian identity display used in Clinics, Select clinic(s), and assigned libraries.</p>
 <pre><code class="language-html">&lt;span&gt;RS: ri000106&lt;/span&gt;
 &lt;fbToolTip&gt;
 SULLIVAN, Rita, Mrs
@@ -674,13 +674,13 @@ WHERE :user_uuid = ANY(l.custodian_user_uuids)
     <h2 id="implementation">Implementation notes</h2>
     <ul>
       <li>The current React prototype is client-side and stores runtime CNT state in <code>localStorage.fbcntStore</code>.</li>
-      <li><code>scripts/seed-cnt-real-db.ts</code> seeds real PostgreSQL <code>cnt_*</code> tables from <code>createInitialCntStore()</code>.</li>
+      <li><code>scripts/seed-cnt-real-db.ts</code> seeds real PostgreSQL <code>cnt_*</code> tables from <code>createInitialCntStore()</code> and upserts the expanded fictitious CNT patient cohort into the main <code>patients</code> table for API-backed patient search demos.</li>
       <li>Local SWAS static deployment should be built with <code>VITE_API_BASE_URL=/formBuilder2/api</code> and copied to <code>D:\swas\dev\root\formBuilder2</code>.</li>
       <li>Blocking workflow errors display in an <code>fbModal</code> titled Error with a white-on-green Ok <code>fbButton</code>.</li>
       <li>Full-size CNT workflow, footer, and modal action controls use <code>fbButton</code>. Custom raw buttons are reserved for specified compact, tile, tree, menu, and icon controls.</li>
       <li>Tables use <code>fbTable</code>, and table data cells are top-aligned.</li>
-      <li>The native Svelte CNT Request page can create one open local-store request per selected volume. The Locator Request selected action can feed its currently selected volume back into an in-progress Request page; the full multi-volume selector popup is still tracked as a parity item.</li>
-      <li>CNT page entry components are exposed as <code>fbcntPageXxx</code> files and modal entry components as <code>fbcntModalXxx</code> files under <code>src/caseNoteTracker</code>. Matching native Svelte component files live under <code>svelte/src/caseNoteTracker</code> and must not import React source. Page bodies live in their own page files, shared modal bodies live in <code>fbcntModalXxxContent.tsx</code> files, and <code>fbcntPageComponents.tsx</code> is limited to shared helpers, styles, base-component re-exports, and compatibility exports. The top-level shell owns session, navigation, persistence, header/footer, and cross-page modal coordination.</li>
+      <li>The native Svelte CNT Request page can create one open local-store request per selected volume. The Locator Request selected action can feed its currently selected volumes back into an in-progress Request page, and the native SvelteKit selector page now shares the locator tree and working disclosure toggles.</li>
+      <li>CNT page entry components are exposed as <code>fbcntPageXxx</code> files and modal entry components as <code>fbcntModalXxx</code> files under <code>src/caseNoteTracker</code>. Matching native Svelte component files live under <code>svelteOrig/src/caseNoteTracker</code>; active SvelteKit files live under <code>src/lib/caseNoteTracker</code> and must not import React source. Page bodies live in their own page files, shared modal bodies live in <code>fbcntModalXxxContent.tsx</code> files, and <code>fbcntPageComponents.tsx</code> is limited to shared helpers, styles, base-component re-exports, and compatibility exports. The top-level shell owns session, navigation, persistence, header/footer, and cross-page modal coordination.</li>
     </ul>
   </main>
 </body>

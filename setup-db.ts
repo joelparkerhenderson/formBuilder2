@@ -30,11 +30,24 @@ CREATE TABLE IF NOT EXISTS patients (
   address_line2 VARCHAR(150),
   address_line3 VARCHAR(150),
   address_line4 VARCHAR(150),
-  crn VARCHAR(50),
+  hospital_number VARCHAR(50),
   date_of_birth DATE NOT NULL,
   sex VARCHAR(20) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS hospital_number VARCHAR(50);
+DROP FUNCTION IF EXISTS search_patients_fuzzy(TEXT);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'patients' AND column_name = 'crn'
+  ) THEN
+    UPDATE patients SET hospital_number = crn WHERE hospital_number IS NULL AND crn IS NOT NULL;
+    ALTER TABLE patients DROP COLUMN crn;
+  END IF;
+END $$;
 
 -- SQL search function mirroring the high-performance trigram addressograph search
 CREATE OR REPLACE FUNCTION search_patients_fuzzy(search_term TEXT)
@@ -51,7 +64,7 @@ BEGIN
     coalesce(address_line2, '') || ', ' ||
     coalesce(address_line3, '') || ', ' ||
     coalesce(address_line4, '') || ', ' ||
-    coalesce(crn, '') || ', ' ||
+    coalesce(hospital_number, '') || ', ' ||
     coalesce(date_of_birth::text, '') || ', ' ||
     coalesce(sex, ''),
     search_term
@@ -180,7 +193,7 @@ const patientsSeed = [
     address_line2: '1 Duck Close',
     address_line3: 'Fantasyland',
     address_line4: 'Disneyworld, FL3 1DC',
-    crn: '012345678',
+    hospital_number: '012345678',
     date_of_birth: '1956-04-12',
     sex: 'Male'
   },
@@ -194,7 +207,7 @@ const patientsSeed = [
     address_line2: 'Cardiff',
     address_line3: '',
     address_line4: 'CF10 1AB',
-    crn: '112233445',
+    hospital_number: '112233445',
     date_of_birth: '1965-03-15',
     sex: 'Male'
   },
@@ -208,7 +221,7 @@ const patientsSeed = [
     address_line2: 'Swansea',
     address_line3: '',
     address_line4: 'SA1 2CD',
-    crn: '223344556',
+    hospital_number: '223344556',
     date_of_birth: '1958-07-22',
     sex: 'Female'
   },
@@ -222,7 +235,7 @@ const patientsSeed = [
     address_line2: 'New Newport',
     address_line3: '',
     address_line4: 'NP19 3EF',
-    crn: '334455667',
+    hospital_number: '334455667',
     date_of_birth: '1972-11-08',
     sex: 'Male'
   }
@@ -261,7 +274,7 @@ async function initializeDatabase() {
     const existCheck = await client.query('SELECT uuid FROM patients WHERE uuid = $1', [patient.uuid]);
     if (existCheck.rowCount === 0) {
       await client.query(
-        `INSERT INTO patients (uuid, version, nhs_number, surname, forenames, title, address_line1, address_line2, address_line3, address_line4, crn, date_of_birth, sex)
+        `INSERT INTO patients (uuid, version, nhs_number, surname, forenames, title, address_line1, address_line2, address_line3, address_line4, hospital_number, date_of_birth, sex)
          VALUES ($1, 1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           patient.uuid,
@@ -273,7 +286,7 @@ async function initializeDatabase() {
           patient.address_line2,
           patient.address_line3,
           patient.address_line4,
-          patient.crn,
+          patient.hospital_number,
           patient.date_of_birth,
           patient.sex
         ]

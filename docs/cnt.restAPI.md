@@ -44,6 +44,8 @@ Saves the logged-in user's CNT preferences. Body may include `healthBoard`, `loc
 
 Body: `{ "identifier": "..." }`. Resolves a scanned barcode, QR value, NHS number, hospital number, volume code, batch code, location code, or simulated RFID code.
 
+CNT Patient search in SvelteKit currently reuses the main formBuilder2 `POST /api/patients/search` endpoint rather than a CNT-specific endpoint. Selecting a patient imports that registry patient into the browser-local CNT store when a simulated locator and review volumes are needed.
+
 `GET /api/cnt/patients/:patientUuid/volumes`
 
 Returns patient details plus volumes grouped by health board, locality, type, volume number, and temporary status.

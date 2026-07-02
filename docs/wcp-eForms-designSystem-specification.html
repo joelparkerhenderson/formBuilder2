@@ -42,7 +42,7 @@
   <table><thead><tr><th>Implementation</th><th>Home</th><th>Component library</th><th>Composer</th></tr></thead><tbody>
     <tr><td>formBuilder1 reference</td><td><a href="https://www.shadesofpale.net/formBuilder1/">formBuilder1</a></td><td>Not published in this package</td><td>Not published in this package</td></tr>
     <tr><td>React formBuilder2</td><td><a href="https://www.shadesofpale.net/formBuilder2/index.html">React home</a></td><td><a href="https://www.shadesofpale.net/formBuilder2/components.html">React component library</a></td><td><a href="https://www.shadesofpale.net/formBuilder2/composer.html">React Composer</a></td></tr>
-    <tr><td>Svelte formBuilder2</td><td><a href="https://www.shadesofpale.net/formBuilder2/svelte/index.html">Svelte home</a></td><td><a href="https://www.shadesofpale.net/formBuilder2/svelte/componentLibrary.html">Svelte component library</a></td><td><a href="https://www.shadesofpale.net/formBuilder2/svelte/composer.html">Svelte Composer</a></td></tr>
+    <tr><td>Svelte formBuilder2</td><td><a href="https://www.shadesofpale.net/formBuilder2/svelteOrig/index.html">Svelte home</a></td><td><a href="https://www.shadesofpale.net/formBuilder2/svelteOrig/componentLibrary.html">Svelte component library</a></td><td><a href="https://www.shadesofpale.net/formBuilder2/svelteOrig/composer.html">Svelte Composer</a></td></tr>
   </tbody></table>
 
   <h2 id="overview">Design and functionality overview</h2>
@@ -56,6 +56,9 @@
     <li><strong>Required fields:</strong> required labels show a red <code>*</code> grouped with the final label word so the star cannot wrap to a line by itself.</li>
     <li><strong>RoVs:</strong> read-only views show current saved content without editable controls. Sectioned RoVs keep navigation panels without counters and do not show Save/Save and close. Form-specific RoV launch rules control whether Edit, Close, Back, or EV buttons appear.</li>
     <li><strong>Save as draft:</strong> draft/final controls and save popups use shared components. Where password confirmation is required, saving includes a second-stage password popup. Password fields are cleared if the user enters a password but leaves the save flow without clicking Save and close.</li>
+    <li><strong>Cooling-off period:</strong> each patient-specific form specification declares a cooling-off period near the top of the form outline. Waiting list card, Operation note, Outpatient outcome, and Treatment summary currently use 4 hours; Cardiology test request uses 30 minutes.</li>
+    <li><strong>Cooling-off behaviour:</strong> when a user checks Final and saves, the backend records the final request and expiry time but exposes the form as draft until the cooling-off period expires. <code>fbBadgeDraft</code> remains visible during that period; reopening the form for editing clears the Final checkbox and resets the timer if Final is saved again.</li>
+    <li><strong>Final promotion:</strong> after the cooling-off period expires, read/list API calls promote the form to final. The draft badge is removed, the normal bottom-right Edit button is hidden, and final-only downstream actions, such as Implant registry synchronisation or Outpatient outcome actioning, may proceed.</li>
     <li><strong>SNOMED and MSI selectors:</strong> <code>fbSCTProcedure</code>, <code>fbSCTDiagnosis</code>, and <code>fbMSISelector</code> use searchable dropdowns, coded/not-coded indicators, clear buttons, and stable dropdown visibility while typing.</li>
     <li><strong>Structure:</strong> forms are nested as <code>fbSection</code> &gt; <code>fbGridRow</code> &gt; <code>fbGridCell</code> &gt; question components. Conditional subquestions are emitted by <code>fbRadio</code> and <code>fbCheck</code> and are indented beneath the selected option.</li>
     <li><strong>Tooltips:</strong> <code>fbToolTip</code> opens when the visible control container, label, or actual control is hovered or focused. Clicking anywhere inside an open tooltip closes it.</li>
@@ -159,11 +162,12 @@
     <tr><td><code>fbModalSaving</code></td><td>Saving progress popup.</td></tr>
     <tr><td><code>fbPopup</code></td><td>Generic modal/popup shell.</td></tr>
     <tr><td><code>fbQuestion</code></td><td>Question label/value wrapper and highlight participant.</td></tr>
-    <tr><td><code>fbRoVField</code></td><td>Read-only view field display.</td></tr>
+    <tr><td><code>fbReadOnly</code></td><td>Read-only view field display.</td></tr>
     <tr><td><code>fbSaveCancelButtons</code></td><td>Footer save/cancel/save-and-close controls.</td></tr>
     <tr><td><code>fbSearchInput</code></td><td>Reusable search input with clear/search affordances.</td></tr>
     <tr><td><code>fbSection</code></td><td>Section block with blue title bar and content body.</td></tr>
     <tr><td><code>fbToolTip</code></td><td>Tooltip popup and trigger wrapper.</td></tr>
+    <tr><td><code>fbToolTipUser</code></td><td>Compact user identity display with the standard full user tooltip for CNT retriever and custodian cells.</td></tr>
     <tr><td><code>fbUserName</code></td><td>Logged-in user display.</td></tr>
   </tbody></table>
 
@@ -335,7 +339,7 @@
   width: 100%;
 }
 @media (max-width: 767px) {
-  .fb-grid-row { grid-template-columns: 1fr !important; }
+  .fb-grid-row { grid-template-columns: 1fr; }
 }</code></pre>
   <p><strong>ARIA/semantics:</strong> Structural grouping only.</p>
   <h3 id="component-fbgroup">fbGroup</h3>
@@ -660,9 +664,9 @@
   <p>Question label/value wrapper and highlight participant.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbQuestion.tsx</code>; Svelte <code>svelte/src/components/fbQuestion.svelte</code>.</p>
   <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
-  <h3 id="component-fbrovfield">fbRoVField</h3>
+  <h3 id="component-fbreadonly">fbReadOnly</h3>
   <p>Read-only view field display.</p>
-  <p><strong>Source files:</strong> React <code>src/components/fbRoVField.tsx</code>; Svelte <code>svelte/src/components/fbRoVField.svelte</code>.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbReadOnly.tsx</code>; Svelte <code>svelte/src/components/fbReadOnly.svelte</code>.</p>
   <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
   <h3 id="component-fbsavecancelbuttons">fbSaveCancelButtons</h3>
   <p>Footer save/cancel/save-and-close controls.</p>
@@ -679,6 +683,10 @@
   <h3 id="component-fbtooltip">fbToolTip</h3>
   <p>Tooltip popup and trigger wrapper.</p>
   <p><strong>Source files:</strong> React <code>src/components/fbToolTip.tsx</code>; Svelte <code>svelte/src/components/fbToolTip.svelte</code>.</p>
+  <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
+  <h3 id="component-fbtooltipuser">fbToolTipUser</h3>
+  <p>Compact user identity display with the standard full user tooltip for CNT retriever and custodian cells.</p>
+  <p><strong>Source files:</strong> React <code>src/components/fbToolTipUser.tsx</code>; Svelte <code>svelte/src/components/fbToolTipUser.svelte</code>.</p>
   <p><strong>Parameters:</strong> implementation-specific props matching the component purpose and the shared form layout conventions.</p>
   <h3 id="component-fbusername">fbUserName</h3>
   <p>Logged-in user display.</p>
@@ -872,6 +880,7 @@ function selectConcept(concept) {
 }</code></pre>
 
   <h2 id="shared-css">Shared CSS rules not owned by one component</h2>
+  <p>Component-specific declarations belong with their owning <code>fbXxx</code>, <code>fbcXxx</code>, <code>fbcpXxx</code>, or <code>fbcntXxx</code> component where practical. Global CSS is reserved for framework imports, design tokens, shared font/icon primitives, focus rules that deliberately cross component boundaries, Composer preview/table recursion rules, and documented legacy React form-shell compatibility or browser-native control overrides where the owning component cannot yet safely take the declaration.</p>
   <pre><code>@import &quot;tailwindcss&quot;;
 
 :root {

@@ -1,0 +1,11 @@
+export const fbRed = '#d50000';
+export const fbGreen = '#008000';
+export const fbBlue = '#1b6ec2';
+export const fbActiveLighterYellow = '#ffffcc';
+export const fbActiveDarkerYellow = '#fee715';
+export const fbSilver = '#c0c0c0';
+export const fbOrange = '#fd8a10';
+export const fbWhite = '#ffffff';
+export const fbBlack = '#000000';
+export const fbLightBlue = '#8cd2e7';
+export const fbFaintGreen = '#c5e1a5';

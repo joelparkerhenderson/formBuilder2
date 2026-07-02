@@ -83,7 +83,7 @@ function generateNHSNumber(index: number): string {
   return `${prefix} ${part2} ${part3}`;
 }
 
-// 3. Hospital Number CRN Generator (Format: Capital letter [excluding O] + 7 digits)
+// 3. Hospital number generator (format: capital letter [excluding O] + 7 digits)
 function generateCRN(index: number): string {
   const letters = "ABCDEFGHIJKLMNPQRSTUVWXYZ"; // 'O' excluded
   const letter = letters[index % letters.length];
@@ -450,6 +450,44 @@ async function seedFictionalPatients() {
   console.log("Connecting securely to database to seed 200 patients...");
   await client.connect();
 
+  await client.query(`ALTER TABLE patients ADD COLUMN IF NOT EXISTS hospital_number VARCHAR(50)`);
+  await client.query(`DROP FUNCTION IF EXISTS search_patients_fuzzy(TEXT)`);
+  await client.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'patients' AND column_name = 'crn'
+      ) THEN
+        UPDATE patients SET hospital_number = crn WHERE hospital_number IS NULL AND crn IS NOT NULL;
+        ALTER TABLE patients DROP COLUMN crn;
+      END IF;
+    END $$
+  `);
+  await client.query(`
+    CREATE OR REPLACE FUNCTION search_patients_fuzzy(search_term TEXT)
+    RETURNS SETOF patients AS $$
+    BEGIN
+      RETURN QUERY
+      SELECT * FROM patients
+      ORDER BY similarity(
+        coalesce(nhs_number, '') || ', ' ||
+        coalesce(surname, '') || ', ' ||
+        coalesce(forenames, '') || ', ' ||
+        coalesce(title, '') || ', ' ||
+        coalesce(address_line1, '') || ', ' ||
+        coalesce(address_line2, '') || ', ' ||
+        coalesce(address_line3, '') || ', ' ||
+        coalesce(address_line4, '') || ', ' ||
+        coalesce(hospital_number, '') || ', ' ||
+        coalesce(date_of_birth::text, '') || ', ' ||
+        coalesce(sex, ''),
+        search_term
+      ) DESC;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+
   console.log("Cascade deleting existing patients to clear registry...");
   await client.query("TRUNCATE TABLE patients CASCADE");
   console.log("Database patients table cleared.");
@@ -463,14 +501,14 @@ async function seedFictionalPatients() {
     const uuid = crypto.randomUUID();
     const address = generateWelshAddress(i);
     const nhs = generateNHSNumber(i);
-    const crn = generateCRN(i);
+    const hospitalNumber = generateCRN(i);
     const dob = generateDOB(char.age, i);
 
     await client.query(`
       INSERT INTO patients (
         uuid, version, nhs_number, surname, forenames, title,
         address_line1, address_line2, address_line3, address_line4,
-        crn, date_of_birth, sex, updated_at
+        hospital_number, date_of_birth, sex, updated_at
       ) VALUES ($1, 1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
     `, [
       uuid,
@@ -482,7 +520,7 @@ async function seedFictionalPatients() {
       address.address2,
       address.address3,
       address.address4,
-      crn,
+      hospitalNumber,
       dob,
       char.sex
     ]);

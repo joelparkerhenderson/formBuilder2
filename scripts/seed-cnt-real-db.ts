@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import pg from 'pg';
-import { createInitialCntStore } from '../src/caseNoteTracker/cntStore';
+import { createInitialCntStore } from '../src/lib/caseNoteTracker/cntStore';
 
 dotenv.config({ path: '.env.local' });
 
@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS cnt_patients (
   address_line2 TEXT,
   address_line3 TEXT,
   address_line4 TEXT,
-  crn TEXT,
   date_of_birth DATE NOT NULL,
   sex TEXT NOT NULL
 );
@@ -213,6 +212,44 @@ async function main() {
   try {
     await client.query('BEGIN');
     await client.query(schemaSql);
+    await client.query(`ALTER TABLE patients ADD COLUMN IF NOT EXISTS hospital_number VARCHAR(50)`);
+    await client.query(`ALTER TABLE cnt_patients DROP COLUMN IF EXISTS crn`);
+    await client.query(`DROP FUNCTION IF EXISTS search_patients_fuzzy(TEXT)`);
+    await client.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'patients' AND column_name = 'crn'
+        ) THEN
+          UPDATE patients SET hospital_number = crn WHERE hospital_number IS NULL AND crn IS NOT NULL;
+          ALTER TABLE patients DROP COLUMN crn;
+        END IF;
+      END $$
+    `);
+    await client.query(`
+      CREATE OR REPLACE FUNCTION search_patients_fuzzy(search_term TEXT)
+      RETURNS SETOF patients AS $$
+      BEGIN
+        RETURN QUERY
+        SELECT * FROM patients
+        ORDER BY similarity(
+          coalesce(nhs_number, '') || ', ' ||
+          coalesce(surname, '') || ', ' ||
+          coalesce(forenames, '') || ', ' ||
+          coalesce(title, '') || ', ' ||
+          coalesce(address_line1, '') || ', ' ||
+          coalesce(address_line2, '') || ', ' ||
+          coalesce(address_line3, '') || ', ' ||
+          coalesce(address_line4, '') || ', ' ||
+          coalesce(hospital_number, '') || ', ' ||
+          coalesce(date_of_birth::text, '') || ', ' ||
+          coalesce(sex, ''),
+          search_term
+        ) DESC;
+      END;
+      $$ LANGUAGE plpgsql
+    `);
     await client.query(resetSql);
     await client.query(invariantSql);
 
@@ -227,8 +264,8 @@ async function main() {
     for (const patient of store.patients) {
       await client.query(
         `INSERT INTO cnt_patients
-          (uuid, nhs_number, hospital_number, name, title, surname, forenames, address_line1, address_line2, address_line3, address_line4, crn, date_of_birth, sex)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+          (uuid, nhs_number, hospital_number, name, title, surname, forenames, address_line1, address_line2, address_line3, address_line4, date_of_birth, sex)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
         [
           patient.uuid,
           patient.nhsNumber,
@@ -241,14 +278,13 @@ async function main() {
           patient.addressLine2,
           patient.addressLine3,
           patient.addressLine4,
-          patient.crn,
           patient.dateOfBirth,
           patient.sex,
         ]
       );
       await client.query(
         `INSERT INTO patients
-          (uuid, version, nhs_number, surname, forenames, title, address_line1, address_line2, address_line3, address_line4, crn, date_of_birth, sex)
+          (uuid, version, nhs_number, surname, forenames, title, address_line1, address_line2, address_line3, address_line4, hospital_number, date_of_birth, sex)
          VALUES ($1,1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
          ON CONFLICT (uuid) DO UPDATE SET
           nhs_number = EXCLUDED.nhs_number,
@@ -259,7 +295,7 @@ async function main() {
           address_line2 = EXCLUDED.address_line2,
           address_line3 = EXCLUDED.address_line3,
           address_line4 = EXCLUDED.address_line4,
-          crn = EXCLUDED.crn,
+          hospital_number = EXCLUDED.hospital_number,
           date_of_birth = EXCLUDED.date_of_birth,
           sex = EXCLUDED.sex,
           updated_at = timezone('utc'::text, now())`,
@@ -273,7 +309,7 @@ async function main() {
           patient.addressLine2,
           patient.addressLine3,
           patient.addressLine4,
-          patient.crn,
+          patient.hospitalNumber,
           patient.dateOfBirth,
           patient.sex,
         ]
