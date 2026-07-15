@@ -15,7 +15,7 @@ Two frozen predecessor implementations are kept for reference (`README.md`: "for
 
 ## Parity status (audited 2026-07-15 — GAP-09 closed in [spec/10](../spec/10-gaps-and-roadmap.md))
 
-**Confirmed at parity**: Cardiology test request (content-complete; the React file is larger only from inlined shell code), the Composer WYSIWYG (all capabilities present; `fbcFooter`/`fbcpName`/`fbcpVal` were trivial wrappers absorbed inline), the RoV shell (reimplemented inline), and the version-history menu. **Known regressions** (each has a gap entry): no user-facing stale-version conflict warning (GAP-16, partially mitigated), RoV no longer hides empty sections (GAP-19). Restored 2026-07-15: Engine A version history (GAP-18) and the superseded badge/old-version behaviour (GAP-17). Consult `reactOrig/src/utils/formVersion.ts` and `reactOrig/src/components/fbRoVShell.tsx` as prior art when fixing these.
+**Confirmed at parity**: Cardiology test request (content-complete; the React file is larger only from inlined shell code), the Composer WYSIWYG (all capabilities present; `fbcFooter`/`fbcpName`/`fbcpVal` were trivial wrappers absorbed inline), the RoV shell (reimplemented inline), and the version-history menu. **Known regressions** (each has a gap entry): RoV no longer hides empty sections (GAP-19). Restored 2026-07-15: Engine A version history (GAP-18), the superseded badge/old-version behaviour (GAP-17), and the stale-save conflict guard (GAP-16). Consult `reactOrig/src/utils/formVersion.ts` and `reactOrig/src/components/fbRoVShell.tsx` as prior art when fixing these.
 
 ## Quirk log
 

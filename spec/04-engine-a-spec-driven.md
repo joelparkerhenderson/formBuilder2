@@ -85,7 +85,7 @@ SpecDrivenFormSpec { title, formType, filename, sections[] }
 
 **Superseded state**: the renderer derives `superseded` (viewed version older than the latest in history); the RoV header then shows `fbBadgeSuperseded` and the EV/History controls are hidden, matching the react-era behaviour.
 
-**Not yet supported by this renderer**: user-facing stale-version conflict warnings (GAP-16 — collisions are prevented, but a concurrent editor gets no notice).
+**Stale-save guard**: before inserting, the save flow calls `assertFormVersionIsLatest` (`src/lib/utils/formVersion.ts`); if another editor saved a newer version since this form was opened, the "Changes NOT saved" modal (`fbModalStaleSave`) appears and Continue reloads the current version into RoV.
 
 ## Authoring checklist — adding an Engine A form
 

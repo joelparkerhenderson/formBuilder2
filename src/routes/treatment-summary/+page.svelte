@@ -11,6 +11,9 @@
   import type { Patient, SectionSpec } from '$lib/types';
   import { formatFormDate, generateUUID } from '$lib/utils/dateFormat';
   import { returnByHref } from '$lib/utils/fbHrefNavigation';
+  import { assertFormVersionIsLatest, isStaleFormVersionError } from '$lib/utils/formVersion';
+  import { getForm } from '$lib/api/legacy';
+  import FbModalStaleSave from '$lib/components/fb/fbModalStaleSave.svelte';
   import { defaultFormState, designerSections, type FormState } from '$lib/utils/generatedForm';
 
   type PageData = {
@@ -39,6 +42,7 @@
   let password = $state('');
   let isSaving = $state(false);
   let saveError = $state('');
+  let showStaleSavePopup = $state(false);
   let formUuid = $state(data.formUuid || data.savedForm?.uuid || savedFormData.uuid || generateUUID());
   let currentVersion = $state(Number(data.savedForm?.version) || 0);
   let formState = $state<FormState>({
@@ -83,7 +87,11 @@
     isSaving = true;
     try {
       const now = new Date().toISOString();
-      const nextVersion = currentVersion + 1;
+      // Refuse to save over a version written since this form was opened
+      const latestVersion = data.savedForm
+        ? await assertFormVersionIsLatest('treatment_summary', formUuid, currentVersion > 0 ? currentVersion : null)
+        : null;
+      const nextVersion = Math.max(Number(latestVersion) || 0, currentVersion) + 1;
       const formDataToSave = {
         ...formState,
         uuid: formUuid,
@@ -120,10 +128,31 @@
       password = '';
       isReadOnlyView = true;
     } catch (error) {
-      saveError = error instanceof Error ? error.message : String(error);
+      if (isStaleFormVersionError(error)) {
+        showStaleSavePopup = true;
+      } else {
+        saveError = error instanceof Error ? error.message : String(error);
+      }
     } finally {
       isSaving = false;
     }
+  }
+
+  async function continueAfterStaleSave() {
+    showStaleSavePopup = false;
+    try {
+      const saved = await getForm('treatment_summary', formUuid);
+      const savedData = saved?.form_data || {};
+      formState = { ...defaultState, ...savedData, uuid: formUuid };
+      finalChecked = saved?.form_status === 'final';
+      highlySensitive = Boolean(saved?.highly_sensitive ?? savedData.highlySensitive);
+      currentVersion = Number(saved?.version) || currentVersion;
+      formChanged = false;
+    } catch {
+      // fall through to RoV with the local state if the reload fails
+    }
+    password = '';
+    isReadOnlyView = true;
   }
 </script>
 
@@ -174,6 +203,10 @@
       />
     {/snippet}
   </FbLayout>
+{/if}
+
+{#if showStaleSavePopup}
+  <FbModalStaleSave onContinue={continueAfterStaleSave} />
 {/if}
 
 <style>

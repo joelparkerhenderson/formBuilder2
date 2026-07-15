@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { base } from '$app/paths';
   import { createApiClient } from '$lib/api/client';
-  import { getFormHistory, getFormVersion, getLatestVersion } from '$lib/api/legacy';
+  import { getForm, getFormHistory, getFormVersion } from '$lib/api/legacy';
   import FbBloodPressure from '$lib/components/fb/fbBloodPressure.svelte';
   import FbBottomControlsRow from '$lib/components/fb/fbBottomControlsRow.svelte';
   import FbBoxedMessage from '$lib/components/fb/fbBoxedMessage.svelte';
@@ -13,6 +13,7 @@
   import FbDatePartial from '$lib/components/fb/fbDatePartial.svelte';
   import FbDropdown from '$lib/components/fb/fbDropdown.svelte';
   import FbFormHistoryMenu, { type FbFormHistoryItem } from '$lib/components/fb/fbFormHistoryMenu.svelte';
+  import FbModalStaleSave from '$lib/components/fb/fbModalStaleSave.svelte';
   import FbGridCell from '$lib/components/fb/fbGridCell.svelte';
   import FbGridRow from '$lib/components/fb/fbGridRow.svelte';
   import FbGroup from '$lib/components/fb/fbGroup.svelte';
@@ -39,6 +40,7 @@
   import { formDateToIsoDate, formatFormDate, generateUUID } from '$lib/utils/dateFormat';
   import { returnByHref } from '$lib/utils/fbHrefNavigation';
   import { compareFormStatesObj } from '$lib/utils/formStateUtils';
+  import { assertFormVersionIsLatest, isStaleFormVersionError } from '$lib/utils/formVersion';
 
   type SaveStatus = 'final' | 'draft';
   let {
@@ -85,6 +87,7 @@
   let draggedTableRow = $state<{ key: string; id: number } | null>(null);
   let formHistory = $state<FbFormHistoryItem[]>([]);
   let showHistoryMenu = $state(false);
+  let showStaleSavePopup = $state(false);
   let latestVersion = $state(0);
 
   const effectiveFormStatus = $derived(finalChecked ? 'final' : 'draft');
@@ -288,10 +291,11 @@
     try {
       const normalisedState = ensureSavedImplantRowUuids(formState);
       formState = normalisedState;
-      // Base the next version on the server's latest, not the loaded version,
-      // so saving after viewing an old version cannot collide with existing rows
-      const latest = savedForm || formHistory.length ? await getLatestVersion(spec.formType, formUuid) : { version: null };
-      const nextVersion = Math.max(Number(latest?.version) || 0, currentVersion) + 1;
+      // Refuse to save over a version written since this form was opened
+      const serverLatest = savedForm || formHistory.length
+        ? await assertFormVersionIsLatest(spec.formType, formUuid, currentVersion > 0 ? currentVersion : null)
+        : null;
+      const nextVersion = Math.max(Number(serverLatest) || 0, currentVersion) + 1;
       const eventDate = formDateToIsoDate(normalisedState.date || normalisedState.operationDate || normalisedState.clinicDate) || new Date().toISOString();
       const formData = {
         ...normalisedState,
@@ -333,10 +337,32 @@
       isReadOnlyView = true;
       refreshFormHistory();
     } catch (error) {
-      saveError = error instanceof Error ? error.message : String(error);
+      if (isStaleFormVersionError(error)) {
+        showStaleSavePopup = true;
+      } else {
+        saveError = error instanceof Error ? error.message : String(error);
+      }
     } finally {
       isSaving = false;
     }
+  }
+
+  async function continueAfterStaleSave() {
+    showStaleSavePopup = false;
+    try {
+      const saved = await getForm(spec.formType, formUuid);
+      const savedData = saved?.form_data || {};
+      formState = { ...initialState(), ...savedData, uuid: formUuid };
+      highlySensitive = Boolean(saved?.highly_sensitive ?? savedData.highlySensitive);
+      finalChecked = saved?.form_status === 'final';
+      currentVersion = Number(saved?.version) || currentVersion;
+      cleanSnapshot = { ...formState };
+    } catch {
+      // fall through to RoV with the local state if the reload fails
+    }
+    password = '';
+    isReadOnlyView = true;
+    refreshFormHistory();
   }
 </script>
 
@@ -557,6 +583,10 @@
 
 {#if showHistoryMenu}
   <FbFormHistoryMenu history={formHistory} onViewVersion={viewHistoryVersion} onClose={() => (showHistoryMenu = false)} />
+{/if}
+
+{#if showStaleSavePopup}
+  <FbModalStaleSave onContinue={continueAfterStaleSave} />
 {/if}
 
 <style>

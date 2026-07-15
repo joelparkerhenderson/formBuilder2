@@ -36,7 +36,9 @@
   import FbTextInput from '$lib/components/fb/fbTextInput.svelte';
   import FbTime from '$lib/components/fb/fbTime.svelte';
   import { facilities, facilitiesForHealthBoard, healthBoards, patientLocations, specialityValuesForFacility } from '$lib/data/clinicalDestinations';
-  import { getForm, getFormHistory, getFormVersion, getLatestVersion, getPatient, insertForm, insertFormsIndex } from '$lib/api/legacy';
+  import { getForm, getFormHistory, getFormVersion, getPatient, insertForm, insertFormsIndex } from '$lib/api/legacy';
+  import FbModalStaleSave from '$lib/components/fb/fbModalStaleSave.svelte';
+  import { assertFormVersionIsLatest, isStaleFormVersionError } from '$lib/utils/formVersion';
   import { generateUUID } from '$lib/utils/dateFormat';
   import { returnByHref } from '$lib/utils/fbHrefNavigation';
   import { compareFormStatesObj } from '$lib/utils/formStateUtils';
@@ -164,6 +166,7 @@
   let saveError = $state('');
   let formHistory = $state<any[]>([]);
   let showHistoryMenu = $state(false);
+  let showStaleSavePopup = $state(false);
 
   const filteredSpecialities = $derived(specialityValuesForFacility(formState.fromHospital || formState.hospital).length
     ? specialities.filter((item) => specialityValuesForFacility(formState.fromHospital || formState.hospital).includes(item.value))
@@ -209,6 +212,26 @@
     else returnByHref(readOnlyBackOnly ? `${base}/patient-record/${encodeURIComponent(patientUuid)}` : `${base}/`);
   }
 
+  async function continueAfterStaleSave() {
+    showStaleSavePopup = false;
+    const uuid = formState.uuid || formUuid;
+    if (!uuid) return;
+    try {
+      const saved = await getForm('cardiology_test_requests', uuid);
+      const savedData = saved?.form_data || {};
+      formState = { ...defaultState, ...savedData, uuid };
+      finalChecked = saved?.form_status === 'final';
+      highlySensitive = Boolean(saved?.highly_sensitive || savedData.highlySensitive);
+      const savedVersion = Number(saved?.version);
+      if (!Number.isNaN(savedVersion)) formVersion = savedVersion;
+      formHistory = await getFormHistory(uuid);
+      cleanSnapshot = cleanState({ ...formState, finalChecked, highlySensitive });
+    } catch {
+      // fall through to RoV with the local state if the reload fails
+    }
+    isReadOnlyView = true;
+  }
+
   async function saveCardiology(status: SaveStatus) {
     try {
       showSavingPopup = true;
@@ -216,8 +239,8 @@
       const uuid = formState.uuid || formUuid || generateUUID();
       let version = 0;
       if (uuid && (formState.uuid || formUuid)) {
-        const latest = await getLatestVersion('cardiology_test_requests', uuid);
-        version = latest.version === null ? 0 : Number(latest.version) + 1;
+        const latestVersion = await assertFormVersionIsLatest('cardiology_test_requests', uuid, formVersion);
+        version = latestVersion === null ? 0 : Number(latestVersion) + 1;
       }
       const now = new Date().toISOString();
       const formData = {
@@ -265,7 +288,11 @@
       showSavedPopup = true;
       window.setTimeout(closeForm, 800);
     } catch (error) {
-      saveError = error instanceof Error ? error.message : String(error);
+      if (isStaleFormVersionError(error)) {
+        showStaleSavePopup = true;
+      } else {
+        saveError = error instanceof Error ? error.message : String(error);
+      }
     } finally {
       showSavingPopup = false;
     }
@@ -285,6 +312,8 @@
         formState = { ...defaultState, ...savedData, uuid: formUuid };
         finalChecked = saved?.form_status === 'final';
         highlySensitive = Boolean(saved?.highly_sensitive || savedData.highlySensitive);
+        const savedVersion = Number(saved?.version);
+        if (!Number.isNaN(savedVersion)) formVersion = savedVersion;
         formHistory = await getFormHistory(formUuid);
       }
       isReadOnlyView = openInRoV;
@@ -694,6 +723,7 @@
 {#if showCancelPopup}<FbModalCancel onDiscard={closeForm} onReturnToForm={() => (showCancelPopup = false)} />{/if}
 {#if showSavingPopup}<FbModalSaving />{/if}
 {#if showSavedPopup}<FbModalSaved />{/if}
+{#if showStaleSavePopup}<FbModalStaleSave onContinue={continueAfterStaleSave} />{/if}
 {#if saveError}<FbModalSaveError error={saveError} onReturnToForm={() => (saveError = '')} />{/if}
 
 <style>

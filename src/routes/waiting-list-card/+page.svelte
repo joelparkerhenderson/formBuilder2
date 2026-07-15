@@ -50,7 +50,9 @@
   import { specialities } from '$lib/data/specialities';
   import { formDateToIsoDate, formatFormDate, generateUUID } from '$lib/utils/dateFormat';
   import { returnByHref } from '$lib/utils/fbHrefNavigation';
-  import { getForm, getFormHistory, getFormVersion, getLatestVersion, getPatient, insertForm, insertFormsIndex } from '$lib/api/legacy';
+  import { getForm, getFormHistory, getFormVersion, getPatient, insertForm, insertFormsIndex } from '$lib/api/legacy';
+  import FbModalStaleSave from '$lib/components/fb/fbModalStaleSave.svelte';
+  import { assertFormVersionIsLatest, isStaleFormVersionError } from '$lib/utils/formVersion';
   import { cleanArrayOfObjects, compareFormStatesObj } from '$lib/utils/formStateUtils';
 
   type SaveStatus = 'final' | 'draft';
@@ -113,6 +115,7 @@
   let cleanSnapshot: FormSnapshot | null = $state(null);
   let formHistory: FbFormHistoryItem[] = $state([]);
   let showHistoryMenu = $state(false);
+  let showStaleSavePopup = $state(false);
 
   let formState: Record<string, any> = $state({
     organisation: 'bae-glas',
@@ -413,8 +416,8 @@
       isSaving = true;
       saveError = '';
       const formUuid = formState.uuid || generateUUID();
-      const latest = formState.uuid ? await getLatestVersion('waiting_list_cards', formUuid) : { version: null };
-      const version = latest.version === null ? 0 : latest.version + 1;
+      const latestVersion = formState.uuid ? await assertFormVersionIsLatest('waiting_list_cards', formUuid, formVersion) : null;
+      const version = latestVersion === null ? 0 : latestVersion + 1;
       const eventDate = formDateToIsoDate(formState.dateListed) || new Date().toISOString();
       const formData = {
         ...normaliseWaitingListFormState(formState),
@@ -450,7 +453,7 @@
 
       formState = normaliseWaitingListFormState({ ...formData });
       cleanSnapshot = createFormSnapshot(formState, procedures, anticoagChecked, finalChecked, highlySensitive);
-      formVersion = null;
+      formVersion = version;
       showSavedPopup = true;
       window.setTimeout(() => {
         showSavedPopup = false;
@@ -461,7 +464,11 @@
         }
       }, 1000);
     } catch (err) {
-      saveError = err instanceof Error ? err.message : String(err);
+      if (isStaleFormVersionError(err)) {
+        showStaleSavePopup = true;
+      } else {
+        saveError = err instanceof Error ? err.message : String(err);
+      }
     } finally {
       isSaving = false;
     }
@@ -506,6 +513,8 @@
         anticoagChecked = savedData.anticoagChecked || anticoagChecked;
         highlySensitive = Boolean(saved?.highly_sensitive ?? savedData.highlySensitive);
         finalChecked = saved.form_status === 'final';
+        const savedVersion = Number(saved?.version);
+        if (!Number.isNaN(savedVersion)) formVersion = savedVersion;
         isReadOnlyView = outpatientReturnReadOnly;
         formHistory = await getFormHistory(formUuid);
       } else if (fromOutpatientOutcome) {
@@ -540,6 +549,30 @@
     isReadOnlyView = true;
     showHistoryMenu = false;
     cleanSnapshot = createFormSnapshot(formState, procedures, anticoagChecked, finalChecked, highlySensitive);
+  }
+
+  async function continueAfterStaleSave() {
+    showStaleSavePopup = false;
+    const formUuid = formState.uuid;
+    if (!formUuid) return;
+    try {
+      const saved = await getForm('waiting_list_card', formUuid);
+      const savedData = saved?.form_data || {};
+      formState = normaliseWaitingListFormState({ ...savedData, uuid: formUuid });
+      procedures = Array.isArray(savedData.procedures) && savedData.procedures.length
+        ? savedData.procedures.map((procedure: any, index: number) => ({ id: procedure.id || index + 1, ...procedure }))
+        : [{ id: 1, side: '', procedure: '', additionalInfo: '' }];
+      anticoagChecked = savedData.anticoagChecked || { warfarin: false, doac: false, antiplatelet: false, heparin: false };
+      highlySensitive = Boolean(saved?.highly_sensitive ?? savedData.highlySensitive);
+      finalChecked = saved.form_status === 'final';
+      const savedVersion = Number(saved?.version);
+      if (!Number.isNaN(savedVersion)) formVersion = savedVersion;
+      formHistory = await getFormHistory(formUuid);
+      cleanSnapshot = createFormSnapshot(formState, procedures, anticoagChecked, finalChecked, highlySensitive);
+    } catch {
+      // fall through to RoV with the local state if the reload fails
+    }
+    isReadOnlyView = true;
   }
 </script>
 
@@ -892,6 +925,10 @@
 
 {#if showHistoryMenu}
   <FbFormHistoryMenu history={formHistory} onViewVersion={viewHistoryVersion} onClose={() => (showHistoryMenu = false)} />
+{/if}
+
+{#if showStaleSavePopup}
+  <FbModalStaleSave onContinue={continueAfterStaleSave} />
 {/if}
 
 <style>

@@ -32,7 +32,9 @@
   import { compareFormStatesObj } from '$lib/utils/formStateUtils';
   import { formatFormDate, generateUUID } from '$lib/utils/dateFormat';
   import { returnByHref } from '$lib/utils/fbHrefNavigation';
-  import { getForm, getFormHistory, getFormVersion, getLatestVersion, getPatient, insertForm, insertFormsIndex } from '$lib/api/legacy';
+  import { getForm, getFormHistory, getFormVersion, getPatient, insertForm, insertFormsIndex } from '$lib/api/legacy';
+  import FbModalStaleSave from '$lib/components/fb/fbModalStaleSave.svelte';
+  import { assertFormVersionIsLatest, isStaleFormVersionError } from '$lib/utils/formVersion';
   import type { Patient } from '$lib/types';
 
   type SaveStatus = 'final' | 'draft';
@@ -107,6 +109,7 @@
   let saveErrorDetails = $state('');
   let formHistory: FbFormHistoryItem[] = $state([]);
   let showHistoryMenu = $state(false);
+  let showStaleSavePopup = $state(false);
   const latestKnownVersion = $derived(formHistory.reduce((max, item) => Math.max(max, Number(item.form_version) || 0), 0));
   const superseded = $derived(formVersion !== null && latestKnownVersion > formVersion);
   const dischargedChecked = $derived(Boolean(formState.discharged ?? formState.discharge));
@@ -328,6 +331,8 @@
         syncWorkingDiagnosisFromFormState();
         finalChecked = saved?.form_status === 'final';
         highlySensitive = Boolean(saved?.highly_sensitive ?? saved?.form_data?.highlySensitive);
+        const savedVersion = Number(saved?.version);
+        if (!Number.isNaN(savedVersion)) formVersion = savedVersion;
         isReadOnlyView = openInRoV;
         formHistory = await getFormHistory(formUuid);
       } catch (error) {
@@ -372,8 +377,8 @@
     showSavingPopup = true;
     try {
       const formUuid = formState.uuid || generateUUID();
-      const latest = await getLatestVersion('outpatient_outcome', formUuid);
-      const version = (latest.version || 0) + 1;
+      const latestVersion = await assertFormVersionIsLatest('outpatient_outcome', formUuid, formVersion);
+      const version = (latestVersion || 0) + 1;
       const formData = {
         ...formState,
         workingDiagnosis: workingDiagnosisValue,
@@ -408,7 +413,7 @@
       });
       formState = { ...formData, uuid: formUuid };
       cleanSnapshot = { ...formState };
-      formVersion = null;
+      formVersion = version;
       showSavingPopup = false;
       showSavedPopup = true;
       if (inline) {
@@ -418,12 +423,36 @@
         }, 1000);
       }
     } catch (error) {
-      saveErrorDetails = error instanceof Error ? error.message : String(error);
       showSavingPopup = false;
-      showSaveErrorPopup = true;
+      if (isStaleFormVersionError(error)) {
+        showStaleSavePopup = true;
+      } else {
+        saveErrorDetails = error instanceof Error ? error.message : String(error);
+        showSaveErrorPopup = true;
+      }
     } finally {
       isSaving = false;
     }
+  }
+
+  async function continueAfterStaleSave() {
+    showStaleSavePopup = false;
+    const formUuid = formState.uuid;
+    if (!formUuid) return;
+    try {
+      const saved = await getForm('outpatient_outcome', formUuid);
+      formState = { ...initialFormState(), ...(saved?.form_data || {}), uuid: formUuid };
+      syncWorkingDiagnosisFromFormState();
+      finalChecked = saved?.form_status === 'final';
+      highlySensitive = Boolean(saved?.highly_sensitive ?? saved?.form_data?.highlySensitive);
+      const savedVersion = Number(saved?.version);
+      if (!Number.isNaN(savedVersion)) formVersion = savedVersion;
+      formHistory = await getFormHistory(formUuid);
+      cleanSnapshot = { ...formState };
+    } catch {
+      // fall through to RoV with the local state if the reload fails
+    }
+    isReadOnlyView = true;
   }
 
   function bullet(label: string) {
@@ -691,6 +720,7 @@
 {#if showSavingPopup}<FbSavingPopup />{/if}
 {#if showSavedPopup}<FbSavedPopup />{/if}
 {#if showSaveErrorPopup}<FbSaveErrorPopup error={saveErrorDetails} onReturnToForm={() => (showSaveErrorPopup = false)} />{/if}
+{#if showStaleSavePopup}<FbModalStaleSave onContinue={continueAfterStaleSave} />{/if}
 {#if showHistoryMenu}
   <FbFormHistoryMenu history={formHistory} onViewVersion={viewHistoryVersion} onClose={() => (showHistoryMenu = false)} />
 {/if}

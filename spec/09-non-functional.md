@@ -41,7 +41,7 @@ Restatements of the [spec/07](07-rest-api-and-data-model.md) domain rules as tes
 - A final operation note's non-empty implant rows appear in the implant registry after cooling-off, each with a stable row `uuid`; removing a row in a later final marks the registry row `superseded` without losing `date_removed`.
 - Every form save writes a matching `forms_index` row; `forms_index_current` returns exactly one row per `form_uuid`.
 - `formState` mutations are immutable-update only (`formState = { ...formState, [key]: value }`) so change detection (`compareFormStatesObj`) stays correct.
-- Saving must detect a concurrent newer version and refuse/redirect rather than interleave — **currently missing** (GAP-16; reactOrig's `assertFormVersionIsLatest` is prior art).
+- Saving must detect a concurrent newer version and refuse rather than interleave — implemented via `assertFormVersionIsLatest` in `src/lib/utils/formVersion.ts` across all clinical save flows (GAP-16, resolved); on conflict the user sees `fbModalStaleSave` and lands in RoV of the current version.
 
 ## Runtime constraints
 

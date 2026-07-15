@@ -116,6 +116,7 @@ Per-component behavioural detail (props, states, edge rules) lives in the HTML s
 | `fbModal` / `FbModalActions` / `FbModalMessage` | Modal base, action row, message body |
 | `fbModalPassword` | Password prompt |
 | `fbModalSaving` / `fbModalSaved` / `fbModalSaveError` | Save lifecycle modals |
+| `fbModalStaleSave` | "Changes NOT saved" conflict modal (concurrent-editor stale save; Continue → RoV of current version) |
 | `fbModalDraft` / `fbModalCancel` | Draft-saved / cancel-confirm modals |
 | `fbPopup` (HTML spec) | Popup — *listed in the HTML spec; verify presence before citing* |
 
