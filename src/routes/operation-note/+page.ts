@@ -10,13 +10,21 @@ export const load: PageLoad = async ({ fetch, url }) => {
   const api = createApiClient({ fetch });
   const patientUuid = url.searchParams.get('patientUuid') || defaultPatientUuid;
   const formUuid = url.searchParams.get('formUuid') || '';
-  const openInRoV = url.searchParams.get('openInRoV') === 'true';
+  const formVersion = Number(url.searchParams.get('formVersion') || '') || null;
+  // A specific historical version always opens read-only
+  const openInRoV = url.searchParams.get('openInRoV') === 'true' || formVersion !== null;
   const readOnlyBackOnly = url.searchParams.get('readOnlyBackOnly') === 'true';
 
   try {
     const [patient, savedForm] = await Promise.all([
       api.get<Patient>(`/patients/${encodeURIComponent(patientUuid)}`),
-      formUuid ? api.get<Record<string, any>>(`/forms/operation_note/${encodeURIComponent(formUuid)}`) : Promise.resolve(null)
+      formUuid
+        ? api.get<Record<string, any>>(
+            formVersion
+              ? `/forms/operation_note/${encodeURIComponent(formUuid)}/versions/${encodeURIComponent(formVersion)}`
+              : `/forms/operation_note/${encodeURIComponent(formUuid)}`
+          )
+        : Promise.resolve(null)
     ]);
     return { patient, patientUuid, formUuid, savedForm, openInRoV, readOnlyBackOnly, loadError: '' };
   } catch (error) {

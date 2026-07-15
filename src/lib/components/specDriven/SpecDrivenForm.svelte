@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { base } from '$app/paths';
   import { createApiClient } from '$lib/api/client';
+  import { getFormHistory, getFormVersion, getLatestVersion } from '$lib/api/legacy';
   import FbBloodPressure from '$lib/components/fb/fbBloodPressure.svelte';
   import FbBottomControlsRow from '$lib/components/fb/fbBottomControlsRow.svelte';
   import FbBoxedMessage from '$lib/components/fb/fbBoxedMessage.svelte';
@@ -10,6 +12,7 @@
   import FbDateHeightWeightBMIRow from '$lib/components/fb/fbDateHeightWeightBMIRow.svelte';
   import FbDatePartial from '$lib/components/fb/fbDatePartial.svelte';
   import FbDropdown from '$lib/components/fb/fbDropdown.svelte';
+  import FbFormHistoryMenu, { type FbFormHistoryItem } from '$lib/components/fb/fbFormHistoryMenu.svelte';
   import FbGridCell from '$lib/components/fb/fbGridCell.svelte';
   import FbGridRow from '$lib/components/fb/fbGridRow.svelte';
   import FbGroup from '$lib/components/fb/fbGroup.svelte';
@@ -80,6 +83,8 @@
   let saveError = $state('');
   let currentVersion = $state(Number(savedForm?.version) || 0);
   let draggedTableRow = $state<{ key: string; id: number } | null>(null);
+  let formHistory = $state<FbFormHistoryItem[]>([]);
+  let showHistoryMenu = $state(false);
 
   const effectiveFormStatus = $derived(finalChecked ? 'final' : 'draft');
   const formChanged = $derived(!compareFormStatesObj(cleanSnapshot, formState));
@@ -236,6 +241,30 @@
     return next;
   }
 
+  async function refreshFormHistory() {
+    try {
+      formHistory = await getFormHistory(formUuid);
+    } catch {
+      formHistory = [];
+    }
+  }
+
+  onMount(() => {
+    if (savedForm) refreshFormHistory();
+  });
+
+  async function viewHistoryVersion(version: number) {
+    const saved = await getFormVersion(spec.formType, formUuid, version);
+    const savedData = saved?.form_data || {};
+    formState = { ...initialState(), ...savedData, uuid: formUuid };
+    highlySensitive = Boolean(saved?.highly_sensitive ?? savedData.highlySensitive);
+    finalChecked = saved?.form_status === 'final';
+    currentVersion = Number(saved?.version) || version;
+    cleanSnapshot = { ...formState };
+    isReadOnlyView = true;
+    showHistoryMenu = false;
+  }
+
   function backToRecord() {
     if (inline) {
       onClose();
@@ -256,7 +285,10 @@
     try {
       const normalisedState = ensureSavedImplantRowUuids(formState);
       formState = normalisedState;
-      const nextVersion = currentVersion + 1;
+      // Base the next version on the server's latest, not the loaded version,
+      // so saving after viewing an old version cannot collide with existing rows
+      const latest = savedForm || formHistory.length ? await getLatestVersion(spec.formType, formUuid) : { version: null };
+      const nextVersion = Math.max(Number(latest?.version) || 0, currentVersion) + 1;
       const eventDate = formDateToIsoDate(normalisedState.date || normalisedState.operationDate || normalisedState.clinicDate) || new Date().toISOString();
       const formData = {
         ...normalisedState,
@@ -295,6 +327,7 @@
       cleanSnapshot = { ...normalisedState };
       password = '';
       isReadOnlyView = true;
+      refreshFormHistory();
     } catch (error) {
       saveError = error instanceof Error ? error.message : String(error);
     } finally {
@@ -459,6 +492,9 @@
         {#if !readOnlyBackOnly && effectiveFormStatus !== 'final'}
           <FbButton type="button" variant="primary" onclick={() => isReadOnlyView = false}>EV</FbButton>
         {/if}
+        {#if formHistory.length > 0}
+          <FbButton type="button" variant="primary" onclick={() => showHistoryMenu = true}>History</FbButton>
+        {/if}
         <div class="spec-driven-footer-spacer"></div>
         <FbButton type="button" variant="primary" onclick={backToRecord}>Back</FbButton>
       </div>
@@ -513,6 +549,10 @@
       />
     {/snippet}
   </FbLayout>
+{/if}
+
+{#if showHistoryMenu}
+  <FbFormHistoryMenu history={formHistory} onViewVersion={viewHistoryVersion} onClose={() => (showHistoryMenu = false)} />
 {/if}
 
 <style>

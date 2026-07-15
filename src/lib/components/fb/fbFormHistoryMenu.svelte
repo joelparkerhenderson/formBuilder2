@@ -111,8 +111,8 @@
 
   .view-old-version:hover,
   .view-old-version:focus {
-    border-color: var(--fb-yellow);
-    background: var(--fb-yellow);
+    border-color: var(--fb-active-darker-yellow);
+    background: var(--fb-active-darker-yellow);
     color: black;
   }
 

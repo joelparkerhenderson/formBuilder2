@@ -36,7 +36,7 @@ All clinical forms share the common chrome and lifecycle: `fbLayout` with sectio
 - **Engine & persistence**: **Engine A** — the only committed `SpecDrivenFormSpec`; saves `form_type: 'operation_note'` with destination metadata columns (`organisation`, `hospital`, `senior_responsible_clinician`, `speciality`).
 - **Sections** (8): Basic information · Surgeons and anaesthetists · Prophylaxis and other specific preop or intraop medication · Procedure(s) · Detail · Tissue removed and pathological specimens · Images · Implants – Scan for safety.
 - **Behaviour notes**: required-field specials — `procedures` needs ≥1 non-empty row; `urgency` needs `emergency` or `elective`+`electiveUrgency`. On a **final** save, non-empty `form_data.implants[]` rows get persistent UUIDs and, after cooling-off promotion, are synchronised into the Implant registry (`implants` table; rows dropped in a later final version become `superseded`). Contract detail in [spec/07](07-rest-api-and-data-model.md).
-- **Known deviations**: RoV renders table fields as raw JSON (GAP-13); no version-history viewing — Engine A lacks it entirely (GAP-18).
+- **Known deviations**: RoV renders table fields as raw JSON (GAP-13). Version-history viewing added 2026-07-15 (GAP-18 resolved).
 
 ## Outpatient outcome
 

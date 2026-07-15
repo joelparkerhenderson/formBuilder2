@@ -81,7 +81,9 @@ SpecDrivenFormSpec { title, formType, filename, sections[] }
 
 **Read-only view (RoV)**: the `rovField` snippet renders each field via `fbReadOnly` (option labels resolved by `optionLabel`; blood pressure as `systolic/diastolic mmHg`; BMI row as three read-only fields). Table-family fields currently render as raw `JSON.stringify` — a known prototype shortcut (GAP-13). An **EV** (edit view) button returns to editing unless the form is final or `readOnlyBackOnly`.
 
-**Not yet supported by this renderer**: version-history viewing (no `formVersion` param plumbing or `fbFormHistoryMenu` wiring — GAP-18), stale-version save conflict detection (GAP-16), and superseded-state display (GAP-17). Hand-coded routes like `src/routes/waiting-list-card/` have the history pattern; port it here to fix all Engine A forms at once.
+**Version history**: for saved forms the renderer loads the version list (`getFormHistory`) on mount and after each save, shows a **History** button in the RoV footer, and opens any version read-only via `viewHistoryVersion` (`getFormVersion`). Routes may pass a `formVersion` query param to open a specific version directly (see `src/routes/operation-note/+page.ts` — historical versions always open in RoV). Save numbering asks the server for the latest version and uses `max(latest, loaded) + 1`, so saving after viewing an old version cannot collide with existing rows.
+
+**Not yet supported by this renderer**: user-facing stale-version conflict warnings (GAP-16 — collisions are prevented, but a concurrent editor gets no notice) and superseded-state display when viewing old versions (GAP-17).
 
 ## Authoring checklist — adding an Engine A form
 
