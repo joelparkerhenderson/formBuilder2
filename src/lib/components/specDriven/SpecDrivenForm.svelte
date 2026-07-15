@@ -31,6 +31,12 @@
   import FbSCTProcedure from '$lib/components/fb/fbSCTProcedure.svelte';
   import FbSection from '$lib/components/fb/fbSection.svelte';
   import FbSmartDropdown from '$lib/components/fb/fbSmartDropdown.svelte';
+  import FbTable from '$lib/components/fb/fbTable.svelte';
+  import FbTableBody from '$lib/components/fb/fbTableBody.svelte';
+  import FbTableCell from '$lib/components/fb/fbTableCell.svelte';
+  import FbTableHeader from '$lib/components/fb/fbTableHeader.svelte';
+  import FbTableHeaderCell from '$lib/components/fb/fbTableHeaderCell.svelte';
+  import FbTableRow from '$lib/components/fb/fbTableRow.svelte';
   import FbTextArea from '$lib/components/fb/fbTextArea.svelte';
   import FbTextInput from '$lib/components/fb/fbTextInput.svelte';
   import FbTime from '$lib/components/fb/fbTime.svelte';
@@ -220,6 +226,17 @@
   function optionLabel(field: SimpleField, value: any) {
     if (Array.isArray(value)) return value.map((item) => field.options?.find((option) => option.value === item)?.label || item).join(', ');
     return field.options?.find((option) => option.value === value)?.label || value;
+  }
+
+  const rovSideLabels: Record<string, string> = { left: 'Left', right: 'Right', bilateral: 'Bilateral', not_applicable: 'Not applicable' };
+
+  function rovRows(key: string) {
+    return Array.isArray(formState[key]) ? formState[key] : [];
+  }
+
+  function rovStaffLabel(kind: 'surgeon' | 'anaesthetist', index: number) {
+    if (kind === 'surgeon') return index === 0 ? 'Second surgeon' : `Surgeon ${index + 2}`;
+    return index === 0 ? 'Second anaesthetist' : `Anaesthetist ${index + 2}`;
   }
 
   function rowCols(row: SimpleRow) {
@@ -472,8 +489,78 @@
         {/each}
       </div>
     </div>
-  {:else if field.type === 'procedureTable' || field.type === 'diagnosisTable' || field.type === 'specimenTable' || field.type === 'implantTable' || field.type === 'surgeonGroup' || field.type === 'anaesthetistGroup'}
-    <FbReadOnly label={field.label} value={JSON.stringify(formState[field.key] || [], null, 2)} preserveGridSpace />
+  {:else if field.type === 'surgeonGroup' || field.type === 'anaesthetistGroup'}
+    {@const kind = field.type === 'surgeonGroup' ? 'surgeon' : 'anaesthetist'}
+    {@const leadKey = kind === 'surgeon' ? 'leadSurgeon' : 'leadAnaesthetist'}
+    {@const srcKey = kind === 'surgeon' ? 'surgeonSRC' : 'anaesthetistSRC'}
+    <div class="spec-driven-rov-staff">
+      <div class="spec-driven-rov-table-label">{field.label}</div>
+      <FbReadOnly label={kind === 'surgeon' ? 'Lead surgeon' : 'Lead anaesthetist'} value={formState[leadKey] || ''} coded={formState[`${leadKey}_coded`]} preserveGridSpace />
+      <FbReadOnly label={kind === 'surgeon' ? 'Surgeon SRC' : 'Anaesthetist SRC'} value={formState[srcKey] || ''} coded={formState[`${srcKey}_coded`]} preserveGridSpace />
+      {#each rovRows(field.key).filter((row) => row.name) as row, index (row.id)}
+        <FbReadOnly label={rovStaffLabel(kind, index)} value={row.name} coded={row.coded} preserveGridSpace />
+      {/each}
+    </div>
+  {:else if field.type === 'procedureTable'}
+    {@const rows = rovRows(field.key).filter((row) => row.procedure)}
+    {#if rows.length}
+      <div class="spec-driven-rov-table">
+        <div class="spec-driven-rov-table-label">{field.label}</div>
+        <FbTable>
+          <FbTableHeader><FbTableRow><FbTableHeaderCell width="20%">Side</FbTableHeaderCell><FbTableHeaderCell width="40%">Procedure</FbTableHeaderCell><FbTableHeaderCell>Additional information</FbTableHeaderCell></FbTableRow></FbTableHeader>
+          <FbTableBody>
+            {#each rows as row (row.id)}
+              <FbTableRow><FbTableCell>{rovSideLabels[row.side] || row.side || '—'}</FbTableCell><FbTableCell>{row.procedure}</FbTableCell><FbTableCell>{row.additionalInfo || '—'}</FbTableCell></FbTableRow>
+            {/each}
+          </FbTableBody>
+        </FbTable>
+      </div>
+    {/if}
+  {:else if field.type === 'diagnosisTable'}
+    {@const rows = rovRows(field.key).filter((row) => row.diagnosis)}
+    {#if rows.length}
+      <div class="spec-driven-rov-table">
+        <div class="spec-driven-rov-table-label">{field.label}</div>
+        <FbTable>
+          <FbTableHeader><FbTableRow><FbTableHeaderCell>Diagnosis</FbTableHeaderCell></FbTableRow></FbTableHeader>
+          <FbTableBody>
+            {#each rows as row (row.id)}
+              <FbTableRow><FbTableCell>{row.diagnosis}</FbTableCell></FbTableRow>
+            {/each}
+          </FbTableBody>
+        </FbTable>
+      </div>
+    {/if}
+  {:else if field.type === 'specimenTable'}
+    {@const rows = rovRows(field.key).filter((row) => row.label || row.description)}
+    {#if rows.length}
+      <div class="spec-driven-rov-table">
+        <div class="spec-driven-rov-table-label">{field.label}</div>
+        <FbTable>
+          <FbTableHeader><FbTableRow><FbTableHeaderCell width="5rem">A, B, C</FbTableHeaderCell><FbTableHeaderCell>Description</FbTableHeaderCell></FbTableRow></FbTableHeader>
+          <FbTableBody>
+            {#each rows as row (row.id)}
+              <FbTableRow><FbTableCell>{row.label || '—'}</FbTableCell><FbTableCell>{row.description || '—'}</FbTableCell></FbTableRow>
+            {/each}
+          </FbTableBody>
+        </FbTable>
+      </div>
+    {/if}
+  {:else if field.type === 'implantTable'}
+    {@const rows = rovRows(field.key).filter((row) => row.implantId || row.description || row.requiresRemoval || row.removeBy)}
+    {#if rows.length}
+      <div class="spec-driven-rov-table">
+        <div class="spec-driven-rov-table-label">{field.label}</div>
+        <FbTable>
+          <FbTableHeader><FbTableRow><FbTableHeaderCell width="9rem">Implant Id</FbTableHeaderCell><FbTableHeaderCell>Type / description</FbTableHeaderCell><FbTableHeaderCell width="12rem">Requires exchange or removal?</FbTableHeaderCell><FbTableHeaderCell width="12rem">Remove by</FbTableHeaderCell></FbTableRow></FbTableHeader>
+          <FbTableBody>
+            {#each rows as row (row.id)}
+              <FbTableRow><FbTableCell>{row.implantId || '—'}</FbTableCell><FbTableCell>{row.description || '—'}</FbTableCell><FbTableCell>{row.requiresRemoval === 'yes' ? 'Yes' : row.requiresRemoval === 'no' ? 'No' : '—'}</FbTableCell><FbTableCell>{row.requiresRemoval === 'yes' ? (row.removeBy || '—') : '—'}</FbTableCell></FbTableRow>
+            {/each}
+          </FbTableBody>
+        </FbTable>
+      </div>
+    {/if}
   {:else if field.type === 'bloodPressure'}
     <FbReadOnly label={field.label} value={[formState[`${field.key}_systolic`], formState[`${field.key}_diastolic`]].filter(Boolean).join('/')} units="mmHg" preserveGridSpace />
   {:else if field.type === 'dateHeightWeightBMIRow'}
@@ -651,5 +738,20 @@
     color: #d50000;
     font-weight: 500;
     margin: 0.6rem;
+  }
+
+  .spec-driven-rov-table {
+    margin: 0.4rem 0 0.6rem;
+    overflow-x: auto;
+  }
+
+  .spec-driven-rov-table-label {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 0.2rem;
+  }
+
+  .spec-driven-rov-staff {
+    margin: 0.4rem 0 0.6rem;
   }
 </style>

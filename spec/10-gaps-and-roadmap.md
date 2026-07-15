@@ -25,7 +25,7 @@ The audit register. Every known defect, inconsistency, or missing capability get
 | GAP-10 | Medium | Engine A conditional logic hardcoded in renderer | Open |
 | GAP-11 | Medium | CNT simulated backend vs future REST contract | Open (by design, pending) |
 | GAP-12 | Info | Legacy typo component `fbBadgeSupperseded` in reactOrig | Record-only |
-| GAP-13 | Low | Engine A RoV renders table fields as raw JSON | Open |
+| GAP-13 | Low | Engine A RoV renders table fields as raw JSON | Resolved 2026-07-15 |
 | GAP-14 | Low | Actioned-endpoint body field names differ between client and contract doc | Open (evidence favours client) |
 | GAP-15 | Medium | `setup-db.ts` schema drift vs API contract | Resolved 2026-07-15 |
 | GAP-16 | Medium | No stale-version write guard (concurrent-save conflicts undetected) | Resolved 2026-07-15 |
@@ -67,7 +67,7 @@ The audit register. Every known defect, inconsistency, or missing capability get
 
 **GAP-12 — Legacy typo.** `reactOrig` contains both `fbBadgeSuperseded` and misspelled `fbBadgeSupperseded`. Record-only: never propagate the misspelling; legacy dirs are frozen.
 
-**GAP-13 — Engine A RoV tables.** `rovField` in `SpecDrivenForm.svelte` renders table-family fields as `JSON.stringify` into `fbReadOnly`. *Action*: render proper read-only tables (Engine B's `GeneratedTableShell` is prior art).
+**GAP-13 — Engine A RoV tables.** *(Resolved 2026-07-15.)* `rovField` in `SpecDrivenForm.svelte` rendered table-family fields as `JSON.stringify` into `fbReadOnly`. *Resolution*, following `reactOrig/src/OperationNoteRoV.tsx`: each table type now renders a read-only `fbTable` with proper headers and plain-text cells — procedure (Side/Procedure/Additional information, side values labelled), diagnosis (single Diagnosis column), specimen (A, B, C/Description), implant (Implant Id/Type/Requires removal as Yes–No/Remove by) — with empty rows filtered out, em-dashes for blank optional cells, and entirely-empty tables suppressed. Surgeon/anaesthetist groups render as labelled `fbReadOnly` rows (lead, SRC, then named additional staff).
 
 **GAP-14 — Actioned body naming.** `markOutpatientOutcomeActioned` in `src/lib/api/legacy.ts` sends `outcome_actioned_date`/`outcome_actioned_user_id`; `docs/restAPI.md` documents `date_actioned`/`user_id`. The server may accept both. *Evidence 2026-07-15*: the database columns added by `scripts/seed-outpatient-outcomes-real-db.ts` are `outcome_actioned_date`/`outcome_actioned_user_id` — matching the client, suggesting the contract doc's wording is stale. *Action*: confirm against the server, then align the wording in [spec/07](07-rest-api-and-data-model.md).
 
@@ -80,6 +80,6 @@ The audit register. Every known defect, inconsistency, or missing capability get
 3. **Quality baseline** (GAP-05) — `svelte-check`, utility tests, CI.
 4. **Engine unification decision** (GAP-02, GAP-10) — decide the target vocabulary and declarative-conditions design before migrating forms.
 5. **Complete the runes migration** (GAP-03).
-6. **Migrate hand-coded forms** (GAP-04) and fix Engine A RoV tables (GAP-13).
+6. **Migrate hand-coded forms** (GAP-04). ~~Fix Engine A RoV tables (GAP-13)~~ done 2026-07-15.
 7. **Versioning robustness** — ~~GAP-16, GAP-17, GAP-18~~ done 2026-07-15; remaining: GAP-19 empty-section suppression and contract reconciliation (GAP-14).
 8. **CNT server backend** (GAP-11) when SWAS work is scheduled.
