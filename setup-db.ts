@@ -180,6 +180,102 @@ CREATE TABLE IF NOT EXISTS outpatient_appointments (
 
 -- Ensure outcome_form_uuid column exists on outpatient_appointments if table already existed
 ALTER TABLE outpatient_appointments ADD COLUMN IF NOT EXISTS outcome_form_uuid UUID;
+
+-- Ensure outcome actioned columns exist on outpatient_appointments (appended on actioning, audit trail)
+ALTER TABLE outpatient_appointments ADD COLUMN IF NOT EXISTS outcome_actioned_date DATE;
+ALTER TABLE outpatient_appointments ADD COLUMN IF NOT EXISTS outcome_actioned_user_id VARCHAR(100);
+
+-- 8. Treatment Summary form data schema (Composer-designed form promoted to clinical form)
+CREATE TABLE IF NOT EXISTS treatment_summaries (
+  uuid UUID NOT NULL,
+  version INT NOT NULL,
+  patient_uuid UUID REFERENCES patients(uuid) ON DELETE CASCADE,
+  event_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+  form_status VARCHAR(20) NOT NULL,
+  form_data JSONB NOT NULL,
+  PRIMARY KEY (uuid, version)
+);
+
+-- 9. Cardiology Test Request form data schema (stores destination metadata like operation_notes)
+CREATE TABLE IF NOT EXISTS cardiology_test_requests (
+  uuid UUID NOT NULL,
+  version INT NOT NULL,
+  patient_uuid UUID REFERENCES patients(uuid) ON DELETE CASCADE,
+  event_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+  form_status VARCHAR(20) NOT NULL,
+  form_data JSONB NOT NULL,
+  organisation VARCHAR(100),
+  hospital VARCHAR(100),
+  senior_responsible_clinician VARCHAR(150),
+  speciality VARCHAR(100),
+  PRIMARY KEY (uuid, version)
+);
+
+-- 10. Implant registry, synchronised from final operation notes
+CREATE TABLE IF NOT EXISTS implants (
+  id BIGSERIAL PRIMARY KEY,
+  operation_note_uuid UUID NOT NULL,
+  operation_note_version INT NOT NULL,
+  operation_note_implant_row_uuid UUID NOT NULL,
+  health_board VARCHAR(100),
+  health_board_text VARCHAR(200),
+  facility_code VARCHAR(100),
+  facility_text VARCHAR(200),
+  surgeon_src_text VARCHAR(200),
+  surgeon_src_nadex_id VARCHAR(100),
+  speciality VARCHAR(100),
+  patient_uuid UUID REFERENCES patients(uuid) ON DELETE CASCADE,
+  date_inserted DATE,
+  implant_id VARCHAR(200),
+  implant_description TEXT,
+  remove_by_date DATE,
+  remove_by_display VARCHAR(100),
+  date_removed DATE,
+  superseded BOOLEAN NOT NULL DEFAULT false,
+  source_form_data JSONB,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  UNIQUE (operation_note_uuid, operation_note_implant_row_uuid)
+);
+CREATE INDEX IF NOT EXISTS implants_patient_uuid_idx ON implants (patient_uuid);
+CREATE INDEX IF NOT EXISTS implants_remove_by_date_idx ON implants (remove_by_date);
+CREATE INDEX IF NOT EXISTS implants_filters_idx ON implants (health_board, speciality, surgeon_src_nadex_id);
+
+-- Ensure implants sync marker exists on operation_notes
+ALTER TABLE operation_notes ADD COLUMN IF NOT EXISTS implants_synced_at TIMESTAMP WITH TIME ZONE;
+
+-- 11. User lookup for NADEX Id tooltip enrichment
+CREATE TABLE IF NOT EXISTS user_lookup (
+  nadex_id VARCHAR(100) PRIMARY KEY,
+  title VARCHAR(50),
+  first_names VARCHAR(150),
+  surname VARCHAR(150),
+  role VARCHAR(150),
+  facility VARCHAR(200),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- 12. Cross-cutting form lifecycle columns: highly sensitive flag and cooling-off fields
+-- on every patient-form table and forms_index (see docs/restAPI.md, POST /api/forms/:formType)
+DO $$
+DECLARE
+  t TEXT;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['waiting_list_cards', 'operation_notes', 'outpatient_outcomes', 'treatment_summaries', 'cardiology_test_requests', 'forms_index']
+  LOOP
+    EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS highly_sensitive BOOLEAN DEFAULT false NOT NULL', t);
+    EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS final_requested_at TIMESTAMP WITH TIME ZONE', t);
+    EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS cooling_off_period_minutes INT', t);
+    EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS cooling_off_expires_at TIMESTAMP WITH TIME ZONE', t);
+  END LOOP;
+END $$;
+
+-- Recreate the current-version view so it includes the lifecycle columns added above
+DROP VIEW IF EXISTS forms_index_current CASCADE;
+CREATE OR REPLACE VIEW forms_index_current AS
+SELECT DISTINCT ON (form_uuid) *
+FROM forms_index
+ORDER BY form_uuid, form_version DESC;
 `;
 
 const patientsSeed = [

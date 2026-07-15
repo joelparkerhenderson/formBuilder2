@@ -2,7 +2,7 @@
 Status: living
 Last-updated: 2026-07-15
 Source-of-truth: code
-Verified-against: 637f03a
+Verified-against: 310262a
 Owns: the REST API contract, the inviolable domain rules, and the PostgreSQL data model (including the future CNT contract).
 
 # spec/07 — REST API and data model
@@ -103,8 +103,11 @@ PostgreSQL via `pg` and `DATABASE_URL` (SSL auto-enabled for common hosts); `pg_
 | `operation_notes` | Same base + `organisation`, `hospital`, `senior_responsible_clinician`, `speciality` (+ `implants_synced_at` per contract) |
 | `outpatient_outcomes` | Base + `appointment_uuid` |
 | `outpatient_appointments` | `uuid`, `version`, `patient_uuid`, `updated_at/by`, `organisation`, `speciality`, `site`, `senior_clinician`, `clinic_name`, `date`, `time`, `outcome_form_uuid`; PK `(uuid, version)` |
-| `treatment_summaries`, `cardiology_test_requests` | Mapped form tables per the contract (created server-side; not in `setup-db.ts` at `637f03a` — see GAP-15) |
-| `implants` | Registry rows (see `GET /implants` field list in `docs/restAPI.md`) |
+| `treatment_summaries` | Base form-table shape (uuid/version/patient_uuid/event_datetime/form_status/form_data JSONB) |
+| `cardiology_test_requests` | Base form-table shape + destination metadata (`organisation`, `hospital`, `senior_responsible_clinician`, `speciality`) |
+| `implants` | Registry: operation-note provenance (`operation_note_uuid`/`_version`/`_implant_row_uuid`, UNIQUE on note+row), clinical context (`health_board(_text)`, `facility_code/_text`, `surgeon_src_text/_nadex_id`, `speciality`), implant fields (`implant_id`, `implant_description`, `date_inserted`, `remove_by_date`, `remove_by_display`, `date_removed`, `superseded`), `source_form_data` JSONB; indexes on patient, remove-by date, and filters |
+| `user_lookup` | `nadex_id` PK, `title`, `first_names`, `surname`, `role`, `facility` — backs `POST /users/by-nadex-ids` |
+| Lifecycle columns | `highly_sensitive`, `final_requested_at`, `cooling_off_period_minutes`, `cooling_off_expires_at` on every patient-form table and `forms_index`; `implants_synced_at` on `operation_notes`; `outcome_actioned_date`/`outcome_actioned_user_id` on `outpatient_appointments` |
 
 **Seeds**: `setup-db.ts` seeds 4 named test patients (DUCK Donald et al.) with appointments across four Welsh health boards; `seed-patients.ts` bulk-seeds deterministic fictional patients with real Welsh addresses; `scripts/seed-implants-real-db.ts` (~200 implants, 80 patients) and `scripts/seed-outpatient-outcomes-real-db.ts` (appointments + final outcomes) are deterministic review seeds that upsert without truncating user rows.
 

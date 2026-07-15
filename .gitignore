@@ -1,0 +1,25 @@
+# Dependencies and build output
+node_modules/
+dist/
+build/
+.svelte-kit/
+.vite/
+
+# IDE and editor artifacts
+.vs/
+.vscode/
+.idea/
+*.suo
+*.wsuo
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log

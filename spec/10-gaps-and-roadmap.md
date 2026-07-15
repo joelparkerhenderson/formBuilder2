@@ -2,7 +2,7 @@
 Status: living
 Last-updated: 2026-07-15
 Source-of-truth: this-file
-Verified-against: 637f03a
+Verified-against: 310262a
 Owns: the audit register (GAP-NN items) and the improvement roadmap. Other documents cite gaps by ID only.
 
 # spec/10 — Gaps and roadmap
@@ -18,7 +18,7 @@ The audit register. Every known defect, inconsistency, or missing capability get
 | GAP-03 | Medium | Svelte 5 runes migration incomplete | Open |
 | GAP-04 | Medium | Three forms hand-coded outside both engines | Open |
 | GAP-05 | High | No tests, lint, type-check, or CI | Open |
-| GAP-06 | Low | Stray Visual Studio artefact directory committed | Open |
+| GAP-06 | Low | Stray Visual Studio artefact directory committed | Partially resolved 2026-07-15 |
 | GAP-07 | Low | Component file-casing inconsistency | Open |
 | GAP-08 | Low | Colour tokens duplicated in CSS and TS | Open |
 | GAP-09 | Medium | reactOrig features not verified as ported | Open (verify) |
@@ -26,8 +26,8 @@ The audit register. Every known defect, inconsistency, or missing capability get
 | GAP-11 | Medium | CNT simulated backend vs future REST contract | Open (by design, pending) |
 | GAP-12 | Info | Legacy typo component `fbBadgeSupperseded` in reactOrig | Record-only |
 | GAP-13 | Low | Engine A RoV renders table fields as raw JSON | Open |
-| GAP-14 | Low | Actioned-endpoint body field names differ between client and contract doc | Open (verify) |
-| GAP-15 | Medium | `setup-db.ts` schema drift vs API contract | Open |
+| GAP-14 | Low | Actioned-endpoint body field names differ between client and contract doc | Open (evidence favours client) |
+| GAP-15 | Medium | `setup-db.ts` schema drift vs API contract | Resolved 2026-07-15 |
 
 ## Detail
 
@@ -41,7 +41,7 @@ The audit register. Every known defect, inconsistency, or missing capability get
 
 **GAP-05 — No quality infrastructure.** No tests, lint, `svelte-check`, or CI anywhere. Requirements listed in [spec/09](09-non-functional.md). *Action*: after GAP-01, add `svelte-check` + a small vitest suite over `src/lib/utils/` + CI.
 
-**GAP-06 — VS artefacts.** `src/lib/api/.vs/` (including `slnx.sqlite`, `VSWorkspaceState.json`) is an IDE artefact committed into source. *Action*: delete and add a `.gitignore` (none exists at root).
+**GAP-06 — VS artefacts.** `src/lib/api/.vs/` (including `slnx.sqlite`, `VSWorkspaceState.json`) is an IDE artefact committed into source. *Progress 2026-07-15*: root `.gitignore` added (covers `.vs/`, `node_modules/`, build output, env files). *Remaining*: `git rm -r src/lib/api/.vs` — deletion deferred pending explicit maintainer approval.
 
 **GAP-07 — File casing.** `src/lib/components/fb/` mixes `fbModal.svelte` with `FbModalActions.svelte`/`FbModalMessage.svelte`; CNT mixes `Fbcnt*` and `fbcnt*`. *Action*: convention for new files in [AGENTS/conventions.md](../AGENTS/conventions.md); bulk rename only as a deliberate change (import churn).
 
@@ -57,14 +57,14 @@ The audit register. Every known defect, inconsistency, or missing capability get
 
 **GAP-13 — Engine A RoV tables.** `rovField` in `SpecDrivenForm.svelte` renders table-family fields as `JSON.stringify` into `fbReadOnly`. *Action*: render proper read-only tables (Engine B's `GeneratedTableShell` is prior art).
 
-**GAP-14 — Actioned body naming.** `markOutpatientOutcomeActioned` in `src/lib/api/legacy.ts` sends `outcome_actioned_date`/`outcome_actioned_user_id`; `docs/restAPI.md` documents `date_actioned`/`user_id`. The server may accept both. *Action*: verify against the server and align the contract wording in [spec/07](07-rest-api-and-data-model.md).
+**GAP-14 — Actioned body naming.** `markOutpatientOutcomeActioned` in `src/lib/api/legacy.ts` sends `outcome_actioned_date`/`outcome_actioned_user_id`; `docs/restAPI.md` documents `date_actioned`/`user_id`. The server may accept both. *Evidence 2026-07-15*: the database columns added by `scripts/seed-outpatient-outcomes-real-db.ts` are `outcome_actioned_date`/`outcome_actioned_user_id` — matching the client, suggesting the contract doc's wording is stale. *Action*: confirm against the server, then align the wording in [spec/07](07-rest-api-and-data-model.md).
 
-**GAP-15 — Schema drift.** `setup-db.ts` creates `patients`, `forms_index`, `waiting_list_cards`, `operation_notes`, `outpatient_outcomes`, `outpatient_appointments` — but not `treatment_summaries`, `cardiology_test_requests`, or `implants`, all required by the contract. Those tables evidently exist server-side. *Action*: extend `setup-db.ts` to the full contract schema so a fresh database supports every form type.
+**GAP-15 — Schema drift.** *(Resolved 2026-07-15.)* `setup-db.ts` originally created only six tables; `treatment_summaries`, `implants`, `user_lookup`, and the cooling-off/`highly_sensitive`/actioned columns existed only as scattered DDL inside `scripts/seed-implants-real-db.ts` and `scripts/seed-outpatient-outcomes-real-db.ts` — and **nothing created `cardiology_test_requests`** (the seed script's ALTER loop would fail on a fresh database). *Resolution*: `setup-db.ts` now carries the full contract schema (sections 8–12): `treatment_summaries`, `cardiology_test_requests` (with destination metadata columns), `implants` + indexes, `implants_synced_at` on `operation_notes`, `user_lookup`, the lifecycle-column loop across all form tables + `forms_index`, and a post-ALTER recreation of `forms_index_current` so the view includes the new columns on first run. Seed scripts keep their own DDL for standalone use; DDL shapes copied verbatim so they stay compatible.
 
 ## Roadmap (ordered)
 
 1. **Restore build tooling** (GAP-01) — everything else depends on a reproducible build.
-2. **Hygiene sweep** (GAP-06, GAP-15) — delete `.vs/`, add `.gitignore`, complete `setup-db.ts`.
+2. **Hygiene sweep** (GAP-06, GAP-15) — ~~add `.gitignore`, complete `setup-db.ts`~~ done 2026-07-15; remaining: delete `.vs/` (needs maintainer approval).
 3. **Quality baseline** (GAP-05) — `svelte-check`, utility tests, CI.
 4. **Engine unification decision** (GAP-02, GAP-10) — decide the target vocabulary and declarative-conditions design before migrating forms.
 5. **Complete the runes migration** (GAP-03).
