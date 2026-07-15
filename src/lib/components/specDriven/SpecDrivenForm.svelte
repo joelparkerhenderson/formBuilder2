@@ -41,7 +41,7 @@
   import FbTextInput from '$lib/components/fb/fbTextInput.svelte';
   import FbTime from '$lib/components/fb/fbTime.svelte';
   import SpecDrivenTableField from './SpecDrivenTableField.svelte';
-  import type { SimpleField, SimpleRow, SpecDrivenFormSpec } from '$lib/data/specDrivenFormTypes';
+  import type { SimpleField, SimpleRow, SimpleSection, SpecDrivenFormSpec } from '$lib/data/specDrivenFormTypes';
   import type { Patient, SectionSpec } from '$lib/types';
   import { formDateToIsoDate, formatFormDate, generateUUID } from '$lib/utils/dateFormat';
   import { returnByHref } from '$lib/utils/fbHrefNavigation';
@@ -238,6 +238,56 @@
     if (kind === 'surgeon') return index === 0 ? 'Second surgeon' : `Surgeon ${index + 2}`;
     return index === 0 ? 'Second anaesthetist' : `Anaesthetist ${index + 2}`;
   }
+
+  // Display-only elements never count as data, so a section holding nothing else stays hidden in RoV
+  function fieldHasRovData(field: SimpleField): boolean {
+    switch (field.type) {
+      case 'boxedInfo':
+      case 'boxedWarning':
+      case 'boxedAlert':
+      case 'imageTiles':
+        return false;
+      case 'bloodPressure':
+        return Boolean(formState[`${field.key}_systolic`] || formState[`${field.key}_diastolic`]);
+      case 'dateHeightWeightBMIRow':
+        return Boolean(formState[`${field.key}_dateRecorded`] || formState[`${field.key}_heightCm`] || formState[`${field.key}_weightKg`]);
+      case 'procedureTable':
+        return rovRows(field.key).some((row) => row.procedure);
+      case 'diagnosisTable':
+        return rovRows(field.key).some((row) => row.diagnosis);
+      case 'specimenTable':
+        return rovRows(field.key).some((row) => row.label || row.description);
+      case 'implantTable':
+        return rovRows(field.key).some((row) => row.implantId || row.description || row.requiresRemoval || row.removeBy);
+      case 'surgeonGroup':
+        return Boolean(formState.leadSurgeon || formState.surgeonSRC) || rovRows(field.key).some((row) => row.name);
+      case 'anaesthetistGroup':
+        return Boolean(formState.leadAnaesthetist || formState.anaesthetistSRC) || rovRows(field.key).some((row) => row.name);
+      case 'checkGroup':
+        return Array.isArray(formState[field.key]) && formState[field.key].length > 0;
+      default: {
+        const value = formState[field.key];
+        return value !== undefined && value !== null && value !== '';
+      }
+    }
+  }
+
+  function sectionHasRovData(section: SimpleSection) {
+    return section.rows.some((row) => row.cells.some((cell) => (cell.fields || []).some((field) => fieldHasRovData(field))));
+  }
+
+  const visibleRovSections = $derived(spec.sections.filter((section) => sectionHasRovData(section)));
+  const rovSectionsConfig = $derived(visibleRovSections.map((section) => ({
+    id: section.id,
+    name: section.name,
+    requiredFields: section.requiredFields || []
+  })));
+
+  $effect(() => {
+    if (isReadOnlyView && visibleRovSections.length && !visibleRovSections.some((section) => section.id === activeSection)) {
+      activeSection = visibleRovSections[0].id;
+    }
+  });
 
   function rowCols(row: SimpleRow) {
     if (row.cols) return Math.max(1, Math.min(12, row.cols)) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
@@ -573,11 +623,11 @@
 {/snippet}
 
 {#if isReadOnlyView}
-  <FbLayout sections={sectionsConfig} {formState} bind:activeSection isReadOnlyView={true}>
+  <FbLayout sections={rovSectionsConfig} {formState} bind:activeSection isReadOnlyView={true}>
     {#snippet header()}
       <FbHeader title={spec.title} {patient} formStatus={effectiveFormStatus} {highlySensitive} {superseded} />
     {/snippet}
-    {#each spec.sections as section}
+    {#each visibleRovSections as section (section.id)}
       <FbSection id={section.id} title={section.name}>
         {#each section.rows as row}
           {#if row.noGrid}

@@ -31,7 +31,7 @@ The audit register. Every known defect, inconsistency, or missing capability get
 | GAP-16 | Medium | No stale-version write guard (concurrent-save conflicts undetected) | Resolved 2026-07-15 |
 | GAP-17 | Medium | Superseded state never computed; `fbBadgeSuperseded` orphaned; no old-version banner | Resolved 2026-07-15 |
 | GAP-18 | Medium | Engine A (operation-note) has no version-history support | Resolved 2026-07-15 |
-| GAP-19 | Low | RoV does not suppress empty sections (react did) | Open |
+| GAP-19 | Low | RoV does not suppress empty sections (react did) | Resolved for Engine A 2026-07-15; hand-coded routes deferred to GAP-04 |
 
 ## Detail
 
@@ -59,7 +59,7 @@ The audit register. Every known defect, inconsistency, or missing capability get
 
 **GAP-18 — Engine A lacks version history.** *(Resolved 2026-07-15.)* Originally `src/routes/operation-note/+page.ts` never read a `formVersion` query param and `SpecDrivenForm.svelte` had no history wiring. *Resolution*, following the `src/routes/waiting-list-card/` reference pattern: `SpecDrivenForm.svelte` now loads `getFormHistory` on mount (for saved forms) and after every save, shows a **History** button in the RoV footer, renders `fbFormHistoryMenu`, and `viewHistoryVersion` loads any version into RoV via `getFormVersion(spec.formType, …)`; `operation-note/+page.ts` reads `formVersion` (loading that exact version, always in RoV). Save-time version numbering now uses the server's latest (see GAP-16 mitigation). Every Engine A form gets this for free. Incidental fix: `fbFormHistoryMenu.svelte`'s hover style referenced the non-existent token `--fb-yellow`; corrected to `--fb-active-darker-yellow`. Residual: no "viewing an old version" banner — that is GAP-17.
 
-**GAP-19 — RoV empty-section suppression.** reactOrig's dedicated `*RoV.tsx` views hid whole sections whose fields were all empty; current RoVs render every `fbSection` header unconditionally (field-level suppression via `fbReadOnly` works). *Action*: add a per-section has-data check in RoV rendering (Engine B's `hasRoVData` in `src/lib/utils/generatedForm.ts` is prior art).
+**GAP-19 — RoV empty-section suppression.** reactOrig's dedicated `*RoV.tsx` views hid whole sections whose fields were all empty; current RoVs rendered every `fbSection` header unconditionally (field-level suppression via `fbReadOnly` works). *Resolved for Engine A 2026-07-15*: `SpecDrivenForm.svelte` derives `visibleRovSections` via `sectionHasRovData`/`fieldHasRovData` (type-aware emptiness — compound blood-pressure/BMI keys, table-row content, staff groups including the lead/SRC form-state fields; display-only boxed messages and image placeholders never count as data), filters both the rendered sections and the section nav, and re-anchors `activeSection` if the current one is hidden. *Deferred*: the hand-coded routes (waiting-list-card, outpatient-outcome, cardiology-test-request) still render their RoV sections unconditionally — retrofitting hand-written per-section guards across three bespoke ~700–900-line files is high-risk without runtime verification (GAP-01/GAP-05); they inherit the behaviour when migrated to Engine A (GAP-04).
 
 **GAP-10 — Hardcoded conditional logic.** Engine A has no declarative "show X when Y"; `urgencyGroup` subquestions and the `procedures`/`urgency` completeness specials live in `SpecDrivenForm.svelte`. Adding a form with new conditional behaviour means editing the renderer. *Action*: add declarative conditions to `SimpleField` (e.g. `showWhen`) when a second consumer needs them.
 
@@ -81,5 +81,5 @@ The audit register. Every known defect, inconsistency, or missing capability get
 4. **Engine unification decision** (GAP-02, GAP-10) — decide the target vocabulary and declarative-conditions design before migrating forms.
 5. **Complete the runes migration** (GAP-03).
 6. **Migrate hand-coded forms** (GAP-04). ~~Fix Engine A RoV tables (GAP-13)~~ done 2026-07-15.
-7. **Versioning robustness** — ~~GAP-16, GAP-17, GAP-18~~ done 2026-07-15; remaining: GAP-19 empty-section suppression and contract reconciliation (GAP-14).
+7. **Versioning robustness** — ~~GAP-16, GAP-17, GAP-18~~ done 2026-07-15; GAP-19 done for Engine A (hand-coded remainder rides on GAP-04); remaining: contract reconciliation (GAP-14).
 8. **CNT server backend** (GAP-11) when SWAS work is scheduled.
