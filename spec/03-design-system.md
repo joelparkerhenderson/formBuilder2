@@ -2,7 +2,7 @@
 Status: living
 Last-updated: 2026-07-15
 Source-of-truth: docs/wcp-eForms-designSystem-specification.html
-Verified-against: 637f03a
+Verified-against: 90b6614
 Owns: the machine-readable index of the WCP eForms design system — tokens, the fb* component inventory, and cross-cutting rules. On any conflict, the canonical HTML specification wins.
 
 # spec/03 — Design system
@@ -111,7 +111,7 @@ Per-component behavioural detail (props, states, edge rules) lives in the HTML s
 | `fbBoxedMessage` | Boxed message base (`variant: info | warning | alert`) |
 | `fbBoxedInfo` / `fbBoxedWarning` / `fbBoxedAlert` | Variant wrappers |
 | `fbBadgeDraft` | Draft status badge |
-| `fbBadgeSuperseded` | Superseded-version badge |
+| `fbBadgeSuperseded` | Superseded-version badge (currently imported nowhere — GAP-17) |
 | `fbBadgeHighlySensitive` | Highly-sensitive badge |
 | `fbModal` / `FbModalActions` / `FbModalMessage` | Modal base, action row, message body |
 | `fbModalPassword` | Password prompt |

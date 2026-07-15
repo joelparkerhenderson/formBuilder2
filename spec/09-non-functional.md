@@ -2,7 +2,7 @@
 Status: living
 Last-updated: 2026-07-15
 Source-of-truth: code
-Verified-against: 637f03a
+Verified-against: 90b6614
 Owns: cross-cutting non-functional requirements — accessibility, security/auth, data integrity, runtime constraints, and quality infrastructure — stated as testable requirements with current status.
 
 # spec/09 — Non-functional requirements
@@ -41,6 +41,7 @@ Restatements of the [spec/07](07-rest-api-and-data-model.md) domain rules as tes
 - A final operation note's non-empty implant rows appear in the implant registry after cooling-off, each with a stable row `uuid`; removing a row in a later final marks the registry row `superseded` without losing `date_removed`.
 - Every form save writes a matching `forms_index` row; `forms_index_current` returns exactly one row per `form_uuid`.
 - `formState` mutations are immutable-update only (`formState = { ...formState, [key]: value }`) so change detection (`compareFormStatesObj`) stays correct.
+- Saving must detect a concurrent newer version and refuse/redirect rather than interleave — **currently missing** (GAP-16; reactOrig's `assertFormVersionIsLatest` is prior art).
 
 ## Runtime constraints
 

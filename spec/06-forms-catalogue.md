@@ -2,7 +2,7 @@
 Status: living
 Last-updated: 2026-07-15
 Source-of-truth: code
-Verified-against: 637f03a
+Verified-against: 90b6614
 Owns: the per-form living specifications — one entry per clinical form, plus supporting screens.
 
 # spec/06 — Forms catalogue
@@ -36,7 +36,7 @@ All clinical forms share the common chrome and lifecycle: `fbLayout` with sectio
 - **Engine & persistence**: **Engine A** — the only committed `SpecDrivenFormSpec`; saves `form_type: 'operation_note'` with destination metadata columns (`organisation`, `hospital`, `senior_responsible_clinician`, `speciality`).
 - **Sections** (8): Basic information · Surgeons and anaesthetists · Prophylaxis and other specific preop or intraop medication · Procedure(s) · Detail · Tissue removed and pathological specimens · Images · Implants – Scan for safety.
 - **Behaviour notes**: required-field specials — `procedures` needs ≥1 non-empty row; `urgency` needs `emergency` or `elective`+`electiveUrgency`. On a **final** save, non-empty `form_data.implants[]` rows get persistent UUIDs and, after cooling-off promotion, are synchronised into the Implant registry (`implants` table; rows dropped in a later final version become `superseded`). Contract detail in [spec/07](07-rest-api-and-data-model.md).
-- **Known deviations**: RoV renders table fields as raw JSON (GAP-13).
+- **Known deviations**: RoV renders table fields as raw JSON (GAP-13); no version-history viewing — Engine A lacks it entirely (GAP-18).
 
 ## Outpatient outcome
 
@@ -61,7 +61,7 @@ All clinical forms share the common chrome and lifecycle: `fbLayout` with sectio
 - **Route & files**: `src/routes/cardiology-test-request/+page.svelte` (~701 lines, bespoke `{#snippet}` indication blocks per investigation) + `+page.ts`.
 - **Engine & persistence**: hand-coded; saves `form_type: 'cardiology_test_request'` with destination metadata in `organisation`, `hospital`, `senior_responsible_clinician`, `speciality`.
 - **Behaviour notes**: shortest cooling-off (30 minutes).
-- **Known deviations**: hand-coded and the largest single route; prime candidate for Engine A migration (GAP-04). The legacy `reactOrig/src/etr/CardiologyTestRequest.tsx` is larger — diff before assuming parity (GAP-09).
+- **Known deviations**: hand-coded and the largest single route; prime candidate for Engine A migration (GAP-04). Content parity with `reactOrig/src/etr/CardiologyTestRequest.tsx` confirmed by audit 2026-07-15 (GAP-09); uses a plain `<select>` version picker instead of `fbFormHistoryMenu`, and captures the save password inline rather than via `fbModalPassword`.
 
 ## Supporting screens (not forms, but agents touch them)
 

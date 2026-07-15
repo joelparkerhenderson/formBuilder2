@@ -2,7 +2,7 @@
 Status: living
 Last-updated: 2026-07-15
 Source-of-truth: code
-Verified-against: 637f03a
+Verified-against: 90b6614
 Owns: the complete Engine A (`SpecDrivenFormSpec`) reference — spec hierarchy, field types, renderer behaviour, and the authoring checklist.
 
 # spec/04 — Engine A: SpecDrivenFormSpec
@@ -80,6 +80,8 @@ SpecDrivenFormSpec { title, formType, filename, sections[] }
 5. On success: snapshot refreshed, password cleared, switch to RoV.
 
 **Read-only view (RoV)**: the `rovField` snippet renders each field via `fbReadOnly` (option labels resolved by `optionLabel`; blood pressure as `systolic/diastolic mmHg`; BMI row as three read-only fields). Table-family fields currently render as raw `JSON.stringify` — a known prototype shortcut (GAP-13). An **EV** (edit view) button returns to editing unless the form is final or `readOnlyBackOnly`.
+
+**Not yet supported by this renderer**: version-history viewing (no `formVersion` param plumbing or `fbFormHistoryMenu` wiring — GAP-18), stale-version save conflict detection (GAP-16), and superseded-state display (GAP-17). Hand-coded routes like `src/routes/waiting-list-card/` have the history pattern; port it here to fix all Engine A forms at once.
 
 ## Authoring checklist — adding an Engine A form
 

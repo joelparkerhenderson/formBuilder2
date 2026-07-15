@@ -2,7 +2,7 @@
 Status: living
 Last-updated: 2026-07-15
 Source-of-truth: this-file
-Verified-against: 310262a
+Verified-against: 90b6614
 Owns: the audit register (GAP-NN items) and the improvement roadmap. Other documents cite gaps by ID only.
 
 # spec/10 — Gaps and roadmap
@@ -21,13 +21,17 @@ The audit register. Every known defect, inconsistency, or missing capability get
 | GAP-06 | Low | Stray Visual Studio artefact directory committed | Partially resolved 2026-07-15 |
 | GAP-07 | Low | Component file-casing inconsistency | Open |
 | GAP-08 | Low | Colour tokens duplicated in CSS and TS | Open |
-| GAP-09 | Medium | reactOrig features not verified as ported | Open (verify) |
+| GAP-09 | Medium | reactOrig features not verified as ported | Closed 2026-07-15 (audit done; residue = GAP-16..19) |
 | GAP-10 | Medium | Engine A conditional logic hardcoded in renderer | Open |
 | GAP-11 | Medium | CNT simulated backend vs future REST contract | Open (by design, pending) |
 | GAP-12 | Info | Legacy typo component `fbBadgeSupperseded` in reactOrig | Record-only |
 | GAP-13 | Low | Engine A RoV renders table fields as raw JSON | Open |
 | GAP-14 | Low | Actioned-endpoint body field names differ between client and contract doc | Open (evidence favours client) |
 | GAP-15 | Medium | `setup-db.ts` schema drift vs API contract | Resolved 2026-07-15 |
+| GAP-16 | Medium | No stale-version write guard (concurrent-save conflicts undetected) | Open |
+| GAP-17 | Medium | Superseded state never computed; `fbBadgeSuperseded` orphaned; no old-version banner | Open |
+| GAP-18 | Medium | Engine A (operation-note) has no version-history support | Open |
+| GAP-19 | Low | RoV does not suppress empty sections (react did) | Open |
 
 ## Detail
 
@@ -47,7 +51,15 @@ The audit register. Every known defect, inconsistency, or missing capability get
 
 **GAP-08 — Token duplication.** The `--fb-*` custom properties in `src/styles/global.css` are duplicated as TS exports in `src/lib/constants/fbColours.ts`. `global.css` is authoritative. *Action*: generate one from the other, or read CSS variables at runtime.
 
-**GAP-09 — Unported reactOrig features (verify).** Present in `reactOrig/` with no confirmed equivalent in `src/`: `reactOrig/src/utils/formHistory.ts` + `reactOrig/src/utils/formVersion.ts` utilities, `reactOrig/src/components/fbRoVShell.tsx` + dedicated `*RoV.tsx` views (current app uses `GeneratedReadOnlyForm`/inline RoV instead), `fbViewOldVersion`. The current `fbFormHistoryMenu` exists; behaviour parity unverified. Also diff `reactOrig/src/etr/CardiologyTestRequest.tsx` (larger than the Svelte port) for lost detail. *Action*: verify parity, port or explicitly waive each item here.
+**GAP-09 — Unported reactOrig features.** *(Closed 2026-07-15 — full parity audit completed.)* **At parity**: Cardiology test request (every section, investigation, indication block, warning, and validation rule from `reactOrig/src/etr/CardiologyTestRequest.tsx` is present in the Svelte route — the React file is larger only because it inlines the RoV shell and a password hook; the Svelte version additionally offers an RoV version dropdown). Composer WYSIWYG (drag/drop, Show JSON edit/reimport, save/load/delete designs, public link + `userForm.html` viewing, preview, prefs persistence, auth — all present; the "missing" `fbcFooter`/`fbcpName`/`fbcpVal` were one-line markup wrappers absorbed inline; neither version has undo/redo). RoV shell (`fbRoVShell` capabilities reimplemented inline via `fbLayout`/`fbHeader`/`fbBottomControlsRow` with field-level empty suppression), history menu (`fbFormHistoryMenu.svelte` is a faithful port), and `fbViewOldVersion` (inlined into the menu). **Real regressions found** were split into GAP-16, GAP-17, GAP-18, GAP-19. Minor note: the cardiology route uses a plain `<select>` version picker instead of `fbFormHistoryMenu`, and captures the save password inline rather than via `fbModalPassword` — harmonisation nits, not omissions.
+
+**GAP-16 — No stale-version write guard.** reactOrig's `reactOrig/src/utils/formVersion.ts` (`assertFormVersionIsLatest`, `STALE_FORM_VERSION`) blocked saving over a newer version and forced the form into RoV on conflict. No equivalent exists in `src/`: every save path just reads the latest version and increments, so two concurrent editors silently interleave versions. *Action*: port the guard into the shared save flows (`SpecDrivenForm.svelte` and the hand-coded routes) using `getLatestVersion` before insert.
+
+**GAP-17 — Superseded state missing.** reactOrig computed `superseded = currentFormVersion < latestFormVersion`, showed `fbBadgeSuperseded` in the RoV header, and hid EV/History controls when viewing an old version. In `src/`, `fbBadgeSuperseded.svelte` exists but is imported nowhere, no route computes superseded-ness, `fbHeader.svelte` has no `superseded` prop, and viewing an old version shows no banner and leaves footer controls unchanged. *Action*: compute superseded per route (or in a shared helper), wire the badge through `fbHeader`, and suppress edit controls on old versions.
+
+**GAP-18 — Engine A lacks version history.** `src/routes/operation-note/+page.ts` never reads a `formVersion` query param and `SpecDrivenForm.svelte` contains no `getFormHistory`/`getFormVersion`/history-menu wiring — waiting-list-card and outpatient-outcome have the full pattern, cardiology a partial one. Any form adopting Engine A silently loses history viewing. *Action*: add history support to `SpecDrivenForm.svelte` (props/param plumbing + `fbFormHistoryMenu`), which fixes every Engine A form at once.
+
+**GAP-19 — RoV empty-section suppression.** reactOrig's dedicated `*RoV.tsx` views hid whole sections whose fields were all empty; current RoVs render every `fbSection` header unconditionally (field-level suppression via `fbReadOnly` works). *Action*: add a per-section has-data check in RoV rendering (Engine B's `hasRoVData` in `src/lib/utils/generatedForm.ts` is prior art).
 
 **GAP-10 — Hardcoded conditional logic.** Engine A has no declarative "show X when Y"; `urgencyGroup` subquestions and the `procedures`/`urgency` completeness specials live in `SpecDrivenForm.svelte`. Adding a form with new conditional behaviour means editing the renderer. *Action*: add declarative conditions to `SimpleField` (e.g. `showWhen`) when a second consumer needs them.
 
@@ -69,5 +81,5 @@ The audit register. Every known defect, inconsistency, or missing capability get
 4. **Engine unification decision** (GAP-02, GAP-10) — decide the target vocabulary and declarative-conditions design before migrating forms.
 5. **Complete the runes migration** (GAP-03).
 6. **Migrate hand-coded forms** (GAP-04) and fix Engine A RoV tables (GAP-13).
-7. **Parity audit vs reactOrig** (GAP-09) and contract reconciliation (GAP-14).
+7. **Versioning robustness** (GAP-16, GAP-17, GAP-18, GAP-19 — the residue of the completed GAP-09 audit) and contract reconciliation (GAP-14).
 8. **CNT server backend** (GAP-11) when SWAS work is scheduled.

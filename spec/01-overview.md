@@ -2,7 +2,7 @@
 Status: living
 Last-updated: 2026-07-15
 Source-of-truth: code
-Verified-against: 637f03a
+Verified-against: 90b6614
 Owns: the product statement, sub-product inventory, generational history, and the project glossary.
 
 # spec/01 — Product overview
@@ -34,7 +34,7 @@ Two usage paths (from `README.md`):
 
 | Generation | Directory | Stack | Status |
 |---|---|---|---|
-| 1. React | `reactOrig/` | React 19, react-router 7, Vite 6, Tailwind 4, Express + PostgreSQL scripts | Frozen reference — historically the most feature-complete; some features not yet ported (see GAP-09 in [spec/10](10-gaps-and-roadmap.md)) |
+| 1. React | `reactOrig/` | React 19, react-router 7, Vite 6, Tailwind 4, Express + PostgreSQL scripts | Frozen reference — parity audited 2026-07-15; remaining regressions are GAP-16..19 in [spec/10](10-gaps-and-roadmap.md) |
 | 2. Standalone Svelte | `svelteOrig/` | Plain Vite 6 multi-page app; components in legacy Svelte-4 dialect (`export let`), compiled under Svelte 5 | Frozen reference |
 | 3. **Current** | `src/` | SvelteKit + Svelte 5 runes, client-only SPA | Active; runes migration incomplete (GAP-03) |
 
