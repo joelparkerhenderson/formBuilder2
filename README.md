@@ -10,8 +10,11 @@ Try the WYSIWYG app at https://www.shadesOfPale.net/formBuilder2/composer.html.
 This repo also contains the source for case note tracker in src/lib/caseNoteTracker. Working demo at [www.shadesOfPale.net/formBuilder2/caseNoteTracker.html](https://www.shadesOfPale.net/formBuilder2/caseNoteTracker.html)
 ## Intended audience
 Any persons (clinicians, PMs, BAs, devs) interested in experimenting or working with WCP form design.
-## Specifcations and documentation
-See docs/
+## Specifications and documentation
+- [index.md](index.md) — the full documentation map.
+- [AGENTS.md](AGENTS.md) — entry point for AI agents and contributors.
+- [spec/](spec/00-conventions.md) — living specifications for spec-driven development (kept in step with the code).
+- docs/ — the canonical HTML specifications (design system, CNT) and historical REST API notes.
 ## Suggested usage
 Engage with SGS about your form(s). You'll get:
 - A clinical sense check
