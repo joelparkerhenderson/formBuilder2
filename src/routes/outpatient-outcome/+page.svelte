@@ -107,6 +107,8 @@
   let saveErrorDetails = $state('');
   let formHistory: FbFormHistoryItem[] = $state([]);
   let showHistoryMenu = $state(false);
+  const latestKnownVersion = $derived(formHistory.reduce((max, item) => Math.max(max, Number(item.form_version) || 0), 0));
+  const superseded = $derived(formVersion !== null && latestKnownVersion > formVersion);
   const dischargedChecked = $derived(Boolean(formState.discharged ?? formState.discharge));
   const sosChecked = $derived(Boolean(formState.sos));
   const pifuChecked = $derived(Boolean(formState.pifu));
@@ -350,6 +352,7 @@
     finalChecked = saved?.form_status === 'final';
     highlySensitive = Boolean(saved?.highly_sensitive ?? saved?.form_data?.highlySensitive);
     cleanSnapshot = { ...formState };
+    formVersion = version;
     isReadOnlyView = true;
     showHistoryMenu = false;
   }
@@ -405,6 +408,7 @@
       });
       formState = { ...formData, uuid: formUuid };
       cleanSnapshot = { ...formState };
+      formVersion = null;
       showSavingPopup = false;
       showSavedPopup = true;
       if (inline) {
@@ -650,7 +654,7 @@
   />
 {:else}
   <FbLayout sections={[]} {formState} isReadOnlyView={isReadOnlyView}>
-    {#snippet header()}<FbHeader title="Outpatient outcome" {patient} formStatus={effectiveFormStatus} {highlySensitive} />{/snippet}
+    {#snippet header()}<FbHeader title="Outpatient outcome" {patient} formStatus={effectiveFormStatus} {highlySensitive} superseded={isReadOnlyView && superseded} />{/snippet}
     {#if isReadOnlyView}
       {@render readonlyContent()}
     {:else}
@@ -659,10 +663,10 @@
     {#snippet bottomControls()}
       <FbBottomControlsRow>
         {#if isReadOnlyView}
-          {#if !readOnlyBackOnly && (effectiveFormStatus !== 'final' || !openInRoV)}
+          {#if !readOnlyBackOnly && !superseded && (effectiveFormStatus !== 'final' || !openInRoV)}
             <FbButton type="button" onClick={() => (isReadOnlyView = false)}>EV</FbButton>
           {/if}
-          {#if formUuid}
+          {#if formUuid && !superseded}
             <FbButton type="button" onClick={() => (showHistoryMenu = true)}>History</FbButton>
           {/if}
           <div style="flex: 1;"></div>

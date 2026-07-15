@@ -2,24 +2,28 @@
   import FbAddressograph from './fbAddressograph.svelte';
   import FbBadgeDraft from './fbBadgeDraft.svelte';
   import FbBadgeHighlySensitive from './fbBadgeHighlySensitive.svelte';
+  import FbBadgeSuperseded from './fbBadgeSuperseded.svelte';
 
   let {
     title,
     patient,
     formStatus,
-    highlySensitive = false
+    highlySensitive = false,
+    superseded = false
   }: {
     title: string;
     patient?: Record<string, unknown> | null;
     formStatus: 'draft' | 'final' | string;
     highlySensitive?: boolean;
+    superseded?: boolean;
   } = $props();
 </script>
 
 <header class="fb-header-with-divider">
   <div class="fb-header-inner">
     <div class="fb-header-title-area">
-      <div class="fb-header-badges" class:empty={formStatus !== 'draft' && !highlySensitive}>
+      <div class="fb-header-badges" class:empty={!superseded && formStatus !== 'draft' && !highlySensitive}>
+        {#if superseded}<FbBadgeSuperseded />{/if}
         {#if formStatus === 'draft'}<FbBadgeDraft />{/if}
         {#if highlySensitive}<FbBadgeHighlySensitive />{/if}
       </div>

@@ -174,6 +174,8 @@
     return required + (section.getIncompleteCount?.(formState) || 0) > 0;
   }));
   const formStatus = $derived(finalChecked ? 'final' : 'draft');
+  const latestKnownVersion = $derived(formHistory.reduce((max, item) => Math.max(max, Number(item.form_version) || 0), 0));
+  const superseded = $derived(formVersion !== null && latestKnownVersion > formVersion);
 
   function selectedTests(state: FormState) {
     return testFields.filter(([key]) => !!state[key]).map(([, label]) => label);
@@ -448,7 +450,7 @@
   <p style="padding: 0.8rem;">Loading cardiology test request...</p>
 {:else if isReadOnlyView}
   <FbLayout sections={sectionsConfig} formState={formState} bind:activeSection isReadOnlyView={true}>
-    {#snippet header()}<FbHeader title="Cardiology test request" {patient} {formStatus} {highlySensitive} />{/snippet}
+    {#snippet header()}<FbHeader title="Cardiology test request" {patient} {formStatus} {highlySensitive} {superseded} />{/snippet}
     <div style="padding: 0.4rem;">
       <FbSection id="to" title="To">
         <FbGridRow cols={3}>
@@ -495,10 +497,10 @@
     </div>
     {#snippet bottomControls()}
       <FbBottomControlsRow>
-        {#if !readOnlyBackOnly && (formStatus !== 'final' || !openInRoV)}
+        {#if !readOnlyBackOnly && !superseded && (formStatus !== 'final' || !openInRoV)}
           <FbButton type="button" onClick={() => (isReadOnlyView = false)}>EV</FbButton>
         {/if}
-        {#if formUuid}<FbButton type="button" onClick={() => (showHistoryMenu = true)}>History</FbButton>{/if}
+        {#if formUuid && !superseded}<FbButton type="button" onClick={() => (showHistoryMenu = true)}>History</FbButton>{/if}
         {#if showHistoryMenu && formHistory.length}
           <select onchange={(event) => {
             const version = Number((event.currentTarget as HTMLSelectElement).value);
@@ -508,6 +510,7 @@
                 finalChecked = saved?.form_status === 'final';
                 highlySensitive = Boolean(saved?.highly_sensitive || saved?.form_data?.highlySensitive);
                 cleanSnapshot = cleanState({ ...formState, finalChecked, highlySensitive });
+                formVersion = version;
               });
             }
           }}>

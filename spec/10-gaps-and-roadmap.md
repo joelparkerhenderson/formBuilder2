@@ -29,7 +29,7 @@ The audit register. Every known defect, inconsistency, or missing capability get
 | GAP-14 | Low | Actioned-endpoint body field names differ between client and contract doc | Open (evidence favours client) |
 | GAP-15 | Medium | `setup-db.ts` schema drift vs API contract | Resolved 2026-07-15 |
 | GAP-16 | Medium | No stale-version write guard (concurrent-save conflicts undetected) | Open |
-| GAP-17 | Medium | Superseded state never computed; `fbBadgeSuperseded` orphaned; no old-version banner | Open |
+| GAP-17 | Medium | Superseded state never computed; `fbBadgeSuperseded` orphaned; no old-version banner | Resolved 2026-07-15 |
 | GAP-18 | Medium | Engine A (operation-note) has no version-history support | Resolved 2026-07-15 |
 | GAP-19 | Low | RoV does not suppress empty sections (react did) | Open |
 
@@ -55,7 +55,7 @@ The audit register. Every known defect, inconsistency, or missing capability get
 
 **GAP-16 — No stale-version write guard.** reactOrig's `reactOrig/src/utils/formVersion.ts` (`assertFormVersionIsLatest`, `STALE_FORM_VERSION`) blocked saving over a newer version and forced the form into RoV on conflict. No equivalent exists in `src/`: every save path just reads the latest version and increments, so two concurrent editors silently interleave versions. *Partial mitigation 2026-07-15*: `SpecDrivenForm.svelte` now fetches the server's latest version at save time and uses `max(latest, loaded) + 1`, so saves can no longer collide with existing `(uuid, version)` rows — but the user still gets no conflict warning. *Action*: port the guard (detect latest > loaded, warn, force RoV) into `SpecDrivenForm.svelte` and the hand-coded routes.
 
-**GAP-17 — Superseded state missing.** reactOrig computed `superseded = currentFormVersion < latestFormVersion`, showed `fbBadgeSuperseded` in the RoV header, and hid EV/History controls when viewing an old version. In `src/`, `fbBadgeSuperseded.svelte` exists but is imported nowhere, no route computes superseded-ness, `fbHeader.svelte` has no `superseded` prop, and viewing an old version shows no banner and leaves footer controls unchanged. *Action*: compute superseded per route (or in a shared helper), wire the badge through `fbHeader`, and suppress edit controls on old versions.
+**GAP-17 — Superseded state missing.** *(Resolved 2026-07-15.)* reactOrig computed `superseded = currentFormVersion < latestFormVersion`, showed `fbBadgeSuperseded` in the RoV header, and hid EV/History controls when viewing an old version; none of that had been ported. *Resolution*, matching the react pattern: `fbHeader.svelte` gained a `superseded` prop rendering `fbBadgeSuperseded` first in the badge row; `SpecDrivenForm.svelte` (Engine A) and the three hand-coded form routes each compute `superseded` (viewed version vs the max version in the loaded history), pass it to the RoV header, and hide the EV and History controls when viewing a superseded version. Viewing or saving the latest version clears the state. One deliberate deviation: the cardiology route's version `<select>` stays visible when superseded (it is the only way back to the latest version there), whereas the History popover in the other routes hides per react's behaviour.
 
 **GAP-18 — Engine A lacks version history.** *(Resolved 2026-07-15.)* Originally `src/routes/operation-note/+page.ts` never read a `formVersion` query param and `SpecDrivenForm.svelte` had no history wiring. *Resolution*, following the `src/routes/waiting-list-card/` reference pattern: `SpecDrivenForm.svelte` now loads `getFormHistory` on mount (for saved forms) and after every save, shows a **History** button in the RoV footer, renders `fbFormHistoryMenu`, and `viewHistoryVersion` loads any version into RoV via `getFormVersion(spec.formType, …)`; `operation-note/+page.ts` reads `formVersion` (loading that exact version, always in RoV). Save-time version numbering now uses the server's latest (see GAP-16 mitigation). Every Engine A form gets this for free. Incidental fix: `fbFormHistoryMenu.svelte`'s hover style referenced the non-existent token `--fb-yellow`; corrected to `--fb-active-darker-yellow`. Residual: no "viewing an old version" banner — that is GAP-17.
 
@@ -81,5 +81,5 @@ The audit register. Every known defect, inconsistency, or missing capability get
 4. **Engine unification decision** (GAP-02, GAP-10) — decide the target vocabulary and declarative-conditions design before migrating forms.
 5. **Complete the runes migration** (GAP-03).
 6. **Migrate hand-coded forms** (GAP-04) and fix Engine A RoV tables (GAP-13).
-7. **Versioning robustness** (GAP-16, GAP-17, GAP-18, GAP-19 — the residue of the completed GAP-09 audit) and contract reconciliation (GAP-14).
+7. **Versioning robustness** — ~~GAP-17, GAP-18~~ done 2026-07-15; remaining: GAP-16 conflict warnings, GAP-19 empty-section suppression, and contract reconciliation (GAP-14).
 8. **CNT server backend** (GAP-11) when SWAS work is scheduled.

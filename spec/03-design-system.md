@@ -111,7 +111,7 @@ Per-component behavioural detail (props, states, edge rules) lives in the HTML s
 | `fbBoxedMessage` | Boxed message base (`variant: info | warning | alert`) |
 | `fbBoxedInfo` / `fbBoxedWarning` / `fbBoxedAlert` | Variant wrappers |
 | `fbBadgeDraft` | Draft status badge |
-| `fbBadgeSuperseded` | Superseded-version badge (currently imported nowhere — GAP-17) |
+| `fbBadgeSuperseded` | Superseded-version badge, shown via `fbHeader`'s `superseded` prop when viewing an old version |
 | `fbBadgeHighlySensitive` | Highly-sensitive badge |
 | `fbModal` / `FbModalActions` / `FbModalMessage` | Modal base, action row, message body |
 | `fbModalPassword` | Password prompt |

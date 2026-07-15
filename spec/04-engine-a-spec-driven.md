@@ -83,7 +83,9 @@ SpecDrivenFormSpec { title, formType, filename, sections[] }
 
 **Version history**: for saved forms the renderer loads the version list (`getFormHistory`) on mount and after each save, shows a **History** button in the RoV footer, and opens any version read-only via `viewHistoryVersion` (`getFormVersion`). Routes may pass a `formVersion` query param to open a specific version directly (see `src/routes/operation-note/+page.ts` — historical versions always open in RoV). Save numbering asks the server for the latest version and uses `max(latest, loaded) + 1`, so saving after viewing an old version cannot collide with existing rows.
 
-**Not yet supported by this renderer**: user-facing stale-version conflict warnings (GAP-16 — collisions are prevented, but a concurrent editor gets no notice) and superseded-state display when viewing old versions (GAP-17).
+**Superseded state**: the renderer derives `superseded` (viewed version older than the latest in history); the RoV header then shows `fbBadgeSuperseded` and the EV/History controls are hidden, matching the react-era behaviour.
+
+**Not yet supported by this renderer**: user-facing stale-version conflict warnings (GAP-16 — collisions are prevented, but a concurrent editor gets no notice).
 
 ## Authoring checklist — adding an Engine A form
 

@@ -85,8 +85,10 @@
   let draggedTableRow = $state<{ key: string; id: number } | null>(null);
   let formHistory = $state<FbFormHistoryItem[]>([]);
   let showHistoryMenu = $state(false);
+  let latestVersion = $state(0);
 
   const effectiveFormStatus = $derived(finalChecked ? 'final' : 'draft');
+  const superseded = $derived(currentVersion > 0 && latestVersion > currentVersion);
   const formChanged = $derived(!compareFormStatesObj(cleanSnapshot, formState));
   const requiredFieldsComplete = $derived(areAllSectionsComplete(sectionsConfig, formState));
 
@@ -244,6 +246,7 @@
   async function refreshFormHistory() {
     try {
       formHistory = await getFormHistory(formUuid);
+      latestVersion = formHistory.reduce((max, item) => Math.max(max, Number(item.form_version) || 0), 0);
     } catch {
       formHistory = [];
     }
@@ -324,6 +327,7 @@
       });
 
       currentVersion = nextVersion;
+      latestVersion = nextVersion;
       cleanSnapshot = { ...normalisedState };
       password = '';
       isReadOnlyView = true;
@@ -458,7 +462,7 @@
 {#if isReadOnlyView}
   <FbLayout sections={sectionsConfig} {formState} bind:activeSection isReadOnlyView={true}>
     {#snippet header()}
-      <FbHeader title={spec.title} {patient} formStatus={effectiveFormStatus} {highlySensitive} />
+      <FbHeader title={spec.title} {patient} formStatus={effectiveFormStatus} {highlySensitive} {superseded} />
     {/snippet}
     {#each spec.sections as section}
       <FbSection id={section.id} title={section.name}>
@@ -489,10 +493,10 @@
     {/each}
     {#snippet bottomControls()}
       <div class="spec-driven-footer">
-        {#if !readOnlyBackOnly && effectiveFormStatus !== 'final'}
+        {#if !readOnlyBackOnly && !superseded && effectiveFormStatus !== 'final'}
           <FbButton type="button" variant="primary" onclick={() => isReadOnlyView = false}>EV</FbButton>
         {/if}
-        {#if formHistory.length > 0}
+        {#if formHistory.length > 0 && !superseded}
           <FbButton type="button" variant="primary" onclick={() => showHistoryMenu = true}>History</FbButton>
         {/if}
         <div class="spec-driven-footer-spacer"></div>

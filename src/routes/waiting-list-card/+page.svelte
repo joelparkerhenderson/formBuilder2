@@ -405,6 +405,8 @@
   const formChanged = $derived(!loadingData && cleanSnapshot !== null && !isStateEqual(cleanSnapshot, liveSnapshot));
   const effectiveFormStatus = $derived(finalChecked ? 'final' : 'draft');
   const saveDisabled = $derived(!formChanged);
+  const latestKnownVersion = $derived(formHistory.reduce((max, item) => Math.max(max, Number(item.form_version) || 0), 0));
+  const superseded = $derived(formVersion !== null && latestKnownVersion > formVersion);
 
   async function saveWaitingListCard(formStatus: SaveStatus) {
     try {
@@ -448,6 +450,7 @@
 
       formState = normaliseWaitingListFormState({ ...formData });
       cleanSnapshot = createFormSnapshot(formState, procedures, anticoagChecked, finalChecked, highlySensitive);
+      formVersion = null;
       showSavedPopup = true;
       window.setTimeout(() => {
         showSavedPopup = false;
@@ -533,6 +536,7 @@
     anticoagChecked = savedData.anticoagChecked || { warfarin: false, doac: false, antiplatelet: false, heparin: false };
     highlySensitive = Boolean(savedData.highlySensitive);
     finalChecked = saved.form_status === 'final';
+    formVersion = version;
     isReadOnlyView = true;
     showHistoryMenu = false;
     cleanSnapshot = createFormSnapshot(formState, procedures, anticoagChecked, finalChecked, highlySensitive);
@@ -545,7 +549,7 @@
   <main class="waiting-list-card-error" role="alert">{loadError}</main>
 {:else if isReadOnlyView}
   <FbLayout sections={sectionsConfig} formState={formState} bind:activeSection isReadOnlyView={true}>
-    {#snippet header()}<FbHeader title="Waiting list card" {patient} formStatus={effectiveFormStatus} {highlySensitive} />{/snippet}
+    {#snippet header()}<FbHeader title="Waiting list card" {patient} formStatus={effectiveFormStatus} {highlySensitive} {superseded} />{/snippet}
     <div style="padding: 0.4rem;">
       <FbSection id="section-from" title="From">
         <FbGridRow cols={4}>
@@ -587,10 +591,10 @@
           <FbButton type="button" onClick={() => (isReadOnlyView = false)}>Edit</FbButton>
           <FbButton type="button" onClick={returnToOutpatientOutcome}>Close</FbButton>
         {:else}
-          {#if !readOnlyBackOnly && (effectiveFormStatus !== 'final' || !openInRoV)}
+          {#if !readOnlyBackOnly && !superseded && (effectiveFormStatus !== 'final' || !openInRoV)}
             <FbButton type="button" onClick={() => (isReadOnlyView = false)}>EV</FbButton>
           {/if}
-          {#if formUuid}
+          {#if formUuid && !superseded}
             <FbButton type="button" onClick={() => (showHistoryMenu = true)}>History</FbButton>
           {/if}
           <div style="flex: 1;"></div>
